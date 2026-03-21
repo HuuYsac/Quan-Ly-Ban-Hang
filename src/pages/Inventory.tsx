@@ -1,0 +1,154 @@
+import React, { useState } from 'react';
+import { AppData } from '../types';
+import { ClipboardList, Search, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { formatCurrency } from '../lib/utils';
+
+interface InventoryProps {
+  data: AppData;
+  updateData: (newData: Partial<AppData>) => void;
+}
+
+export function Inventory({ data, updateData }: InventoryProps) {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filter, setFilter] = useState<'all' | 'low' | 'out'>('all');
+
+  const filteredProducts = data.products.filter(p => {
+    const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase()) || p.id.toLowerCase().includes(searchTerm.toLowerCase());
+    if (!matchesSearch) return false;
+    
+    if (filter === 'low') return p.stock > 0 && p.stock < p.minStock;
+    if (filter === 'out') return p.stock === 0;
+    return true;
+  });
+
+  const totalValue = data.products.reduce((sum, p) => sum + (p.stock * (p.importPrice || p.price * 0.8)), 0);
+  const lowStockCount = data.products.filter(p => p.stock > 0 && p.stock < p.minStock).length;
+  const outOfStockCount = data.products.filter(p => p.stock === 0).length;
+
+  return (
+    <div className="animate-in fade-in duration-500">
+      {/* Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+        <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100 flex items-center justify-between border-l-4 border-l-blue-500">
+          <div>
+            <p className="text-sm font-medium text-gray-500 mb-1">Tổng giá trị tồn kho (Ước tính)</p>
+            <h3 className="text-2xl font-bold text-gray-900">{formatCurrency(totalValue)}</h3>
+          </div>
+          <div className="w-12 h-12 bg-blue-50 rounded-full flex items-center justify-center text-blue-600">
+            <ClipboardList size={24} />
+          </div>
+        </div>
+        
+        <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100 flex items-center justify-between border-l-4 border-l-amber-500">
+          <div>
+            <p className="text-sm font-medium text-gray-500 mb-1">Sắp hết hàng</p>
+            <h3 className="text-2xl font-bold text-gray-900">{lowStockCount}</h3>
+          </div>
+          <div className="w-12 h-12 bg-amber-50 rounded-full flex items-center justify-center text-amber-600">
+            <AlertTriangle size={24} />
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100 flex items-center justify-between border-l-4 border-l-rose-500">
+          <div>
+            <p className="text-sm font-medium text-gray-500 mb-1">Hết hàng</p>
+            <h3 className="text-2xl font-bold text-gray-900">{outOfStockCount}</h3>
+          </div>
+          <div className="w-12 h-12 bg-rose-50 rounded-full flex items-center justify-center text-rose-600">
+            <AlertTriangle size={24} />
+          </div>
+        </div>
+      </div>
+
+      {/* Actions & Search */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="p-5 border-b border-gray-100 flex flex-col sm:flex-row justify-between items-center gap-4">
+          <div className="relative w-full sm:w-96">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+            <input 
+              type="text" 
+              placeholder="Tìm kiếm sản phẩm..." 
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+            />
+          </div>
+          <div className="flex gap-2 w-full sm:w-auto overflow-x-auto pb-2 sm:pb-0">
+            <button 
+              onClick={() => setFilter('all')}
+              className={`px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ${filter === 'all' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+            >
+              Tất cả
+            </button>
+            <button 
+              onClick={() => setFilter('low')}
+              className={`px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ${filter === 'low' ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+            >
+              Sắp hết
+            </button>
+            <button 
+              onClick={() => setFilter('out')}
+              className={`px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ${filter === 'out' ? 'bg-rose-100 text-rose-700' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+            >
+              Hết hàng
+            </button>
+          </div>
+        </div>
+
+        {/* Table */}
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-gray-50 text-gray-500 text-sm uppercase tracking-wider">
+                <th className="p-4 font-medium">Sản phẩm</th>
+                <th className="p-4 font-medium">Danh mục</th>
+                <th className="p-4 font-medium text-center">Tồn kho</th>
+                <th className="p-4 font-medium text-center">Tối thiểu</th>
+                <th className="p-4 font-medium text-center">Trạng thái</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {filteredProducts.map((product) => (
+                <tr key={product.id} className="hover:bg-gray-50/50 transition-colors">
+                  <td className="p-4">
+                    <div className="font-medium text-gray-900">{product.name}</div>
+                    <div className="text-xs text-gray-500 mt-1">{product.id}</div>
+                  </td>
+                  <td className="p-4 text-sm text-gray-600">{product.category}</td>
+                  <td className="p-4 text-center font-semibold text-gray-900">
+                    {product.stock}
+                  </td>
+                  <td className="p-4 text-center text-gray-500">
+                    {product.minStock}
+                  </td>
+                  <td className="p-4 text-center">
+                    {product.stock === 0 ? (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-rose-100 text-rose-700">
+                        <AlertTriangle size={14} /> Hết hàng
+                      </span>
+                    ) : product.stock < product.minStock ? (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-700">
+                        <AlertTriangle size={14} /> Sắp hết
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700">
+                        <CheckCircle2 size={14} /> Đủ hàng
+                      </span>
+                    )}
+                  </td>
+                </tr>
+              ))}
+              {filteredProducts.length === 0 && (
+                <tr>
+                  <td colSpan={5} className="p-8 text-center text-gray-500">
+                    Không tìm thấy sản phẩm nào phù hợp.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}

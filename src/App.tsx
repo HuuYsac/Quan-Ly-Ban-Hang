@@ -1,0 +1,183 @@
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+import React, { useState, useEffect } from 'react';
+import { Sidebar } from './components/Sidebar';
+import { Header } from './components/Header';
+import { Dashboard } from './pages/Dashboard';
+import { Products } from './pages/Products';
+import { Orders } from './pages/Orders';
+import { Customers } from './pages/Customers';
+import { Suppliers } from './pages/Suppliers';
+import { Categories } from './pages/Categories';
+import { Inventory } from './pages/Inventory';
+import { Debts } from './pages/Debts';
+import { Reports } from './pages/Reports';
+import { Settings } from './pages/Settings';
+import { CompanyInfo } from './pages/CompanyInfo';
+import { useAppStore } from './hooks/useAppStore';
+import { Auth } from './pages/Auth';
+import { auth } from './firebase';
+import { onAuthStateChanged, User, sendEmailVerification } from 'firebase/auth';
+import { Mail, LogOut, RefreshCw } from 'lucide-react';
+
+export default function App() {
+  const [activePage, setActivePage] = useState('dashboard');
+  const { data, updateData } = useAppStore();
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [resending, setResending] = useState(false);
+  const [resendMessage, setResendMessage] = useState('');
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+      setLoading(false);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const handleResendVerification = async () => {
+    if (user) {
+      setResending(true);
+      try {
+        await sendEmailVerification(user);
+        setResendMessage('Đã gửi lại email xác minh. Vui lòng kiểm tra hộp thư của bạn.');
+      } catch (error: any) {
+        setResendMessage('Có lỗi xảy ra: ' + error.message);
+      } finally {
+        setResending(false);
+      }
+    }
+  };
+
+  const handleLogout = async () => {
+    await auth.signOut();
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="w-10 h-10 border-4 border-blue-600/30 border-t-blue-600 rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <Auth />;
+  }
+
+  if (!user.emailVerified) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+        <div className="sm:mx-auto sm:w-full sm:max-w-md">
+          <div className="bg-white py-8 px-4 shadow-xl shadow-gray-200/50 sm:rounded-2xl sm:px-10 border border-gray-100 text-center">
+            <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-blue-100 mb-6">
+              <Mail className="h-8 w-8 text-blue-600" />
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Xác minh Email</h2>
+            <p className="text-gray-600 mb-6">
+              Vui lòng kiểm tra email <strong>{user.email}</strong> và nhấp vào liên kết xác minh để tiếp tục sử dụng ứng dụng.
+            </p>
+            
+            {resendMessage && (
+              <div className="mb-6 p-3 bg-blue-50 text-blue-700 text-sm rounded-lg">
+                {resendMessage}
+              </div>
+            )}
+
+            <div className="space-y-3">
+              <button
+                onClick={handleResendVerification}
+                disabled={resending}
+                className="w-full flex justify-center items-center gap-2 py-2.5 px-4 border border-transparent rounded-xl shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors disabled:opacity-70"
+              >
+                {resending ? <RefreshCw className="animate-spin" size={18} /> : <Mail size={18} />}
+                Gửi lại email xác minh
+              </button>
+              
+              <button
+                onClick={handleLogout}
+                className="w-full flex justify-center items-center gap-2 py-2.5 px-4 border border-gray-300 rounded-xl shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+              >
+                <LogOut size={18} />
+                Đăng xuất
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const getPageTitle = () => {
+    switch (activePage) {
+      case 'dashboard': return { title: 'Hệ thống Quản lý', subtitle: 'Quản lý bán hàng doanh nghiệp Việt Nam' };
+      case 'customers': return { title: 'Quản lý Khách hàng', subtitle: 'Hồ sơ, thiết bị và lịch sử bảo hành' };
+      case 'suppliers': return { title: 'Quản lý Nhà cung cấp', subtitle: 'Danh sách và thông tin nhà cung cấp' };
+      case 'products': return { title: 'Quản lý Sản phẩm', subtitle: 'Danh mục và kho hàng sản phẩm' };
+      case 'categories': return { title: 'Quản lý Danh mục', subtitle: 'Phân loại sản phẩm' };
+      case 'inventory': return { title: 'Quản lý Kho hàng', subtitle: 'Kiểm kê và nhập xuất kho' };
+      case 'debts': return { title: 'Quản lý Công nợ', subtitle: 'Theo dõi công nợ khách hàng và nhà cung cấp' };
+      case 'orders': return { title: 'Quản lý Đơn hàng', subtitle: 'Danh sách và xử lý đơn hàng' };
+      case 'reports': return { title: 'Báo cáo', subtitle: 'Thống kê doanh thu và hoạt động' };
+      case 'settings': return { title: 'Cài đặt hệ thống', subtitle: 'Tùy chỉnh hệ thống và giao diện' };
+      case 'company-info': return { title: 'Thông tin Shop', subtitle: 'Cập nhật thông tin cửa hàng/doanh nghiệp' };
+      default: return { title: 'Đang phát triển', subtitle: 'Tính năng này sẽ sớm ra mắt' };
+    }
+  };
+
+  const renderPage = () => {
+    switch (activePage) {
+      case 'dashboard':
+        return <Dashboard data={data} onNavigate={setActivePage} />;
+      case 'customers':
+        return <Customers data={data} updateData={updateData} />;
+      case 'suppliers':
+        return <Suppliers data={data} updateData={updateData} />;
+      case 'products':
+        return <Products data={data} updateData={updateData} />;
+      case 'categories':
+        return <Categories data={data} updateData={updateData} />;
+      case 'inventory':
+        return <Inventory data={data} updateData={updateData} />;
+      case 'debts':
+        return <Debts data={data} updateData={updateData} />;
+      case 'orders':
+        return <Orders data={data} updateData={updateData} />;
+      case 'reports':
+        return <Reports data={data} updateData={updateData} />;
+      case 'settings':
+        return <Settings data={data} updateData={updateData} />;
+      case 'company-info':
+        return <CompanyInfo data={data} updateData={updateData} />;
+      default:
+        return (
+          <div className="flex flex-col items-center justify-center h-64 text-gray-500">
+            <div className="text-4xl mb-4">🚧</div>
+            <h2 className="text-xl font-semibold">Tính năng đang phát triển</h2>
+            <p className="text-sm mt-2">Vui lòng quay lại sau.</p>
+          </div>
+        );
+    }
+  };
+
+  const { title, subtitle } = getPageTitle();
+
+  return (
+    <div className="flex min-h-screen bg-slate-50 font-sans text-gray-900">
+      <Sidebar activePage={activePage} setActivePage={setActivePage} />
+      
+      <div className="flex-1 ml-64 flex flex-col min-h-screen">
+        <Header title={title} subtitle={subtitle} onNavigate={setActivePage} />
+        
+        <main className="flex-1 p-8 max-w-7xl mx-auto w-full">
+          {renderPage()}
+        </main>
+      </div>
+    </div>
+  );
+}
+
