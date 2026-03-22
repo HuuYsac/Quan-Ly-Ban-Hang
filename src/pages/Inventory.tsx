@@ -96,7 +96,7 @@ export function Inventory({ data, updateData }: InventoryProps) {
         </div>
 
         {/* Table */}
-        <div className="hidden md:block overflow-x-auto">
+        <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-gray-50 text-gray-500 text-sm uppercase tracking-wider">
@@ -147,51 +147,6 @@ export function Inventory({ data, updateData }: InventoryProps) {
               )}
             </tbody>
           </table>
-        </div>
-
-        {/* Mobile Cards */}
-        <div className="md:hidden divide-y divide-gray-100">
-          {filteredProducts.map((product) => (
-            <div key={product.id} className="p-4 space-y-3">
-              <div className="flex justify-between items-start">
-                <div>
-                  <div className="font-bold text-gray-900">{product.name}</div>
-                  <div className="text-xs text-gray-500">{product.id}</div>
-                </div>
-                {product.stock === 0 ? (
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-700">
-                    Hết hàng
-                  </span>
-                ) : product.stock < product.minStock ? (
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-700">
-                    Sắp hết
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700">
-                    Đủ hàng
-                  </span>
-                )}
-              </div>
-              <div className="flex justify-between items-center text-sm">
-                <span className="text-gray-500">Danh mục: {product.category}</span>
-                <div className="flex items-center gap-4">
-                  <div className="text-center">
-                    <div className="text-[10px] text-gray-400 uppercase font-bold">Tồn</div>
-                    <div className="font-bold text-gray-900">{product.stock}</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-[10px] text-gray-400 uppercase font-bold">Tối thiểu</div>
-                    <div className="text-gray-500">{product.minStock}</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          ))}
-          {filteredProducts.length === 0 && (
-            <div className="p-8 text-center text-gray-500 text-sm">
-              Không tìm thấy sản phẩm nào phù hợp.
-            </div>
-          )}
         </div>
       </div>
     </div>

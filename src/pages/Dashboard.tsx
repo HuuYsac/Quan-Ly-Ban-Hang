@@ -146,36 +146,36 @@ export function Dashboard({ data, onNavigate }: DashboardProps) {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard 
-          title="Doanh thu" 
+          title="Doanh thu hôm nay" 
           value={formatCurrency(stats.todayRevenue)} 
           icon={DollarSign} 
-          trend="+12.5%" 
+          trend="+12.5% so với hôm qua" 
           trendUp={true} 
           color="blue"
         />
         <StatCard 
-          title="Đơn hàng" 
+          title="Đơn hàng mới" 
           value={stats.todayOrdersCount.toString()} 
           icon={ClipboardList} 
-          trend="+2 đơn" 
+          trend="+2 đơn so với hôm qua" 
           trendUp={true} 
           color="indigo"
         />
         <StatCard 
-          title="Khách hàng" 
+          title="Tổng khách hàng" 
           value={stats.customerCount.toString()} 
           icon={Users} 
-          trend="+5 mới" 
+          trend="+5 khách mới tuần này" 
           trendUp={true} 
           color="emerald"
         />
         <StatCard 
-          title="Sản phẩm" 
+          title="Sản phẩm trong kho" 
           value={stats.productCount.toString()} 
           icon={Package} 
-          trend={`${stats.lowStockCount} sắp hết`} 
+          trend={`${stats.lowStockCount} sản phẩm sắp hết`} 
           trendUp={false} 
           color="amber"
         />
@@ -183,11 +183,11 @@ export function Dashboard({ data, onNavigate }: DashboardProps) {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Performance Chart */}
-        <div className="lg:col-span-2 bg-white rounded-2xl p-4 sm:p-6 shadow-sm border border-gray-100">
+        <div className="lg:col-span-2 bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-2">
               <TrendingUp className="text-blue-600" size={20} />
-              <h3 className="text-lg font-bold text-gray-900">Hiệu suất 7 ngày</h3>
+              <h3 className="text-lg font-bold text-gray-900">Hiệu suất 7 ngày qua</h3>
             </div>
             <button 
               onClick={() => onNavigate('reports')}
@@ -204,7 +204,7 @@ export function Dashboard({ data, onNavigate }: DashboardProps) {
                   dataKey="name" 
                   axisLine={false} 
                   tickLine={false} 
-                  tick={{ fill: '#64748b', fontSize: 10 }} 
+                  tick={{ fill: '#64748b', fontSize: 12 }} 
                 />
                 <YAxis 
                   hide
@@ -225,9 +225,9 @@ export function Dashboard({ data, onNavigate }: DashboardProps) {
         </div>
 
         {/* Quick Actions */}
-        <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm border border-gray-100">
+        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
           <h3 className="text-lg font-bold text-gray-900 mb-6">Thao tác nhanh</h3>
-          <div className="grid grid-cols-3 gap-3 sm:gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             <QuickAction 
               icon={FileText} 
               title="Tạo đơn" 
@@ -426,8 +426,8 @@ export function Dashboard({ data, onNavigate }: DashboardProps) {
 
       {/* Modals */}
       {viewOrder && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[9999] sm:p-4 print:bg-white print:p-0 print:static print:block">
-          <div className="bg-white sm:rounded-2xl shadow-2xl w-full max-w-3xl h-full sm:h-auto sm:max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-200 print:shadow-none print:max-h-none print:overflow-visible print:w-full print:max-w-none relative">
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[9999] p-4 print:bg-white print:p-0 print:static print:block">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-200 print:shadow-none print:max-h-none print:overflow-visible print:w-full print:max-w-none relative">
             <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between z-30 print:hidden">
               <h3 className="text-lg font-bold text-gray-900">Chi tiết đơn hàng #{viewOrder.id}</h3>
               <div className="flex gap-2">
@@ -435,10 +435,10 @@ export function Dashboard({ data, onNavigate }: DashboardProps) {
                   type="button"
                   onClick={handlePrint}
                   disabled={isPrinting}
-                  className="relative z-50 flex items-center gap-2 px-3 sm:px-4 py-2 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white rounded-lg font-medium transition-all shadow-lg shadow-emerald-600/20 cursor-pointer disabled:opacity-50"
+                  className="relative z-50 flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white rounded-lg font-medium transition-all shadow-lg shadow-emerald-600/20 cursor-pointer disabled:opacity-50"
                 >
                   <Printer size={18} className={isPrinting ? 'animate-pulse' : ''} />
-                  <span className="hidden sm:inline">{isPrinting ? 'Đang chuẩn bị...' : 'In hóa đơn'}</span>
+                  <span>{isPrinting ? 'Đang chuẩn bị...' : 'In hóa đơn'}</span>
                 </button>
                 <button 
                   type="button"
@@ -646,8 +646,8 @@ export function Dashboard({ data, onNavigate }: DashboardProps) {
       )}
 
       {viewCustomer && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[9999] sm:p-4">
-          <div className="bg-white sm:rounded-2xl shadow-2xl w-full max-w-2xl h-full sm:h-auto sm:max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-200 relative">
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[9999] p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-200 relative">
             <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between z-30">
               <h3 className="text-lg font-bold text-gray-900">Chi tiết khách hàng</h3>
               <button 
@@ -744,8 +744,8 @@ export function Dashboard({ data, onNavigate }: DashboardProps) {
       )}
 
       {viewProduct && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[9999] sm:p-4">
-          <div className="bg-white sm:rounded-2xl shadow-2xl w-full max-w-md h-full sm:h-auto animate-in fade-in zoom-in-95 duration-200 relative">
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[9999] p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md animate-in fade-in zoom-in-95 duration-200 relative">
             <div className="p-6">
               <div className="flex justify-between items-start mb-6">
                 <div className="w-12 h-12 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center">
@@ -787,8 +787,8 @@ export function Dashboard({ data, onNavigate }: DashboardProps) {
       )}
 
       {viewRepair && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[9999] sm:p-4">
-          <div className="bg-white sm:rounded-2xl shadow-2xl w-full max-w-md h-full sm:h-auto animate-in fade-in zoom-in-95 duration-200 relative">
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[9999] p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md animate-in fade-in zoom-in-95 duration-200 relative">
             <div className="p-6">
               <div className="flex justify-between items-start mb-6">
                 <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">

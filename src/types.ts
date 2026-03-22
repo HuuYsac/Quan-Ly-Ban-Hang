@@ -171,18 +171,6 @@ export interface CareTask {
   completedAt?: string;
 }
 
-export interface Promotion {
-  id: string;
-  title: string;
-  description: string;
-  target: string;
-  status: 'Đang chạy' | 'Đã kết thúc' | 'Đã gửi';
-  type: 'Gift' | 'Promo';
-  sentCount: number;
-  clickCount: number;
-  createdAt: string;
-}
-
 export interface AppData {
   customers: Customer[];
   suppliers: Supplier[];
@@ -192,7 +180,6 @@ export interface AppData {
   repairs: Repair[];
   leads: Lead[];
   careTasks: CareTask[];
-  promotions: Promotion[];
   sales: Sale[];
   shopInfo: ShopInfo;
   settings: Settings;

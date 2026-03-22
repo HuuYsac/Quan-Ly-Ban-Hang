@@ -48,8 +48,8 @@ export default function App() {
         } else {
           // If doc doesn't exist yet (just registered), it will be created with approved: false
           // unless it's the owner
-          const ownerEmails = ['dieuhuu1995@gmail.com', 'huulaptop.info@gmail.com'];
-          setIsApproved(ownerEmails.includes(currentUser.email || ''));
+          const ownerEmail = 'dieuhuu1995@gmail.com';
+          setIsApproved(currentUser.email === ownerEmail);
         }
       } else {
         setIsApproved(null);
@@ -224,31 +224,16 @@ export default function App() {
     }
   };
 
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const { title, subtitle } = getPageTitle();
 
   return (
-    <div className="flex min-h-screen bg-slate-50 font-sans text-gray-900 overflow-x-hidden">
-      <Sidebar 
-        activePage={activePage} 
-        setActivePage={(page) => {
-          setActivePage(page);
-          setIsSidebarOpen(false);
-        }} 
-        data={data}
-        isOpen={isSidebarOpen}
-        onClose={() => setIsSidebarOpen(false)}
-      />
+    <div className="flex min-h-screen bg-slate-50 font-sans text-gray-900">
+      <Sidebar activePage={activePage} setActivePage={setActivePage} data={data} />
       
-      <div className="flex-1 flex flex-col min-h-screen lg:ml-64 transition-all duration-300 print:ml-0">
-        <Header 
-          title={title} 
-          subtitle={subtitle} 
-          onNavigate={setActivePage} 
-          onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
-        />
+      <div className="flex-1 ml-64 flex flex-col min-h-screen print:ml-0">
+        <Header title={title} subtitle={subtitle} onNavigate={setActivePage} />
         
-        <main className="flex-1 p-4 md:p-8 max-w-7xl mx-auto w-full print:p-0">
+        <main className="flex-1 p-8 max-w-7xl mx-auto w-full print:p-0">
           {renderPage()}
         </main>
       </div>

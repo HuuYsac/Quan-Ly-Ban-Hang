@@ -200,7 +200,7 @@ export function Customers({ data, updateData }: CustomersProps) {
         </div>
 
         {/* Table */}
-        <div className="hidden md:block overflow-x-auto">
+        <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-gray-50 text-gray-500 text-sm uppercase tracking-wider">
@@ -304,85 +304,15 @@ export function Customers({ data, updateData }: CustomersProps) {
             </tbody>
           </table>
         </div>
-
-        {/* Mobile Cards */}
-        <div className="md:hidden divide-y divide-gray-100">
-          {filteredCustomers.map((customer) => {
-            const warrantyStatus = getWarrantyStatus(customer);
-            return (
-              <div key={customer.id} className="p-4 space-y-3">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <div className="font-bold text-gray-900">{customer.name}</div>
-                    <div className="text-xs text-gray-500">📞 {customer.phone}</div>
-                    {customer.type === 'doanh-nghiep' && customer.companyName && (
-                      <div className="text-xs text-blue-600 font-medium">🏢 {customer.companyName}</div>
-                    )}
-                  </div>
-                  <div className="text-right">
-                    <div className="text-[10px] text-gray-400 uppercase font-bold">Công nợ</div>
-                    <div className={`text-sm font-bold ${customer.debt > 0 ? 'text-rose-600' : 'text-gray-400'}`}>
-                      {customer.debt > 0 ? formatCurrency(customer.debt) : '0 đ'}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex flex-wrap gap-1">
-                  {customer.tags && customer.tags.map((tag, idx) => (
-                    <span key={idx} className="px-2 py-0.5 bg-indigo-50 text-indigo-700 text-[10px] font-bold rounded border border-indigo-100">
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-
-                <div className="flex items-center justify-between pt-2">
-                  <div className="flex gap-2">
-                    {warrantyStatus && (
-                      <>
-                        <span className="text-[10px] text-gray-500 flex items-center gap-1">
-                          <Laptop size={10} /> {warrantyStatus.total} máy
-                        </span>
-                        {warrantyStatus.activeWarranty > 0 && (
-                          <span className="text-[10px] text-emerald-600 font-bold flex items-center gap-1">
-                            <ShieldCheck size={10} /> {warrantyStatus.activeWarranty} BH
-                          </span>
-                        )}
-                      </>
-                    )}
-                  </div>
-                  <div className="flex gap-1">
-                    <button 
-                      onClick={() => handleEdit(customer)}
-                      className="p-2 text-blue-600 bg-blue-50 rounded-lg border border-blue-100"
-                    >
-                      <Edit size={16} />
-                    </button>
-                    <button 
-                      onClick={() => setConfirmingDelete(customer.id)}
-                      className="p-2 text-rose-600 bg-rose-50 rounded-lg border border-rose-100"
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-          {filteredCustomers.length === 0 && (
-            <div className="p-8 text-center text-gray-500 text-sm">
-              Không tìm thấy khách hàng nào.
-            </div>
-          )}
         </div>
       </div>
-    </div>
 
-    {/* Add Customer Modal */}
-    {isAddModalOpen && (
-      <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-[100] sm:p-4">
-        <div className="bg-white sm:rounded-2xl shadow-xl w-full max-w-2xl h-full sm:h-auto sm:max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-200">
-          <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between z-10">
-            <h3 className="text-lg font-bold text-gray-900">
+      {/* Add Customer Modal */}
+      {isAddModalOpen && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-200">
+            <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between z-10">
+              <h3 className="text-lg font-bold text-gray-900">
                 {editingId ? 'Chỉnh sửa khách hàng' : 'Thêm khách hàng mới'}
               </h3>
               <button 

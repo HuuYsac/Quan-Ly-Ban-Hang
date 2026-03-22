@@ -122,9 +122,6 @@ export function useAppStore() {
           initialData.careTasks.forEach(ct => {
             batch.set(doc(db, 'users', user.uid, 'careTasks', ct.id), ct);
           });
-          initialData.promotions.forEach(p => {
-            batch.set(doc(db, 'users', user.uid, 'promotions', p.id), p);
-          });
           initialData.sales.forEach(s => {
             batch.set(doc(db, 'users', user.uid, 'sales', s.id), s);
           });
@@ -139,12 +136,12 @@ export function useAppStore() {
           });
           
           // Create user profile
-          const ownerEmails = ['dieuhuu1995@gmail.com', 'huulaptop.info@gmail.com'];
+          const ownerEmail = 'dieuhuu1995@gmail.com';
           batch.set(userRef, {
             uid: user.uid,
             email: user.email,
             phone: user.phoneNumber || '00000000',
-            approved: ownerEmails.includes(user.email || ''),
+            approved: user.email === ownerEmail,
             createdAt: new Date().toISOString()
           });
 
@@ -179,7 +176,6 @@ export function useAppStore() {
     syncCollection('repairs', 'repairs');
     syncCollection('leads', 'leads');
     syncCollection('careTasks', 'careTasks');
-    syncCollection('promotions', 'promotions');
     syncCollection('sales', 'sales');
 
     // Listen to config
@@ -268,7 +264,6 @@ export function useAppStore() {
       await syncCollection('repairs', 'repairs');
       await syncCollection('leads', 'leads');
       await syncCollection('careTasks', 'careTasks');
-      await syncCollection('promotions', 'promotions');
       await syncCollection('sales', 'sales');
 
     } catch (error) {

@@ -126,80 +126,80 @@ export function Reports({ data, updateData }: ReportsProps) {
   return (
     <div className="animate-in fade-in duration-500 space-y-6">
       {/* Stats Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-        <div className="bg-white rounded-xl p-4 sm:p-5 shadow-sm border border-gray-100 border-l-4 border-l-blue-500">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100 border-l-4 border-l-blue-500">
           <div className="flex justify-between items-start">
             <div>
-              <p className="text-xs sm:text-sm font-medium text-gray-500 mb-1">Doanh thu</p>
-              <h3 className="text-lg sm:text-2xl font-bold text-gray-900">{formatCurrency(stats.totalRevenue)}</h3>
+              <p className="text-sm font-medium text-gray-500 mb-1">Tổng doanh thu</p>
+              <h3 className="text-2xl font-bold text-gray-900">{formatCurrency(stats.totalRevenue)}</h3>
             </div>
-            <div className="p-1.5 sm:p-2 bg-blue-50 rounded-lg text-blue-600">
-              <DollarSign size={18} />
+            <div className="p-2 bg-blue-50 rounded-lg text-blue-600">
+              <DollarSign size={20} />
             </div>
           </div>
-          <div className={`mt-3 sm:mt-4 flex items-center text-[10px] sm:text-xs font-medium ${stats.revenueGrowth >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
-            {stats.revenueGrowth >= 0 ? <ArrowUpRight size={12} className="mr-1" /> : <ArrowDownRight size={12} className="mr-1" />}
-            <span>{Math.abs(stats.revenueGrowth).toFixed(1)}%</span>
+          <div className={`mt-4 flex items-center text-xs font-medium ${stats.revenueGrowth >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+            {stats.revenueGrowth >= 0 ? <ArrowUpRight size={14} className="mr-1" /> : <ArrowDownRight size={14} className="mr-1" />}
+            <span>{Math.abs(stats.revenueGrowth).toFixed(1)}% so với tháng trước</span>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl p-4 sm:p-5 shadow-sm border border-gray-100 border-l-4 border-l-emerald-500">
+        <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100 border-l-4 border-l-emerald-500">
           <div className="flex justify-between items-start">
             <div>
-              <p className="text-xs sm:text-sm font-medium text-gray-500 mb-1">Lợi nhuận</p>
-              <h3 className="text-lg sm:text-2xl font-bold text-gray-900">{formatCurrency(stats.totalProfit)}</h3>
+              <p className="text-sm font-medium text-gray-500 mb-1">Tổng lợi nhuận</p>
+              <h3 className="text-2xl font-bold text-gray-900">{formatCurrency(stats.totalProfit)}</h3>
             </div>
-            <div className="p-1.5 sm:p-2 bg-emerald-50 rounded-lg text-emerald-600">
-              <TrendingUp size={18} />
+            <div className="p-2 bg-emerald-50 rounded-lg text-emerald-600">
+              <TrendingUp size={20} />
             </div>
           </div>
-          <div className={`mt-3 sm:mt-4 flex items-center text-[10px] sm:text-xs font-medium ${stats.profitGrowth >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
-            {stats.profitGrowth >= 0 ? <ArrowUpRight size={12} className="mr-1" /> : <ArrowDownRight size={12} className="mr-1" />}
-            <span>{Math.abs(stats.profitGrowth).toFixed(1)}%</span>
+          <div className={`mt-4 flex items-center text-xs font-medium ${stats.profitGrowth >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+            {stats.profitGrowth >= 0 ? <ArrowUpRight size={14} className="mr-1" /> : <ArrowDownRight size={14} className="mr-1" />}
+            <span>{Math.abs(stats.profitGrowth).toFixed(1)}% so với tháng trước</span>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl p-4 sm:p-5 shadow-sm border border-gray-100 border-l-4 border-l-amber-500">
+        <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100 border-l-4 border-l-amber-500">
           <div className="flex justify-between items-start">
             <div>
-              <p className="text-xs sm:text-sm font-medium text-gray-500 mb-1">Đơn hàng</p>
-              <h3 className="text-lg sm:text-2xl font-bold text-gray-900">{stats.totalOrders}</h3>
+              <p className="text-sm font-medium text-gray-500 mb-1">Đơn hàng</p>
+              <h3 className="text-2xl font-bold text-gray-900">{stats.totalOrders}</h3>
             </div>
-            <div className="p-1.5 sm:p-2 bg-amber-50 rounded-lg text-amber-600">
-              <BarChart3 size={18} />
+            <div className="p-2 bg-amber-50 rounded-lg text-amber-600">
+              <BarChart3 size={20} />
             </div>
           </div>
-          <div className="mt-3 sm:mt-4 text-[10px] sm:text-xs text-gray-500 truncate">
-            TB: {formatCurrency(stats.totalRevenue / (stats.totalOrders || 1))}
+          <div className="mt-4 text-xs text-gray-500">
+            Trung bình: {formatCurrency(stats.totalRevenue / (stats.totalOrders || 1))}/đơn
           </div>
         </div>
 
-        <div className="bg-white rounded-xl p-4 sm:p-5 shadow-sm border border-gray-100 border-l-4 border-l-indigo-500">
+        <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100 border-l-4 border-l-indigo-500">
           <div className="flex justify-between items-start">
             <div>
-              <p className="text-xs sm:text-sm font-medium text-gray-500 mb-1">Đã bán</p>
-              <h3 className="text-lg sm:text-2xl font-bold text-gray-900">{stats.totalProductsSold}</h3>
+              <p className="text-sm font-medium text-gray-500 mb-1">Sản phẩm đã bán</p>
+              <h3 className="text-2xl font-bold text-gray-900">{stats.totalProductsSold}</h3>
             </div>
-            <div className="p-1.5 sm:p-2 bg-indigo-50 rounded-lg text-indigo-600">
-              <Package size={18} />
+            <div className="p-2 bg-indigo-50 rounded-lg text-indigo-600">
+              <Package size={20} />
             </div>
           </div>
-          <div className="mt-3 sm:mt-4 text-[10px] sm:text-xs text-gray-500">
-            {data.products.length} SP kho
+          <div className="mt-4 text-xs text-gray-500">
+            {data.products.length} sản phẩm trong kho
           </div>
         </div>
       </div>
 
       {/* Charts Row 1 */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-6">
+        <div className="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-100 p-6">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-2">
               <Calendar className="text-blue-600" size={20} />
-              <h3 className="text-base sm:text-lg font-bold text-gray-900">Doanh thu & Lợi nhuận</h3>
+              <h3 className="text-lg font-bold text-gray-900">Doanh thu & Lợi nhuận theo tháng</h3>
             </div>
           </div>
-          <div className="h-64 sm:h-80 w-full">
+          <div className="h-80 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={stats.monthlyData}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
@@ -207,20 +207,19 @@ export function Reports({ data, updateData }: ReportsProps) {
                   dataKey="name" 
                   axisLine={false} 
                   tickLine={false} 
-                  tick={{ fill: '#64748b', fontSize: 10 }} 
+                  tick={{ fill: '#64748b', fontSize: 12 }} 
                 />
                 <YAxis 
                   axisLine={false} 
                   tickLine={false} 
-                  tick={{ fill: '#64748b', fontSize: 10 }}
+                  tick={{ fill: '#64748b', fontSize: 12 }}
                   tickFormatter={(value) => `${value / 1000000}M`}
-                  width={35}
                 />
                 <Tooltip 
                   formatter={(value: number) => formatCurrency(value)}
                   contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
                 />
-                <Legend iconType="circle" wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }} />
+                <Legend iconType="circle" />
                 <Bar name="Doanh thu" dataKey="revenue" fill="#3b82f6" radius={[4, 4, 0, 0]} />
                 <Bar name="Lợi nhuận" dataKey="profit" fill="#10b981" radius={[4, 4, 0, 0]} />
               </BarChart>
@@ -228,20 +227,20 @@ export function Reports({ data, updateData }: ReportsProps) {
           </div>
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-6">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
           <div className="flex items-center gap-2 mb-6">
             <PieChartIcon className="text-indigo-600" size={20} />
-            <h3 className="text-base sm:text-lg font-bold text-gray-900">Cơ cấu danh mục</h3>
+            <h3 className="text-lg font-bold text-gray-900">Cơ cấu danh mục</h3>
           </div>
-          <div className="h-56 sm:h-64 w-full">
+          <div className="h-64 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
                   data={stats.categoryData}
                   cx="50%"
                   cy="50%"
-                  innerRadius={50}
-                  outerRadius={70}
+                  innerRadius={60}
+                  outerRadius={80}
                   paddingAngle={5}
                   dataKey="value"
                 >
@@ -254,11 +253,11 @@ export function Reports({ data, updateData }: ReportsProps) {
             </ResponsiveContainer>
           </div>
           <div className="mt-4 space-y-2">
-            {stats.categoryData.slice(0, 4).map((cat, i) => (
-              <div key={cat.name} className="flex items-center justify-between text-xs sm:text-sm">
+            {stats.categoryData.map((cat, i) => (
+              <div key={cat.name} className="flex items-center justify-between text-sm">
                 <div className="flex items-center gap-2">
-                  <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }}></div>
-                  <span className="text-gray-600 truncate max-w-[100px]">{cat.name}</span>
+                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }}></div>
+                  <span className="text-gray-600">{cat.name}</span>
                 </div>
                 <span className="font-semibold text-gray-900">{cat.value} SP</span>
               </div>
@@ -269,38 +268,38 @@ export function Reports({ data, updateData }: ReportsProps) {
 
       {/* Charts Row 2 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-6">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
           <div className="flex items-center gap-2 mb-6">
             <Package className="text-blue-600" size={20} />
-            <h3 className="text-base sm:text-lg font-bold text-gray-900">Sản phẩm bán chạy</h3>
+            <h3 className="text-lg font-bold text-gray-900">Sản phẩm bán chạy nhất</h3>
           </div>
-          <div className="space-y-3 sm:space-y-4">
+          <div className="space-y-4">
             {stats.productSales.map((product, i) => (
-              <div key={product.id} className="flex items-center justify-between p-2 sm:p-3 rounded-lg hover:bg-gray-50 transition-colors">
-                <div className="flex items-center gap-2 sm:gap-3">
-                  <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 font-bold text-xs sm:text-sm">
+              <div key={product.id} className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 transition-colors">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 font-bold">
                     {i + 1}
                   </div>
-                  <div className="max-w-[120px] sm:max-w-none">
-                    <p className="text-xs sm:text-sm font-bold text-gray-900 truncate">{product.name}</p>
-                    <p className="text-[10px] sm:text-xs text-gray-500 truncate">{product.category}</p>
+                  <div>
+                    <p className="text-sm font-bold text-gray-900">{product.name}</p>
+                    <p className="text-xs text-gray-500">{product.category}</p>
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="text-xs sm:text-sm font-bold text-gray-900">{product.quantitySold} cái</p>
-                  <p className="text-[10px] sm:text-xs text-emerald-600 font-medium">{formatCurrency(product.price)}</p>
+                  <p className="text-sm font-bold text-gray-900">{product.quantitySold} cái</p>
+                  <p className="text-xs text-emerald-600 font-medium">{formatCurrency(product.price)}</p>
                 </div>
               </div>
             ))}
           </div>
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-6">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
           <div className="flex items-center gap-2 mb-6">
             <TrendingUp className="text-emerald-600" size={20} />
-            <h3 className="text-base sm:text-lg font-bold text-gray-900">Xu hướng doanh thu</h3>
+            <h3 className="text-lg font-bold text-gray-900">Xu hướng doanh thu</h3>
           </div>
-          <div className="h-56 sm:h-64 w-full">
+          <div className="h-64 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={stats.monthlyData}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
@@ -308,7 +307,7 @@ export function Reports({ data, updateData }: ReportsProps) {
                   dataKey="name" 
                   axisLine={false} 
                   tickLine={false} 
-                  tick={{ fill: '#64748b', fontSize: 10 }} 
+                  tick={{ fill: '#64748b', fontSize: 12 }} 
                 />
                 <YAxis 
                   hide
@@ -322,15 +321,15 @@ export function Reports({ data, updateData }: ReportsProps) {
                   dataKey="revenue" 
                   stroke="#3b82f6" 
                   strokeWidth={3} 
-                  dot={{ fill: '#3b82f6', strokeWidth: 2, r: 3 }} 
-                  activeDot={{ r: 5, strokeWidth: 0 }}
+                  dot={{ fill: '#3b82f6', strokeWidth: 2, r: 4 }} 
+                  activeDot={{ r: 6, strokeWidth: 0 }}
                 />
               </LineChart>
             </ResponsiveContainer>
           </div>
-          <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-slate-50 rounded-xl border border-slate-100">
-            <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
-              Dựa trên dữ liệu 12 tháng qua, doanh thu có xu hướng <span className="text-emerald-600 font-bold">tăng trưởng ổn định</span>. 
+          <div className="mt-6 p-4 bg-slate-50 rounded-xl border border-slate-100">
+            <p className="text-sm text-slate-600 leading-relaxed">
+              Dựa trên dữ liệu 6 tháng qua, doanh thu có xu hướng <span className="text-emerald-600 font-bold">tăng trưởng ổn định</span>. 
               Sản phẩm chủ lực đóng góp hơn 40% tổng lợi nhuận của cửa hàng.
             </p>
           </div>

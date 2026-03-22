@@ -42,12 +42,12 @@ export function Auth() {
         const user = userCredential.user;
 
         // Create user profile in Firestore
-        const ownerEmails = ['dieuhuu1995@gmail.com', 'huulaptop.info@gmail.com'];
+        const ownerEmail = 'dieuhuu1995@gmail.com';
         await setDoc(doc(db, 'users', user.uid), {
           uid: user.uid,
           email: user.email,
           phone: phone,
-          approved: ownerEmails.includes(user.email || ''),
+          approved: user.email === ownerEmail,
           createdAt: new Date().toISOString()
         });
 

@@ -1,5 +1,4 @@
 import React, { useState, useMemo } from 'react';
-import { auth } from '../firebase';
 import { AppData, Order, Customer, Lead, CareTask } from '../types';
 import { formatCurrency } from '../lib/utils';
 import { 
@@ -177,8 +176,7 @@ export function CRM({ data, updateData }: CRMProps) {
       return;
     }
 
-    const adminEmails = ['dieuhuu1995@gmail.com', 'huulaptop.info@gmail.com'];
-    const adminEmail = adminEmails.includes(auth.currentUser?.email || '') ? auth.currentUser?.email : adminEmails[0];
+    const adminEmail = 'dieuhuu1995@gmail.com';
     const subject = `Báo cáo chăm sóc khách hàng ngày ${today.toLocaleDateString('vi-VN')}`;
     let body = `Danh sách khách hàng cần chăm sóc hôm nay (${today.toLocaleDateString('vi-VN')}):\n\n`;
     
@@ -309,8 +307,7 @@ export function CRM({ data, updateData }: CRMProps) {
       return;
     }
 
-    const adminEmails = ['dieuhuu1995@gmail.com', 'huulaptop.info@gmail.com'];
-    const adminEmail = adminEmails.includes(auth.currentUser?.email || '') ? auth.currentUser?.email : adminEmails[0];
+    const adminEmail = 'dieuhuu1995@gmail.com';
     const subject = `Báo cáo chăm sóc khách hàng ngày ${today.toLocaleDateString('vi-VN')}`;
     let body = `Danh sách khách hàng cần chăm sóc hôm nay (${today.toLocaleDateString('vi-VN')}):\n\n`;
     
@@ -371,17 +368,15 @@ export function CRM({ data, updateData }: CRMProps) {
           </div>
           <div>
             <p className="text-sm text-gray-500 font-medium">CT Khuyến mãi chạy</p>
-            <h3 className="text-2xl font-bold text-gray-900">
-              {data.promotions?.filter(p => p.status === 'Đang chạy').length || 0}
-            </h3>
+            <h3 className="text-2xl font-bold text-gray-900">2</h3>
           </div>
         </div>
       </div>
 
-      {/* Tabs */}
+      {/* Main Content */}
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
         <div className="border-b border-gray-100">
-          <div className="flex flex-col sm:flex-row p-1 gap-1">
+          <div className="flex p-1 gap-1">
             <button
               onClick={() => setActiveTab('leads')}
               className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-medium transition-all ${
@@ -391,7 +386,7 @@ export function CRM({ data, updateData }: CRMProps) {
               }`}
             >
               <Users size={18} />
-              Tiềm năng (Trước bán)
+              Khách hàng tiềm năng (Trước bán)
             </button>
             <button
               onClick={() => setActiveTab('tasks')}
@@ -413,12 +408,12 @@ export function CRM({ data, updateData }: CRMProps) {
               }`}
             >
               <Gift size={18} />
-              Khuyến mãi
+              Quà tặng & Khuyến mãi
             </button>
           </div>
         </div>
 
-        <div className="p-4 sm:p-6">
+        <div className="p-6">
           {activeTab === 'leads' && (
             <div className="space-y-6">
               <div className="flex flex-col md:flex-row gap-4 justify-between items-center">
@@ -437,15 +432,14 @@ export function CRM({ data, updateData }: CRMProps) {
                     setEditingLead(null);
                     setShowLeadModal(true);
                   }}
-                  className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20"
+                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20"
                 >
                   <Plus size={18} />
                   Thêm tiềm năng
                 </button>
               </div>
 
-              {/* Table View */}
-              <div className="hidden md:block overflow-x-auto">
+              <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                   <thead>
                     <tr className="border-b border-gray-100 text-gray-400 text-xs uppercase tracking-wider">
@@ -458,153 +452,93 @@ export function CRM({ data, updateData }: CRMProps) {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-50">
-                    {filteredLeads.map((lead) => (
-                      <tr key={lead.id} className="hover:bg-gray-50/50 transition-colors group">
-                        <td className="px-4 py-4">
-                          <div className="flex flex-col">
-                            <span className="text-sm font-bold text-gray-900">{lead.name}</span>
-                            <span className="text-xs text-gray-500">{lead.phone}</span>
-                          </div>
-                        </td>
-                        <td className="px-4 py-4">
-                          <span className="text-xs px-2 py-1 bg-gray-100 text-gray-600 rounded-lg font-medium">{lead.source}</span>
-                        </td>
-                        <td className="px-4 py-4">
-                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
-                            lead.status === 'Mới' ? 'bg-blue-100 text-blue-600' :
-                            lead.status === 'Đã liên hệ' ? 'bg-amber-100 text-amber-600' :
-                            lead.status === 'Đang thương lượng' ? 'bg-purple-100 text-purple-600' :
-                            lead.status === 'Thành công' ? 'bg-emerald-100 text-emerald-600' :
-                            'bg-rose-100 text-rose-600'
-                          }`}>
-                            {lead.status}
-                          </span>
-                        </td>
-                        <td className="px-4 py-4">
-                          <p className="text-xs text-gray-500 truncate max-w-[200px]">{lead.notes || '---'}</p>
-                        </td>
-                        <td className="px-4 py-4 text-right">
-                          <div className="flex justify-end gap-2">
-                            <a href={getZaloLink(lead.phone)} target="_blank" rel="noreferrer" className="p-2 text-blue-500 hover:bg-blue-50 rounded-lg transition-all" title="Zalo">
-                              <MessageSquare size={18} />
-                            </a>
-                            {lead.facebook && (
-                              <a href={getMessengerLink(lead.facebook)!} target="_blank" rel="noreferrer" className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-all" title="Messenger">
-                                <Facebook size={18} />
+                    {filteredLeads.length > 0 ? (
+                      filteredLeads.map((lead) => (
+                        <tr key={lead.id} className="hover:bg-gray-50/50 transition-colors group">
+                          <td className="px-4 py-4">
+                            <div className="flex flex-col">
+                              <span className="text-sm font-bold text-gray-900">{lead.name}</span>
+                              <span className="text-xs text-gray-500">{lead.phone}</span>
+                            </div>
+                          </td>
+                          <td className="px-4 py-4">
+                            <span className="text-xs px-2 py-1 bg-gray-100 text-gray-600 rounded-lg font-medium">{lead.source}</span>
+                          </td>
+                          <td className="px-4 py-4">
+                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
+                              lead.status === 'Mới' ? 'bg-blue-100 text-blue-600' :
+                              lead.status === 'Đã liên hệ' ? 'bg-amber-100 text-amber-600' :
+                              lead.status === 'Đang thương lượng' ? 'bg-purple-100 text-purple-600' :
+                              lead.status === 'Thành công' ? 'bg-emerald-100 text-emerald-600' :
+                              'bg-rose-100 text-rose-600'
+                            }`}>
+                              {lead.status}
+                            </span>
+                          </td>
+                          <td className="px-4 py-4">
+                            <p className="text-xs text-gray-500 truncate max-w-[200px]">{lead.notes || '---'}</p>
+                          </td>
+                          <td className="px-4 py-4 text-right">
+                            <div className="flex justify-end gap-2">
+                              <a href={getZaloLink(lead.phone)} target="_blank" rel="noreferrer" className="p-2 text-blue-500 hover:bg-blue-50 rounded-lg transition-all" title="Zalo">
+                                <MessageSquare size={18} />
                               </a>
-                            )}
-                            <a href={`tel:${lead.phone}`} className="p-2 text-emerald-500 hover:bg-emerald-50 rounded-lg transition-all" title="Gọi điện">
-                              <Phone size={18} />
-                            </a>
-                          </div>
-                        </td>
-                        <td className="px-4 py-4 text-right">
-                          <div className="flex justify-end gap-2">
-                            <button 
-                              onClick={() => setConfirmingConvert(lead)}
-                              className="p-2 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all"
-                              title="Chuyển thành khách hàng"
-                            >
-                              <UserPlus size={16} />
-                            </button>
-                            <button 
-                              onClick={() => {
-                                setEditingLead(lead);
-                                setShowLeadModal(true);
-                              }}
-                              className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
-                            >
-                              <Edit2 size={16} />
-                            </button>
-                            <button 
-                              onClick={() => setConfirmingDelete(lead.id)}
-                              className="p-2 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all"
-                            >
-                              <Trash2 size={16} />
-                            </button>
+                              {lead.facebook && (
+                                <a href={getMessengerLink(lead.facebook)!} target="_blank" rel="noreferrer" className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-all" title="Messenger">
+                                  <Facebook size={18} />
+                                </a>
+                              )}
+                              <a href={`tel:${lead.phone}`} className="p-2 text-emerald-500 hover:bg-emerald-50 rounded-lg transition-all" title="Gọi điện">
+                                <Phone size={18} />
+                              </a>
+                              {lead.email && (
+                                <a href={getEmailLink(lead.email, 'Tư vấn sản phẩm', 'Chào bạn...')} className="p-2 text-amber-500 hover:bg-amber-50 rounded-lg transition-all" title="Email">
+                                  <Mail size={18} />
+                                </a>
+                              )}
+                            </div>
+                          </td>
+                          <td className="px-4 py-4 text-right">
+                            <div className="flex justify-end gap-2">
+                              <button 
+                                onClick={() => setConfirmingConvert(lead)}
+                                className="p-2 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all"
+                                title="Chuyển thành khách hàng"
+                              >
+                                <UserPlus size={16} />
+                              </button>
+                              <button 
+                                onClick={() => {
+                                  setEditingLead(lead);
+                                  setShowLeadModal(true);
+                                }}
+                                className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+                              >
+                                <Edit2 size={16} />
+                              </button>
+                              <button 
+                                onClick={() => setConfirmingDelete(lead.id)}
+                                className="p-2 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all"
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan={6} className="px-4 py-12 text-center text-gray-500">
+                          <div className="flex flex-col items-center gap-2">
+                            <Target size={48} className="text-gray-200" />
+                            <p>Chưa có khách hàng tiềm năng nào.</p>
                           </div>
                         </td>
                       </tr>
-                    ))}
+                    )}
                   </tbody>
                 </table>
               </div>
-
-              {/* Mobile Card View */}
-              <div className="md:hidden space-y-4">
-                {filteredLeads.map((lead) => (
-                  <div key={lead.id} className="bg-gray-50 p-4 rounded-2xl border border-gray-100 space-y-4">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h4 className="font-bold text-gray-900">{lead.name}</h4>
-                        <p className="text-xs text-gray-500">{lead.phone}</p>
-                      </div>
-                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
-                        lead.status === 'Mới' ? 'bg-blue-100 text-blue-600' :
-                        lead.status === 'Đã liên hệ' ? 'bg-amber-100 text-amber-600' :
-                        lead.status === 'Đang thương lượng' ? 'bg-purple-100 text-purple-600' :
-                        lead.status === 'Thành công' ? 'bg-emerald-100 text-emerald-600' :
-                        'bg-rose-100 text-rose-600'
-                      }`}>
-                        {lead.status}
-                      </span>
-                    </div>
-                    
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs px-2 py-1 bg-white border border-gray-200 text-gray-600 rounded-lg font-medium">Nguồn: {lead.source}</span>
-                    </div>
-
-                    {lead.notes && (
-                      <p className="text-xs text-gray-500 bg-white p-2 rounded-lg border border-gray-100 italic">
-                        {lead.notes}
-                      </p>
-                    )}
-
-                    <div className="flex items-center justify-between pt-2 border-t border-gray-200">
-                      <div className="flex gap-1">
-                        <a href={getZaloLink(lead.phone)} target="_blank" rel="noreferrer" className="p-2 text-blue-500 hover:bg-blue-50 rounded-lg transition-all">
-                          <MessageSquare size={18} />
-                        </a>
-                        <a href={`tel:${lead.phone}`} className="p-2 text-emerald-500 hover:bg-emerald-50 rounded-lg transition-all">
-                          <Phone size={18} />
-                        </a>
-                      </div>
-                      <div className="flex gap-1">
-                        <button 
-                          onClick={() => setConfirmingConvert(lead)}
-                          className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all"
-                        >
-                          <UserPlus size={18} />
-                        </button>
-                        <button 
-                          onClick={() => {
-                            setEditingLead(lead);
-                            setShowLeadModal(true);
-                          }}
-                          className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
-                        >
-                          <Edit2 size={18} />
-                        </button>
-                        <button 
-                          onClick={() => setConfirmingDelete(lead.id)}
-                          className="p-2 text-rose-600 hover:bg-rose-50 rounded-lg transition-all"
-                        >
-                          <Trash2 size={18} />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {filteredLeads.length === 0 && (
-                <div className="py-12 text-center text-gray-500">
-                  <div className="flex flex-col items-center gap-2">
-                    <Target size={48} className="text-gray-200" />
-                    <p>Chưa có khách hàng tiềm năng nào.</p>
-                  </div>
-                </div>
-              )}
             </div>
           )}
 
@@ -621,22 +555,22 @@ export function CRM({ data, updateData }: CRMProps) {
                     onChange={(e) => setSearchTerm(e.target.value)}
                   />
                 </div>
-                <div className="flex w-full sm:w-auto gap-2">
+                <div className="flex gap-2">
                   <button 
                     onClick={handleSyncAndReport}
-                    className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-600 border border-indigo-100 rounded-xl text-sm font-bold hover:bg-indigo-100 transition-all"
+                    className="flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-600 border border-indigo-100 rounded-xl text-sm font-bold hover:bg-indigo-100 transition-all"
                   >
                     <RefreshCw size={18} />
-                    Đồng bộ & Báo cáo
+                    Đồng bộ & Báo cáo Admin
                   </button>
-                  <button className="flex items-center justify-center gap-2 px-4 py-2 border border-gray-200 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 transition-all">
+                  <button className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 transition-all">
                     <Filter size={18} />
+                    Lọc
                   </button>
                 </div>
               </div>
 
-              {/* Table View */}
-              <div className="hidden md:block overflow-x-auto">
+              <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                   <thead>
                     <tr className="border-b border-gray-100 text-gray-400 text-xs uppercase tracking-wider">
@@ -648,178 +582,107 @@ export function CRM({ data, updateData }: CRMProps) {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-50">
-                    {filteredTasks.map((task) => {
-                      const taskDate = new Date(task.taskDate);
-                      const isToday = taskDate.setHours(0,0,0,0) === new Date().setHours(0,0,0,0);
-                      const isPast = taskDate < new Date() && !isToday;
-                      const customer = data.customers.find(c => c.id === task.customerId);
-                      
-                      return (
-                        <tr key={task.id} className="hover:bg-gray-50/50 transition-colors group">
-                          <td className="px-4 py-4">
-                            <div className="flex items-center gap-3">
-                              <button
-                                onClick={() => handleToggleTaskStatus(task)}
-                                className={`w-5 h-5 rounded border flex items-center justify-center transition-all ${
-                                  task.status === 'completed' 
-                                  ? 'bg-emerald-500 border-emerald-500 text-white' 
-                                  : 'border-gray-300 hover:border-blue-500'
-                                }`}
-                              >
-                                {task.status === 'completed' && <CheckCircle2 size={12} />}
-                              </button>
-                              <div className="flex flex-col">
-                                <span className={`text-sm font-semibold ${task.status === 'completed' ? 'text-gray-400 line-through' : isToday ? 'text-blue-600' : isPast ? 'text-red-500' : 'text-gray-900'}`}>
-                                  {new Date(task.taskDate).toLocaleDateString('vi-VN')}
+                    {filteredTasks.length > 0 ? (
+                      filteredTasks.map((task) => {
+                        const taskDate = new Date(task.taskDate);
+                        const isToday = taskDate.setHours(0,0,0,0) === new Date().setHours(0,0,0,0);
+                        const isPast = taskDate < new Date() && !isToday;
+                        const customer = data.customers.find(c => c.id === task.customerId);
+                        
+                        return (
+                          <tr key={task.id} className="hover:bg-gray-50/50 transition-colors group">
+                            <td className="px-4 py-4">
+                              <div className="flex items-center gap-3">
+                                <button
+                                  onClick={() => handleToggleTaskStatus(task)}
+                                  className={`w-5 h-5 rounded border flex items-center justify-center transition-all ${
+                                    task.status === 'completed' 
+                                    ? 'bg-emerald-500 border-emerald-500 text-white' 
+                                    : 'border-gray-300 hover:border-blue-500'
+                                  }`}
+                                >
+                                  {task.status === 'completed' && <CheckCircle2 size={12} />}
+                                </button>
+                                <div className="flex flex-col">
+                                  <span className={`text-sm font-semibold ${task.status === 'completed' ? 'text-gray-400 line-through' : isToday ? 'text-blue-600' : isPast ? 'text-red-500' : 'text-gray-900'}`}>
+                                    {new Date(task.taskDate).toLocaleDateString('vi-VN')}
+                                  </span>
+                                  {isToday && task.status !== 'completed' && <span className="text-[10px] font-bold text-blue-600 uppercase">Hôm nay</span>}
+                                  {isPast && task.status !== 'completed' && <span className="text-[10px] font-bold text-red-500 uppercase">Quá hạn</span>}
+                                </div>
+                              </div>
+                            </td>
+                            <td className="px-4 py-4">
+                              <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center text-gray-500">
+                                  <User size={14} />
+                                </div>
+                                <div className="flex flex-col">
+                                  <span className="text-sm font-medium text-gray-900">{task.customerName}</span>
+                                  <span className="text-[10px] text-gray-400">{customer?.phone}</span>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="px-4 py-4">
+                              <div className="flex items-center gap-2">
+                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
+                                  task.type === 'milestone1' ? 'bg-blue-100 text-blue-600' :
+                                  task.type === 'milestone2' ? 'bg-amber-100 text-amber-600' :
+                                  'bg-purple-100 text-purple-600'
+                                }`}>
+                                  {task.type === 'milestone1' ? `${settings.milestone1} Ngày` : task.type === 'milestone2' ? `${settings.milestone2} Tháng` : `${settings.milestone3} Tháng`}
                                 </span>
-                                {isToday && task.status !== 'completed' && <span className="text-[10px] font-bold text-blue-600 uppercase">Hôm nay</span>}
-                                {isPast && task.status !== 'completed' && <span className="text-[10px] font-bold text-red-500 uppercase">Quá hạn</span>}
+                                <span className="text-sm text-gray-600">{task.description}</span>
                               </div>
-                            </div>
-                          </td>
-                          <td className="px-4 py-4">
-                            <div className="flex items-center gap-3">
-                              <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center text-gray-500">
-                                <User size={14} />
+                            </td>
+                            <td className="px-4 py-4">
+                              <span className="text-xs font-mono text-gray-500">#{task.orderId}</span>
+                            </td>
+                            <td className="px-4 py-4 text-right">
+                              <div className="flex justify-end gap-2">
+                                <a href={getZaloLink(customer?.phone || '')} target="_blank" rel="noreferrer" className="p-2 text-blue-500 hover:bg-blue-50 rounded-lg transition-all" title="Zalo">
+                                  <MessageSquare size={18} />
+                                </a>
+                                {customer?.facebook && (
+                                  <a href={getMessengerLink(customer.facebook)!} target="_blank" rel="noreferrer" className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-all" title="Messenger">
+                                    <Facebook size={18} />
+                                  </a>
+                                )}
+                                <a href={getSmsLink(customer?.phone || '', `Chào ${task.customerName}, mình từ Hữu Laptop...`)} className="p-2 text-emerald-500 hover:bg-emerald-50 rounded-lg transition-all" title="Gửi SMS">
+                                  <Send size={18} />
+                                </a>
+                                {customer?.email && (
+                                  <a href={getEmailLink(customer.email, 'Chăm sóc khách hàng', 'Chào bạn...')} className="p-2 text-amber-500 hover:bg-amber-50 rounded-lg transition-all" title="Gửi Email">
+                                    <Mail size={18} />
+                                  </a>
+                                )}
+                                <a
+                                  href={getGoogleCalendarLink(task)}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+                                  title="Thêm vào Google Lịch"
+                                >
+                                  <Calendar size={18} />
+                                </a>
                               </div>
-                              <div className="flex flex-col">
-                                <span className="text-sm font-medium text-gray-900">{task.customerName}</span>
-                                <span className="text-[10px] text-gray-400">{customer?.phone}</span>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="px-4 py-4">
-                            <div className="flex items-center gap-2">
-                              <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
-                                task.type === 'milestone1' ? 'bg-blue-100 text-blue-600' :
-                                task.type === 'milestone2' ? 'bg-amber-100 text-amber-600' :
-                                'bg-purple-100 text-purple-600'
-                              }`}>
-                                {task.type === 'milestone1' ? `${settings.milestone1} Ngày` : task.type === 'milestone2' ? `${settings.milestone2} Tháng` : `${settings.milestone3} Tháng`}
-                              </span>
-                              <span className="text-sm text-gray-600">{task.description}</span>
-                            </div>
-                          </td>
-                          <td className="px-4 py-4">
-                            <span className="text-xs font-mono text-gray-500">#{task.orderId}</span>
-                          </td>
-                          <td className="px-4 py-4 text-right">
-                            <div className="flex justify-end gap-2">
-                              <a href={getZaloLink(customer?.phone || '')} target="_blank" rel="noreferrer" className="p-2 text-blue-500 hover:bg-blue-50 rounded-lg transition-all" title="Zalo">
-                                <MessageSquare size={18} />
-                              </a>
-                              <a href={getSmsLink(customer?.phone || '', `Chào ${task.customerName}, mình từ Hữu Laptop...`)} className="p-2 text-emerald-500 hover:bg-emerald-50 rounded-lg transition-all" title="Gửi SMS">
-                                <Send size={18} />
-                              </a>
-                              <a
-                                href={getGoogleCalendarLink(task)}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
-                                title="Thêm vào Google Lịch"
-                              >
-                                <Calendar size={18} />
-                              </a>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
+                            </td>
+                          </tr>
+                        );
+                      })
+                    ) : (
+                      <tr>
+                        <td colSpan={5} className="px-4 py-12 text-center text-gray-500">
+                          <div className="flex flex-col items-center gap-2">
+                            <HeartHandshake size={48} className="text-gray-200" />
+                            <p>Không có lịch chăm sóc nào cần xử lý.</p>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
                   </tbody>
                 </table>
               </div>
-
-              {/* Mobile Card View */}
-              <div className="md:hidden space-y-4">
-                {filteredTasks.map((task) => {
-                  const taskDate = new Date(task.taskDate);
-                  const isToday = taskDate.setHours(0,0,0,0) === new Date().setHours(0,0,0,0);
-                  const isPast = taskDate < new Date() && !isToday;
-                  const customer = data.customers.find(c => c.id === task.customerId);
-
-                  return (
-                    <div key={task.id} className={`p-4 rounded-2xl border transition-all ${task.status === 'completed' ? 'bg-gray-50 border-gray-100 opacity-75' : 'bg-white border-gray-200'}`}>
-                      <div className="flex justify-between items-start mb-3">
-                        <div className="flex items-center gap-3">
-                          <button
-                            onClick={() => handleToggleTaskStatus(task)}
-                            className={`w-6 h-6 rounded border flex items-center justify-center transition-all ${
-                              task.status === 'completed' 
-                              ? 'bg-emerald-500 border-emerald-500 text-white' 
-                              : 'border-gray-300'
-                            }`}
-                          >
-                            {task.status === 'completed' && <CheckCircle2 size={14} />}
-                          </button>
-                          <div>
-                            <p className={`font-bold ${task.status === 'completed' ? 'text-gray-400 line-through' : isToday ? 'text-blue-600' : isPast ? 'text-red-500' : 'text-gray-900'}`}>
-                              {new Date(task.taskDate).toLocaleDateString('vi-VN')}
-                            </p>
-                            <div className="flex gap-2">
-                              {isToday && task.status !== 'completed' && <span className="text-[10px] font-bold text-blue-600 uppercase">Hôm nay</span>}
-                              {isPast && task.status !== 'completed' && <span className="text-[10px] font-bold text-red-500 uppercase">Quá hạn</span>}
-                            </div>
-                          </div>
-                        </div>
-                        <span className="text-xs font-mono text-gray-400">#{task.orderId}</span>
-                      </div>
-
-                      <div className="space-y-3">
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center text-gray-500">
-                            <User size={14} />
-                          </div>
-                          <div>
-                            <p className="text-sm font-bold text-gray-900">{task.customerName}</p>
-                            <p className="text-xs text-gray-500">{customer?.phone}</p>
-                          </div>
-                        </div>
-
-                        <div className="bg-gray-50 p-3 rounded-xl border border-gray-100">
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
-                              task.type === 'milestone1' ? 'bg-blue-100 text-blue-600' :
-                              task.type === 'milestone2' ? 'bg-amber-100 text-amber-600' :
-                              'bg-purple-100 text-purple-600'
-                            }`}>
-                              {task.type === 'milestone1' ? `${settings.milestone1} Ngày` : task.type === 'milestone2' ? `${settings.milestone2} Tháng` : `${settings.milestone3} Tháng`}
-                            </span>
-                          </div>
-                          <p className="text-sm text-gray-700">{task.description}</p>
-                        </div>
-
-                        <div className="flex items-center justify-between pt-2">
-                          <div className="flex gap-2">
-                            <a href={getZaloLink(customer?.phone || '')} target="_blank" rel="noreferrer" className="p-2 text-blue-500 bg-blue-50 rounded-lg">
-                              <MessageSquare size={18} />
-                            </a>
-                            <a href={`tel:${customer?.phone}`} className="p-2 text-emerald-500 bg-emerald-50 rounded-lg">
-                              <Phone size={18} />
-                            </a>
-                          </div>
-                          <a
-                            href={getGoogleCalendarLink(task)}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="p-2 text-gray-400 bg-gray-50 rounded-lg"
-                          >
-                            <Calendar size={18} />
-                          </a>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-
-              {filteredTasks.length === 0 && (
-                <div className="py-12 text-center text-gray-500">
-                  <div className="flex flex-col items-center gap-2">
-                    <HeartHandshake size={48} className="text-gray-200" />
-                    <p>Không có lịch chăm sóc nào cần xử lý.</p>
-                  </div>
-                </div>
-              )}
             </div>
           )}
 
@@ -872,8 +735,11 @@ export function CRM({ data, updateData }: CRMProps) {
                     Lịch sử quà tặng & Khuyến mãi
                   </h4>
                   <div className="space-y-4">
-                    {data.promotions?.map((promo) => (
-                      <div key={promo.id} className="bg-white p-4 rounded-2xl border border-gray-100 hover:border-blue-200 transition-all group">
+                    {[
+                      { title: 'Tặng Voucher 500k cho khách mua MacBook', date: '20/03/2026', sent: 45, clicks: 12, type: 'Gift' },
+                      { title: 'Giảm 20% vệ sinh laptop định kỳ', date: '15/03/2026', sent: 120, clicks: 34, type: 'Promo' },
+                    ].map((promo, idx) => (
+                      <div key={idx} className="bg-white p-4 rounded-2xl border border-gray-100 hover:border-blue-200 transition-all group">
                         <div className="flex justify-between items-start">
                           <div className="flex items-center gap-3">
                             <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${promo.type === 'Gift' ? 'bg-purple-50 text-purple-600' : 'bg-blue-50 text-blue-600'}`}>
@@ -881,32 +747,23 @@ export function CRM({ data, updateData }: CRMProps) {
                             </div>
                             <div>
                               <h5 className="font-bold text-gray-900 group-hover:text-blue-600 transition-colors">{promo.title}</h5>
-                              <p className="text-xs text-gray-500 mt-1">Đã gửi vào: {new Date(promo.createdAt).toLocaleDateString('vi-VN')}</p>
+                              <p className="text-xs text-gray-500 mt-1">Đã gửi vào: {promo.date}</p>
                             </div>
                           </div>
-                          <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase ${
-                            promo.status === 'Đang chạy' ? 'bg-blue-100 text-blue-600' : 'bg-emerald-100 text-emerald-600'
-                          }`}>
-                            {promo.status}
-                          </span>
+                          <span className="px-2 py-1 bg-emerald-100 text-emerald-600 rounded text-[10px] font-bold uppercase">Đã gửi</span>
                         </div>
                         <div className="grid grid-cols-2 gap-4 mt-4 pt-4 border-t border-gray-50">
                           <div className="text-center">
                             <p className="text-xs text-gray-400">Số lượng gửi</p>
-                            <p className="text-lg font-bold text-gray-900">{promo.sentCount}</p>
+                            <p className="text-lg font-bold text-gray-900">{promo.sent}</p>
                           </div>
                           <div className="text-center">
                             <p className="text-xs text-gray-400">Lượt quan tâm</p>
-                            <p className="text-lg font-bold text-blue-600">{promo.clickCount}</p>
+                            <p className="text-lg font-bold text-blue-600">{promo.clicks}</p>
                           </div>
                         </div>
                       </div>
                     ))}
-                    {(!data.promotions || data.promotions.length === 0) && (
-                      <div className="p-8 text-center text-gray-500 bg-gray-50 rounded-2xl border border-dashed border-gray-200">
-                        Chưa có chương trình khuyến mãi nào.
-                      </div>
-                    )}
                   </div>
                 </div>
               </div>
