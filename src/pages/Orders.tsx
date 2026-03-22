@@ -670,62 +670,70 @@ export function Orders({ data, updateData, addItem }: OrdersProps) {
             </div>
             <div className="p-6 print:p-0">
               {/* Print Layout (Hidden in UI, visible in print) */}
-              <div className="hidden print:block text-black font-serif p-8 bg-white min-h-screen print-container">
-                <div className="flex justify-between items-start mb-6">
-                  <div className="flex items-start gap-4">
+              <div className="hidden print:block text-black font-sans p-8 bg-white min-h-screen print-container">
+                {/* Header */}
+                <div className="flex justify-between items-center mb-8 border-b-2 border-blue-600 pb-6">
+                  <div className="flex items-center gap-6">
                     <img 
-                      src="https://storage.googleapis.com/static.antigravity.dev/dieuhuu1995@gmail.com/610176597039/dieuhuu1995@gmail.com_1742636402000_1.png" 
+                      src="/Logo Huu Laptop-01.png" 
                       alt="Shop Logo" 
-                      className="w-24 h-24 object-contain"
+                      className="w-32 h-32 object-contain"
                       referrerPolicy="no-referrer"
+                      onError={(e) => {
+                        if (data.shopInfo?.logo) {
+                          (e.target as HTMLImageElement).src = data.shopInfo.logo;
+                        }
+                      }}
                     />
-                    <div className="space-y-1 text-sm">
-                      <p className="font-bold text-lg uppercase">{data.shopInfo?.name || 'Hữu Laptop'}</p>
-                      <p><span className="font-semibold">Điện thoại:</span> {data.shopInfo?.phone}</p>
-                      <p><span className="font-semibold">Địa chỉ:</span> {data.shopInfo?.address}</p>
+                    <div>
+                      <h1 className="text-2xl font-black text-blue-700 uppercase tracking-tight">{data.shopInfo?.name || 'Hữu Laptop'}</h1>
+                      <p className="text-sm font-medium text-gray-600 mt-1">{data.shopInfo?.address}</p>
+                      <p className="text-sm font-bold text-gray-800">Hotline: {data.shopInfo?.phone}</p>
+                      {data.shopInfo?.website && <p className="text-xs text-blue-600">{data.shopInfo.website}</p>}
                     </div>
                   </div>
-                  <div className="text-right text-sm">
-                    <p className="font-bold text-xl uppercase mb-2">HÓA ĐƠN BÁN HÀNG</p>
-                    <p>Mã số: <span className="font-bold">{viewOrder.id}</span></p>
-                    <p>Ngày: {viewOrder.date}</p>
+                  <div className="text-right">
+                    <h2 className="text-3xl font-black text-gray-900 uppercase mb-1">Hóa Đơn Bán Hàng</h2>
+                    <p className="text-sm text-gray-500">Mã đơn: <span className="font-bold text-black">#{viewOrder.id}</span></p>
+                    <p className="text-sm text-gray-500">Ngày lập: <span className="font-bold text-black">{viewOrder.date}</span></p>
                   </div>
                 </div>
 
-                <div className="border-t border-black my-4"></div>
-
-                <div className="grid grid-cols-2 gap-x-8 gap-y-1 mb-6 text-sm">
-                  <div className="col-span-1 space-y-1">
-                    <p><span className="font-semibold">Họ tên người mua hàng:</span> {viewOrder.customerName}</p>
-                    <p><span className="font-semibold">Tên đơn vị:</span> {data.customers.find(c => c.id === viewOrder.customerId)?.companyName || ''}</p>
-                    <p><span className="font-semibold">Địa chỉ:</span> {data.customers.find(c => c.id === viewOrder.customerId)?.address || ''}</p>
+                {/* Customer Info */}
+                <div className="grid grid-cols-2 gap-8 mb-8 bg-gray-50 p-4 rounded-xl border border-gray-100">
+                  <div>
+                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Thông tin khách hàng</h3>
+                    <p className="text-base font-bold text-gray-900">{viewOrder.customerName}</p>
+                    <p className="text-sm text-gray-600">{data.customers.find(c => c.id === viewOrder.customerId)?.phone}</p>
+                    <p className="text-sm text-gray-600">{data.customers.find(c => c.id === viewOrder.customerId)?.address}</p>
                   </div>
-                  <div className="col-span-1 text-right">
-                    <p><span className="font-semibold">Số điện thoại:</span> {data.customers.find(c => c.id === viewOrder.customerId)?.phone || ''}</p>
+                  <div className="text-right">
+                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Hình thức thanh toán</h3>
+                    <p className="text-base font-bold text-gray-900">{viewOrder.paymentMethod}</p>
+                    <p className={`text-sm font-bold ${viewOrder.paymentStatus === 'Đã thanh toán' ? 'text-emerald-600' : 'text-rose-600'}`}>
+                      {viewOrder.paymentStatus}
+                    </p>
                   </div>
                 </div>
 
-                <table className="w-full border-collapse border border-black mb-6 text-sm">
+                {/* Products Table */}
+                <table className="w-full mb-8 overflow-hidden rounded-xl border border-gray-200 border-collapse">
                   <thead>
-                    <tr className="bg-gray-100">
-                      <th className="border border-black p-2 text-center w-10">STT</th>
-                      <th className="border border-black p-2 text-left">Tên hàng hóa, dịch vụ</th>
-                      <th className="border border-black p-2 text-center w-16">ĐVT</th>
-                      <th className="border border-black p-2 text-center w-12">SL</th>
-                      <th className="border border-black p-2 text-right w-24">Đơn giá</th>
-                      <th className="border border-black p-2 text-center w-20">Giảm giá</th>
-                      <th className="border border-black p-2 text-right w-28">Thành tiền</th>
+                    <tr className="bg-blue-600 text-white">
+                      <th className="p-3 text-left text-xs font-bold uppercase">Sản phẩm</th>
+                      <th className="p-3 text-center text-xs font-bold uppercase w-20">SL</th>
+                      <th className="p-3 text-right text-xs font-bold uppercase w-32">Đơn giá</th>
+                      <th className="p-3 text-right text-xs font-bold uppercase w-32">Thành tiền</th>
                     </tr>
                   </thead>
-                  <tbody>
+                  <tbody className="divide-y divide-gray-100">
                     {viewOrder.products.map((item, idx) => (
-                      <tr key={idx}>
-                        <td className="border border-black p-2 text-center">{idx + 1}</td>
-                        <td className="border border-black p-2">
-                          <div className="font-semibold">{item.name}</div>
-                          {(item.serviceTag || item.cpu || item.ram || item.ssd || item.screen) && (
-                            <div className="text-[10px] mt-1 flex flex-wrap gap-x-2 border-t border-gray-200 pt-1">
-                              {item.serviceTag && <span className="font-bold">S/N: {item.serviceTag}</span>}
+                      <tr key={idx} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}>
+                        <td className="p-4">
+                          <div className="font-bold text-gray-900">{item.name}</div>
+                          {item.serviceTag && <div className="text-[10px] text-blue-600 font-bold mt-1">S/N: {item.serviceTag}</div>}
+                          {(item.cpu || item.ram || item.ssd || item.screen) && (
+                            <div className="text-[10px] text-gray-500 mt-0.5 flex flex-wrap gap-x-2">
                               {item.cpu && <span>CPU: {item.cpu}</span>}
                               {item.ram && <span>RAM: {item.ram}</span>}
                               {item.ssd && <span>SSD: {item.ssd}</span>}
@@ -733,69 +741,61 @@ export function Orders({ data, updateData, addItem }: OrdersProps) {
                             </div>
                           )}
                         </td>
-                        <td className="border border-black p-2 text-center">Cái</td>
-                        <td className="border border-black p-2 text-center">{item.quantity}</td>
-                        <td className="border border-black p-2 text-right">{formatCurrency(item.price).replace('₫', '').trim()}</td>
-                        <td className="border border-black p-2 text-center">
-                          {item.discountType === 'amount' 
-                            ? formatCurrency(item.discount || 0).replace('₫', '').trim() 
-                            : `${item.discount || 0}%`}
-                        </td>
-                        <td className="border border-black p-2 text-right">{formatCurrency(item.subtotal || 0).replace('₫', '').trim()}</td>
+                        <td className="p-4 text-center font-medium text-gray-900">{item.quantity}</td>
+                        <td className="p-4 text-right font-medium text-gray-900">{formatCurrency(item.price).replace('₫', '').trim()}</td>
+                        <td className="p-4 text-right font-bold text-gray-900">{formatCurrency(item.subtotal || 0).replace('₫', '').trim()}</td>
                       </tr>
                     ))}
                   </tbody>
                   <tfoot>
-                    <tr>
-                      <td colSpan={6} className="border border-black p-2 text-right font-bold uppercase">Tổng cộng tiền hàng:</td>
-                      <td className="border border-black p-2 text-right font-bold">{formatCurrency(viewOrder.total)}</td>
+                    <tr className="bg-gray-50 border-t-2 border-gray-200">
+                      <td colSpan={3} className="p-4 text-right font-bold text-gray-600 uppercase">Tổng cộng:</td>
+                      <td className="p-4 text-right font-black text-xl text-blue-700">{formatCurrency(viewOrder.total)}</td>
                     </tr>
                   </tfoot>
                 </table>
 
-                <div className="text-sm mb-8 space-y-2">
-                  <p><span className="font-semibold italic">Số tiền viết bằng chữ:</span> {numberToVietnameseWords(viewOrder.total)}</p>
-                  <p>
-                    {viewOrder.paymentStatus === 'Đã thanh toán' 
-                      ? `Hình thức thanh toán: ${viewOrder.paymentMethod}.` 
-                      : `Hình thức thanh toán: Công nợ.`}
+                {/* Amount in words */}
+                <div className="mb-12 p-4 bg-blue-50/50 rounded-xl border border-blue-100">
+                  <p className="text-sm text-gray-700 italic">
+                    <span className="font-bold not-italic text-blue-800">Bằng chữ: </span>
+                    {numberToVietnameseWords(viewOrder.total)}
                   </p>
                 </div>
 
-                <div className="grid grid-cols-2 text-center mb-24">
+                {/* Signatures */}
+                <div className="grid grid-cols-2 gap-8 text-center mb-20">
                   <div>
-                    <p className="font-bold">Người mua hàng</p>
-                    <p className="text-xs italic">(Ký, ghi rõ họ tên)</p>
+                    <p className="font-bold text-gray-900 mb-20">Người mua hàng</p>
+                    <p className="text-sm text-gray-400 italic">(Ký và ghi rõ họ tên)</p>
                   </div>
                   <div>
-                    <p className="font-bold">Người bán hàng</p>
-                    <p className="text-xs italic">(Ký, ghi rõ họ tên)</p>
-                    <div className="mt-8">
-                      <p className="text-rose-600 font-bold uppercase text-lg">{data.shopInfo?.name || 'Hữu Laptop'}</p>
-                      <p className="text-[10px] text-gray-500 italic">Đã được ký điện tử bởi hệ thống quản lý</p>
-                    </div>
+                    <p className="font-bold text-gray-900 mb-20">Người bán hàng</p>
+                    <p className="text-sm text-gray-400 italic">(Ký và ghi rõ họ tên)</p>
                   </div>
                 </div>
 
-                <div className="flex justify-between items-end mt-12 pt-6 border-t border-dashed border-gray-300">
-                  <div className="border-2 border-rose-500 rounded-2xl p-4 flex gap-6 items-center bg-rose-50/30">
-                    <div className="text-sm space-y-1">
-                      <p className="font-bold text-blue-800">Ngân hàng {data.shopInfo?.bankName || 'Techcombank'}</p>
-                      <p className="font-bold">STK: {data.shopInfo?.bankAccount || '95 7777 6789'}</p>
-                      <p className="font-bold">Tên: {data.shopInfo?.taxCode || 'DIEU HUU'}</p>
-                      <p className="text-xs text-gray-500 mt-2 italic">* Quét mã để thanh toán nhanh</p>
-                    </div>
-                    <div className="bg-white p-1 rounded-lg border border-gray-200">
+                {/* Payment Info & QR */}
+                <div className="flex justify-between items-end pt-8 border-t border-dashed border-gray-200">
+                  <div className="flex items-center gap-6 bg-rose-50 p-4 rounded-2xl border border-rose-100">
+                    <div className="bg-white p-2 rounded-xl shadow-sm">
                       <img 
-                        src="https://storage.googleapis.com/static.antigravity.dev/dieuhuu1995@gmail.com/610176597039/dieuhuu1995@gmail.com_1742636402000_0.png" 
+                        src="/QR Code HLT 01.png" 
                         alt="Payment QR" 
                         className="w-24 h-24 object-contain"
                         referrerPolicy="no-referrer"
                       />
                     </div>
+                    <div>
+                      <p className="text-xs font-bold text-rose-400 uppercase tracking-wider mb-1">Thông tin chuyển khoản</p>
+                      <p className="text-sm font-black text-gray-900">{data.shopInfo?.bankName || 'Techcombank'}</p>
+                      <p className="text-lg font-black text-blue-700">{data.shopInfo?.bankAccount || '95 7777 6789'}</p>
+                      <p className="text-sm font-bold text-gray-700">{data.shopInfo?.taxCode || 'DIEU HUU'}</p>
+                    </div>
                   </div>
-                  <div className="text-[10px] text-gray-400 italic">
-                    Cảm ơn quý khách đã tin tưởng và sử dụng dịch vụ!
+                  <div className="text-right">
+                    <p className="text-sm font-bold text-gray-900 mb-1">Cảm ơn quý khách!</p>
+                    <p className="text-xs text-gray-400 italic">Hẹn gặp lại quý khách lần sau.</p>
                   </div>
                 </div>
               </div>

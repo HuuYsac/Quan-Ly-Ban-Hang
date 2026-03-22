@@ -54,7 +54,8 @@ service cloud.firestore {
       return isAuthenticated() && (
         request.auth.token.email == 'dieuhuu1995@gmail.com' ||
         request.auth.token.email == 'huulaptop.info@gmail.com' ||
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin')
       );
     }
 
@@ -66,8 +67,12 @@ service cloud.firestore {
                     (isAdmin() || request.resource.data.approved == resource.data.approved);
       allow delete: if isAdmin();
 
+      match /config/{configId} {
+        allow read, write: if isOwner(userId) || isAdmin();
+      }
+
       match /{allSubcollections=**} {
-        allow read, write: if isOwner(userId);
+        allow read, write: if isOwner(userId) || isAdmin();
       }
     }
   }
