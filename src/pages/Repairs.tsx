@@ -213,7 +213,7 @@ const Repairs: React.FC = () => {
 
       {/* Repairs List */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-gray-50 text-gray-500 text-xs uppercase tracking-wider">
@@ -304,13 +304,75 @@ const Repairs: React.FC = () => {
             </tbody>
           </table>
         </div>
+
+        {/* Mobile Cards */}
+        <div className="md:hidden divide-y divide-gray-100">
+          {filteredRepairs.map((repair) => (
+            <div key={repair.id} className="p-4 space-y-3">
+              <div className="flex justify-between items-start">
+                <div className="space-y-1">
+                  <div className="font-bold text-gray-900">{repair.customerName}</div>
+                  <div className="text-xs text-gray-500 flex items-center gap-1">
+                    <Phone size={10} /> {repair.customerPhone}
+                  </div>
+                  <div className="pt-1">
+                    <span className="text-sm text-blue-600 font-bold">{repair.productName}</span>
+                    <div className="text-[10px] text-gray-400 font-mono font-bold uppercase">S/N: {repair.serviceTag}</div>
+                  </div>
+                </div>
+                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${getStatusColor(repair.status)}`}>
+                  {repair.status}
+                </span>
+              </div>
+              
+              <div className="bg-gray-50 p-2 rounded-lg text-sm text-gray-700 flex items-start gap-2">
+                <AlertCircle size={14} className="text-rose-500 mt-0.5 shrink-0" />
+                <span className="line-clamp-2">{repair.issue}</span>
+              </div>
+
+              <div className="flex items-center justify-between pt-2">
+                <div className="flex flex-col text-[10px] text-gray-500 gap-1">
+                  <div className="flex items-center gap-1">
+                    <Calendar size={10} />
+                    <span>Nhận: {new Date(repair.receivedDate).toLocaleDateString('vi-VN')}</span>
+                  </div>
+                  {repair.returnDate && (
+                    <div className="flex items-center gap-1 text-emerald-600 font-bold">
+                      <CheckCircle2 size={10} />
+                      <span>Trả: {new Date(repair.returnDate).toLocaleDateString('vi-VN')}</span>
+                    </div>
+                  )}
+                </div>
+                <div className="flex gap-1">
+                  <button 
+                    onClick={() => handleEdit(repair)}
+                    className="p-2 text-blue-600 bg-blue-50 rounded-lg border border-blue-100"
+                  >
+                    <Edit2 size={16} />
+                  </button>
+                  <button 
+                    onClick={() => handleDelete(repair.id)}
+                    className="p-2 text-rose-600 bg-rose-50 rounded-lg border border-rose-100"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+          {filteredRepairs.length === 0 && (
+            <div className="p-12 text-center text-gray-400 text-sm">
+              Không tìm thấy phiếu sửa chữa nào.
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Modal Form */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl animate-in fade-in zoom-in-95 duration-200 overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-[100] sm:p-4">
+          <div className="bg-white sm:rounded-2xl shadow-xl w-full max-w-2xl h-full sm:h-auto sm:max-h-[90vh] animate-in fade-in zoom-in-95 duration-200 overflow-y-auto">
+            <div className="sticky top-0 bg-white px-6 py-4 border-b border-gray-100 flex items-center justify-between z-10">
               <h3 className="text-lg font-bold text-gray-900">
                 {editingRepair ? 'Cập nhật phiếu sửa chữa' : 'Tạo phiếu sửa chữa mới'}
               </h3>
@@ -318,7 +380,7 @@ const Repairs: React.FC = () => {
                 <X size={20} />
               </button>
             </div>
-            <form onSubmit={handleSubmit} className="p-6">
+            <form onSubmit={handleSubmit} className="p-4 sm:p-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                 {/* Customer Info */}
                 <div className="space-y-4">

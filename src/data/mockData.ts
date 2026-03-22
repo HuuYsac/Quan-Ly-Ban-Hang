@@ -201,5 +201,29 @@ export const initialData: AppData = {
   },
   repairs: [],
   leads: [],
-  careTasks: []
+  careTasks: [],
+  promotions: [
+    { 
+      id: 'PROMO001', 
+      title: 'Tặng Voucher 500k cho khách mua MacBook', 
+      description: 'Chương trình tri ân khách hàng đã mua MacBook Pro/Air tại cửa hàng.',
+      target: 'Khách hàng thân thiết',
+      status: 'Đã gửi',
+      type: 'Gift',
+      sentCount: 45,
+      clickCount: 12,
+      createdAt: '2026-03-20T10:00:00Z'
+    },
+    { 
+      id: 'PROMO002', 
+      title: 'Giảm 20% vệ sinh laptop định kỳ', 
+      description: 'Khuyến mãi dịch vụ vệ sinh laptop cho tất cả khách hàng.',
+      target: 'Tất cả khách hàng',
+      status: 'Đang chạy',
+      type: 'Promo',
+      sentCount: 120,
+      clickCount: 34,
+      createdAt: '2026-03-15T09:00:00Z'
+    }
+  ]
 };

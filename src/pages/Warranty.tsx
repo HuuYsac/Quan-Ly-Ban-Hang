@@ -237,7 +237,7 @@ const Warranty: React.FC = () => {
 
       {/* Warranty List */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-gray-50 text-gray-500 text-xs uppercase tracking-wider">
@@ -333,19 +333,81 @@ const Warranty: React.FC = () => {
             </tbody>
           </table>
         </div>
+
+        {/* Mobile Cards */}
+        <div className="md:hidden divide-y divide-gray-100">
+          {filteredWarranties.map((warranty, idx) => (
+            <div key={`${warranty.orderId}-${idx}`} className="p-4 space-y-3">
+              <div className="flex justify-between items-start">
+                <div className="space-y-1">
+                  <div className="font-bold text-gray-900">{warranty.customerName}</div>
+                  <div className="text-xs text-gray-500 flex items-center gap-1">
+                    <Phone size={10} /> {warranty.customerPhone}
+                  </div>
+                  <div className="pt-1">
+                    <span className="text-sm text-blue-600 font-bold">{warranty.productName}</span>
+                    <div className="text-[10px] text-gray-400 font-mono font-bold uppercase">S/N: {warranty.serviceTag}</div>
+                  </div>
+                </div>
+                {warranty.status === 'expired' ? (
+                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-700">
+                    Hết hạn
+                  </span>
+                ) : warranty.status === 'expiring' ? (
+                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-700">
+                    Sắp hết hạn
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700">
+                    Đang bảo hành
+                  </span>
+                )}
+              </div>
+
+              <div className="flex items-center justify-between pt-2">
+                <div className="flex flex-col text-[10px] text-gray-500 gap-1">
+                  <div className="flex items-center gap-1">
+                    <Calendar size={10} />
+                    <span>Hết hạn: {warranty.expiryDate.toLocaleDateString('vi-VN')}</span>
+                  </div>
+                  <div className="text-blue-600 font-bold">
+                    Còn {warranty.daysRemaining} ngày
+                  </div>
+                </div>
+                {warranty.status !== 'expired' && (
+                  <button 
+                    onClick={() => {
+                      setSelectedWarranty(warranty);
+                      setIsRepairModalOpen(true);
+                    }}
+                    className="flex items-center gap-1 px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-bold shadow-sm"
+                  >
+                    <Wrench size={14} />
+                    Sửa chữa
+                  </button>
+                )}
+              </div>
+            </div>
+          ))}
+          {filteredWarranties.length === 0 && (
+            <div className="p-12 text-center text-gray-400 text-sm">
+              Không tìm thấy thông tin bảo hành nào.
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Repair Modal */}
       {isRepairModalOpen && selectedWarranty && (
-        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg animate-in fade-in zoom-in-95 duration-200">
-            <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-[100] sm:p-4">
+          <div className="bg-white sm:rounded-2xl shadow-xl w-full max-w-lg h-full sm:h-auto sm:max-h-[90vh] animate-in fade-in zoom-in-95 duration-200 overflow-y-auto">
+            <div className="sticky top-0 bg-white px-6 py-4 border-b border-gray-100 flex items-center justify-between z-10">
               <h3 className="text-lg font-bold text-gray-900">Tạo phiếu sửa chữa/bảo hành</h3>
               <button onClick={() => setIsRepairModalOpen(false)} className="p-2 text-gray-400 hover:text-gray-600 rounded-full">
                 <X size={20} />
               </button>
             </div>
-            <form onSubmit={handleCreateRepair} className="p-6 space-y-4">
+            <form onSubmit={handleCreateRepair} className="p-4 sm:p-6 space-y-4">
               <div className="bg-blue-50 p-3 rounded-xl border border-blue-100 mb-4">
                 <p className="text-xs font-bold text-blue-600 uppercase mb-1">Thông tin máy</p>
                 <p className="text-sm font-bold text-gray-900">{selectedWarranty.productName}</p>
