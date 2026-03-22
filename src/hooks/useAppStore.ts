@@ -15,6 +15,58 @@ import {
 } from 'firebase/firestore';
 import { onAuthStateChanged, User } from 'firebase/auth';
 
+enum OperationType {
+  CREATE = 'create',
+  UPDATE = 'update',
+  DELETE = 'delete',
+  LIST = 'list',
+  GET = 'get',
+  WRITE = 'write',
+}
+
+interface FirestoreErrorInfo {
+  error: string;
+  operationType: OperationType;
+  path: string | null;
+  authInfo: {
+    userId: string | undefined;
+    email: string | null | undefined;
+    emailVerified: boolean | undefined;
+    isAnonymous: boolean | undefined;
+    tenantId: string | null | undefined;
+    providerInfo: {
+      providerId: string;
+      displayName: string | null;
+      email: string | null;
+      photoUrl: string | null;
+    }[];
+  }
+}
+
+function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
+  const errInfo: FirestoreErrorInfo = {
+    error: error instanceof Error ? error.message : String(error),
+    authInfo: {
+      userId: auth.currentUser?.uid,
+      email: auth.currentUser?.email,
+      emailVerified: auth.currentUser?.emailVerified,
+      isAnonymous: auth.currentUser?.isAnonymous,
+      tenantId: auth.currentUser?.tenantId,
+      providerInfo: auth.currentUser?.providerData.map(provider => ({
+        providerId: provider.providerId,
+        displayName: provider.displayName,
+        email: provider.email,
+        photoUrl: provider.photoURL
+      })) || []
+    },
+    operationType,
+    path
+  }
+  console.error('Firestore Error: ', JSON.stringify(errInfo));
+  // We don't necessarily want to throw here as it might crash the whole app
+  // but we should log it clearly.
+}
+
 export function useAppStore() {
   const [data, setData] = useState<AppData>(initialData);
   const [loading, setLoading] = useState(true);
@@ -61,6 +113,18 @@ export function useAppStore() {
           initialData.orders.forEach(o => {
             batch.set(doc(db, 'users', user.uid, 'orders', o.id), o);
           });
+          initialData.repairs.forEach(r => {
+            batch.set(doc(db, 'users', user.uid, 'repairs', r.id), r);
+          });
+          initialData.leads.forEach(l => {
+            batch.set(doc(db, 'users', user.uid, 'leads', l.id), l);
+          });
+          initialData.careTasks.forEach(ct => {
+            batch.set(doc(db, 'users', user.uid, 'careTasks', ct.id), ct);
+          });
+          initialData.sales.forEach(s => {
+            batch.set(doc(db, 'users', user.uid, 'sales', s.id), s);
+          });
           
           // Seed config
           batch.set(doc(db, 'users', user.uid, 'config', 'shopInfo'), initialData.shopInfo);
@@ -72,9 +136,12 @@ export function useAppStore() {
           });
           
           // Create user profile
+          const ownerEmails = ['dieuhuu1995@gmail.com', 'huulaptop.info@gmail.com'];
           batch.set(userRef, {
             uid: user.uid,
             email: user.email,
+            phone: user.phoneNumber || '00000000',
+            approved: ownerEmails.includes(user.email || ''),
             createdAt: new Date().toISOString()
           });
 
@@ -95,6 +162,8 @@ export function useAppStore() {
       const unsub = onSnapshot(colRef, (snapshot) => {
         const items = snapshot.docs.map(doc => doc.data());
         setData(prev => ({ ...prev, [key]: items }));
+      }, (error) => {
+        handleFirestoreError(error, OperationType.GET, `users/${user.uid}/${name}`);
       });
       unsubscribers.push(unsub);
     };
@@ -105,12 +174,17 @@ export function useAppStore() {
     syncCollection('categories', 'categories');
     syncCollection('orders', 'orders');
     syncCollection('repairs', 'repairs');
+    syncCollection('leads', 'leads');
+    syncCollection('careTasks', 'careTasks');
+    syncCollection('sales', 'sales');
 
     // Listen to config
     const unsubShop = onSnapshot(doc(db, 'users', user.uid, 'config', 'shopInfo'), (doc) => {
       if (doc.exists()) {
         setData(prev => ({ ...prev, shopInfo: doc.data() as ShopInfo }));
       }
+    }, (error) => {
+      handleFirestoreError(error, OperationType.GET, `users/${user.uid}/config/shopInfo`);
     });
     unsubscribers.push(unsubShop);
 
@@ -119,6 +193,9 @@ export function useAppStore() {
         setData(prev => ({ ...prev, settings: doc.data() as Settings }));
       }
       setLoading(false);
+    }, (error) => {
+      handleFirestoreError(error, OperationType.GET, `users/${user.uid}/config/settings`);
+      setLoading(false);
     });
     unsubscribers.push(unsubSettings);
 
@@ -126,6 +203,8 @@ export function useAppStore() {
       if (doc.exists()) {
         setData(prev => ({ ...prev, cskhSettings: doc.data() as CSKHSettings }));
       }
+    }, (error) => {
+      handleFirestoreError(error, OperationType.GET, `users/${user.uid}/config/cskhSettings`);
     });
     unsubscribers.push(unsubCSKH);
 
@@ -183,6 +262,9 @@ export function useAppStore() {
       await syncCollection('categories', 'categories');
       await syncCollection('orders', 'orders');
       await syncCollection('repairs', 'repairs');
+      await syncCollection('leads', 'leads');
+      await syncCollection('careTasks', 'careTasks');
+      await syncCollection('sales', 'sales');
 
     } catch (error) {
       console.error('Error updating data:', error);

@@ -28,6 +28,7 @@ interface SidebarProps {
 }
 
 export function Sidebar({ activePage, setActivePage, data }: SidebarProps) {
+  const [showLogoutConfirm, setShowLogoutConfirm] = React.useState(false);
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, section: 'Tổng quan' },
     { id: 'customers', label: 'Khách hàng', icon: Users, section: 'Quản lý cơ bản' },
@@ -39,7 +40,7 @@ export function Sidebar({ activePage, setActivePage, data }: SidebarProps) {
     { id: 'orders', label: 'Quản lý đơn hàng', icon: ShoppingCart, section: 'Nghiệp vụ' },
     { id: 'warranty', label: 'Quản lý bảo hành', icon: ShieldCheck, section: 'Nghiệp vụ' },
     { id: 'repairs', label: 'Quản lý sửa chữa', icon: Wrench, section: 'Nghiệp vụ' },
-    { id: 'cskh', label: 'Chăm sóc khách hàng', icon: HeartHandshake, section: 'Nghiệp vụ' },
+    { id: 'crm', label: 'Quản lý CRM', icon: HeartHandshake, section: 'Nghiệp vụ' },
     { id: 'reports', label: 'Báo cáo', icon: BarChart3, section: 'Báo cáo' },
     { id: 'settings', label: 'Cài đặt', icon: Settings, section: 'Hệ thống' },
     { id: 'company-info', label: 'Thông Tin Shop', icon: Building, section: 'Hệ thống' },
@@ -48,9 +49,11 @@ export function Sidebar({ activePage, setActivePage, data }: SidebarProps) {
   const sections = Array.from(new Set(navItems.map(item => item.section)));
 
   const handleLogout = async () => {
-    if (window.confirm('Bạn có chắc chắn muốn đăng xuất?')) {
-      await auth.signOut();
-    }
+    setShowLogoutConfirm(true);
+  };
+
+  const confirmLogout = async () => {
+    await auth.signOut();
   };
 
   return (
@@ -67,8 +70,8 @@ export function Sidebar({ activePage, setActivePage, data }: SidebarProps) {
               />
             </div>
           ) : (
-            <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center text-2xl">
-              <Store size={24} />
+            <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center text-xs font-black tracking-tighter">
+              QLBH
             </div>
           )}
         </div>
@@ -114,6 +117,35 @@ export function Sidebar({ activePage, setActivePage, data }: SidebarProps) {
           Đăng xuất
         </button>
       </div>
+
+      {/* Logout Confirmation Modal */}
+      {showLogoutConfirm && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[100] p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 space-y-4 animate-in zoom-in duration-200">
+            <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center text-red-600 mx-auto">
+              <LogOut size={24} />
+            </div>
+            <div className="text-center">
+              <h3 className="text-lg font-bold text-gray-900">Xác nhận đăng xuất</h3>
+              <p className="text-sm text-gray-500 mt-1">Bạn có chắc chắn muốn thoát khỏi hệ thống?</p>
+            </div>
+            <div className="flex gap-3 pt-2">
+              <button 
+                onClick={() => setShowLogoutConfirm(false)}
+                className="flex-1 py-2.5 border border-gray-200 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+              >
+                Hủy
+              </button>
+              <button 
+                onClick={confirmLogout}
+                className="flex-1 py-2.5 bg-red-600 text-white rounded-xl text-sm font-bold hover:bg-red-700 shadow-lg shadow-red-600/20 transition-all active:scale-95"
+              >
+                Đăng xuất
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

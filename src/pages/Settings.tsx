@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { AppData, Settings as SettingsType } from '../types';
-import { Settings as SettingsIcon, DollarSign, Calendar, Moon, Sun, Monitor, Bell, HardDrive, FileText, Save, CheckCircle2 } from 'lucide-react';
+import { Settings as SettingsIcon, DollarSign, Calendar, Moon, Sun, Monitor, Bell, HardDrive, FileText, Save, CheckCircle2, Users as UsersIcon, ShieldCheck, ShieldX, Trash2 } from 'lucide-react';
+import { auth, db } from '../firebase';
+import { collection, getDocs, doc, updateDoc, deleteDoc } from 'firebase/firestore';
 
 interface SettingsProps {
   data: AppData;
@@ -20,6 +22,53 @@ export function Settings({ data, updateData }: SettingsProps) {
   );
   const [isSaving, setIsSaving] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [users, setUsers] = useState<any[]>([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+  const isAdmin = auth.currentUser?.email === 'dieuhuu1995@gmail.com' || auth.currentUser?.email === 'huulaptop.info@gmail.com';
+
+  useEffect(() => {
+    if (isAdmin) {
+      fetchUsers();
+    }
+  }, [isAdmin]);
+
+  const fetchUsers = async () => {
+    setLoadingUsers(true);
+    try {
+      const querySnapshot = await getDocs(collection(db, 'users'));
+      const userList = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      setUsers(userList);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+    } finally {
+      setLoadingUsers(false);
+    }
+  };
+
+  const toggleApproval = async (userId: string, currentStatus: boolean) => {
+    try {
+      await updateDoc(doc(db, 'users', userId), {
+        approved: !currentStatus
+      });
+      setUsers(prev => prev.map(u => u.id === userId ? { ...u, approved: !currentStatus } : u));
+    } catch (error) {
+      console.error('Error updating user status:', error);
+    }
+  };
+
+  const deleteUser = async (userId: string) => {
+    if (window.confirm('Bạn có chắc chắn muốn xóa người dùng này?')) {
+      try {
+        await deleteDoc(doc(db, 'users', userId));
+        setUsers(prev => prev.filter(u => u.id !== userId));
+      } catch (error) {
+        console.error('Error deleting user:', error);
+      }
+    }
+  };
 
   useEffect(() => {
     if (data.settings) {
@@ -203,6 +252,70 @@ export function Settings({ data, updateData }: SettingsProps) {
                 </select>
               </div>
             </div>
+
+            {/* User Management (Admin Only) */}
+            {isAdmin && (
+              <div className="mt-12">
+                <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wider mb-4 pb-2 border-b border-gray-100 flex items-center gap-2">
+                  <UsersIcon size={18} className="text-blue-600" />
+                  Quản lý người dùng (Admin)
+                </h3>
+                
+                {loadingUsers ? (
+                  <div className="flex justify-center py-8">
+                    <div className="w-8 h-8 border-4 border-blue-600/30 border-t-blue-600 rounded-full animate-spin" />
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="bg-gray-50 text-gray-500 text-xs uppercase tracking-wider">
+                          <th className="p-3 font-medium">Email</th>
+                          <th className="p-3 font-medium">SĐT</th>
+                          <th className="p-3 font-medium">Trạng thái</th>
+                          <th className="p-3 font-medium text-center">Thao tác</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100">
+                        {users.map(u => (
+                          <tr key={u.id} className="hover:bg-gray-50 transition-colors">
+                            <td className="p-3 text-sm font-medium text-gray-900">{u.email}</td>
+                            <td className="p-3 text-sm text-gray-600">{u.phone}</td>
+                            <td className="p-3">
+                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${u.approved ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}`}>
+                                {u.approved ? 'Đã phê duyệt' : 'Chờ phê duyệt'}
+                              </span>
+                            </td>
+                            <td className="p-3">
+                              <div className="flex items-center justify-center gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => toggleApproval(u.id, u.approved)}
+                                  className={`p-1.5 rounded-md transition-colors ${u.approved ? 'text-amber-600 hover:bg-amber-50' : 'text-emerald-600 hover:bg-emerald-50'}`}
+                                  title={u.approved ? 'Hủy phê duyệt' : 'Phê duyệt'}
+                                >
+                                  {u.approved ? <ShieldX size={16} /> : <ShieldCheck size={16} />}
+                                </button>
+                                {u.email !== 'dieuhuu1995@gmail.com' && u.email !== 'huulaptop.info@gmail.com' && (
+                                  <button
+                                    type="button"
+                                    onClick={() => deleteUser(u.id)}
+                                    className="p-1.5 text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                                    title="Xóa người dùng"
+                                  >
+                                    <Trash2 size={16} />
+                                  </button>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="mt-8 pt-6 border-t border-gray-100 flex items-center justify-between">

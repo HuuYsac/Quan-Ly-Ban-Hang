@@ -1,5 +1,5 @@
 import React from 'react';
-import { Info, ShoppingCart, LogOut } from 'lucide-react';
+import { ShoppingCart, HeartHandshake, ShieldCheck } from 'lucide-react';
 
 interface HeaderProps {
   title: string;
@@ -16,9 +16,20 @@ export function Header({ title, subtitle, onNavigate }: HeaderProps) {
       </div>
       
       <div className="flex items-center gap-3">
-        <button className="flex items-center gap-2 px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-full text-sm font-semibold transition-all shadow-sm hover:shadow-md hover:-translate-y-0.5">
-          <Info size={16} />
-          PITC
+        <button 
+          onClick={() => onNavigate('crm')}
+          className="flex items-center gap-2 px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg text-sm font-semibold transition-all shadow-sm hover:shadow-md hover:-translate-y-0.5"
+        >
+          <HeartHandshake size={16} />
+          Quản lý CRM
+        </button>
+
+        <button 
+          onClick={() => onNavigate('warranty')}
+          className="flex items-center gap-2 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-sm font-semibold transition-all shadow-sm hover:shadow-md hover:-translate-y-0.5"
+        >
+          <ShieldCheck size={16} />
+          Quản lý bảo hành
         </button>
         
         <button 
@@ -27,11 +38,6 @@ export function Header({ title, subtitle, onNavigate }: HeaderProps) {
         >
           <ShoppingCart size={16} />
           Đơn hàng
-        </button>
-        
-        <button className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white rounded-lg text-sm font-semibold transition-all shadow-sm hover:shadow-md hover:-translate-y-0.5">
-          <LogOut size={16} />
-          Đăng xuất
         </button>
       </div>
     </header>

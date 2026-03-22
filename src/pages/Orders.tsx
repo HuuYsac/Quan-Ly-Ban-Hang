@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { AppData, Order, OrderItem } from '../types';
 import { formatCurrency, numberToVietnameseWords } from '../lib/utils';
 import { ShoppingCart, Plus, Search, Eye, Printer, Trash2, X, PlusCircle, Edit } from 'lucide-react';
+import { Toast, ToastType, ConfirmModal } from '../components/Notification';
 
 interface OrdersProps {
   data: AppData;
@@ -58,6 +59,12 @@ export function Orders({ data, updateData, addItem }: OrdersProps) {
     tags: ''
   });
   const [orderItems, setOrderItems] = useState<OrderItem[]>([{ productId: '', name: '', quantity: 1, price: 0, discount: 0, discountType: 'percent' }]);
+  const [toast, setToast] = useState<{ message: string; type: ToastType } | null>(null);
+  const [confirmingDelete, setConfirmingDelete] = useState<string | null>(null);
+
+  const showToast = (message: string, type: ToastType = 'success') => {
+    setToast({ message, type });
+  };
 
   const filteredOrders = data.orders.filter(o => 
     o.id.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -65,34 +72,34 @@ export function Orders({ data, updateData, addItem }: OrdersProps) {
   );
 
   const handleDelete = (id: string) => {
-    if (window.confirm('Bạn có chắc muốn xóa đơn hàng này?')) {
-      const orderToDelete = data.orders.find(o => o.id === id);
-      if (!orderToDelete) return;
+    const orderToDelete = data.orders.find(o => o.id === id);
+    if (!orderToDelete) return;
 
-      // Revert stock
-      const updatedProducts = [...data.products];
-      orderToDelete.products.forEach(item => {
-        const pIdx = updatedProducts.findIndex(p => p.id === item.productId);
-        if (pIdx > -1) {
-          updatedProducts[pIdx] = { ...updatedProducts[pIdx], stock: updatedProducts[pIdx].stock + item.quantity };
-        }
-      });
-
-      // Revert debt
-      const updatedCustomers = [...data.customers];
-      if (orderToDelete.paymentStatus === 'Công nợ') {
-        const cIdx = updatedCustomers.findIndex(c => c.id === orderToDelete.customerId);
-        if (cIdx > -1) {
-          updatedCustomers[cIdx] = { ...updatedCustomers[cIdx], debt: updatedCustomers[cIdx].debt - orderToDelete.total };
-        }
+    // Revert stock
+    const updatedProducts = [...data.products];
+    orderToDelete.products.forEach(item => {
+      const pIdx = updatedProducts.findIndex(p => p.id === item.productId);
+      if (pIdx > -1) {
+        updatedProducts[pIdx] = { ...updatedProducts[pIdx], stock: updatedProducts[pIdx].stock + item.quantity };
       }
+    });
 
-      updateData({
-        orders: data.orders.filter(o => o.id !== id),
-        products: updatedProducts,
-        customers: updatedCustomers
-      });
+    // Revert debt
+    const updatedCustomers = [...data.customers];
+    if (orderToDelete.paymentStatus === 'Công nợ') {
+      const cIdx = updatedCustomers.findIndex(c => c.id === orderToDelete.customerId);
+      if (cIdx > -1) {
+        updatedCustomers[cIdx] = { ...updatedCustomers[cIdx], debt: updatedCustomers[cIdx].debt - orderToDelete.total };
+      }
     }
+
+    updateData({
+      orders: data.orders.filter(o => o.id !== id),
+      products: updatedProducts,
+      customers: updatedCustomers
+    });
+    setConfirmingDelete(null);
+    showToast('Đã xóa đơn hàng thành công');
   };
 
   const togglePaymentStatus = (id: string) => {
@@ -144,6 +151,7 @@ export function Orders({ data, updateData, addItem }: OrdersProps) {
           productId: product.id, 
           name: product.name, 
           price: product.price, 
+          importPrice: product.importPrice,
           discount: 0, 
           discountType: 'percent',
           serviceTag: '',
@@ -222,7 +230,7 @@ export function Orders({ data, updateData, addItem }: OrdersProps) {
       });
     } catch (error) {
       console.error('Error creating customer:', error);
-      alert('Có lỗi xảy ra khi tạo khách hàng. Vui lòng thử lại.');
+      showToast('Có lỗi xảy ra khi tạo khách hàng. Vui lòng thử lại.', 'error');
     } finally {
       setIsSubmittingCustomer(false);
     }
@@ -276,7 +284,7 @@ export function Orders({ data, updateData, addItem }: OrdersProps) {
       setCurrentOrderItemIndex(null);
     } catch (error) {
       console.error('Error creating product:', error);
-      alert('Có lỗi xảy ra khi tạo sản phẩm. Vui lòng thử lại.');
+      showToast('Có lỗi xảy ra khi tạo sản phẩm. Vui lòng thử lại.', 'error');
     } finally {
       setIsSubmittingProduct(false);
     }
@@ -319,7 +327,7 @@ export function Orders({ data, updateData, addItem }: OrdersProps) {
       });
     } catch (error) {
       console.error('Error creating supplier:', error);
-      alert('Có lỗi xảy ra khi tạo nhà cung cấp. Vui lòng thử lại.');
+      showToast('Có lỗi xảy ra khi tạo nhà cung cấp. Vui lòng thử lại.', 'error');
     } finally {
       setIsSubmittingSupplier(false);
     }
@@ -364,10 +372,10 @@ export function Orders({ data, updateData, addItem }: OrdersProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.customerId) return alert('Vui lòng chọn khách hàng');
+    if (!formData.customerId) return showToast('Vui lòng chọn khách hàng', 'warning');
     
     const validItems = orderItems.filter(item => item.productId);
-    if (validItems.length === 0) return alert('Vui lòng chọn ít nhất 1 sản phẩm');
+    if (validItems.length === 0) return showToast('Vui lòng chọn ít nhất 1 sản phẩm', 'warning');
 
     const customer = data.customers.find(c => c.id === formData.customerId);
     if (!customer) return;
@@ -480,6 +488,7 @@ export function Orders({ data, updateData, addItem }: OrdersProps) {
 
     setIsAddModalOpen(false);
     setEditingId(null);
+    showToast(editingId ? 'Đã cập nhật đơn hàng thành công' : 'Đã tạo đơn hàng thành công');
     setFormData({ customerId: '', paymentMethod: 'Tiền mặt', paymentStatus: 'Đã thanh toán', notes: '' });
     setOrderItems([{ 
       productId: '', 
@@ -612,7 +621,7 @@ export function Orders({ data, updateData, addItem }: OrdersProps) {
                         <Edit size={16} />
                       </button>
                       <button 
-                        onClick={() => handleDelete(order.id)}
+                        onClick={() => setConfirmingDelete(order.id)}
                         className="p-1.5 text-red-600 hover:bg-red-50 rounded-md transition-colors" title="Xóa"
                       >
                         <Trash2 size={16} />
@@ -662,30 +671,30 @@ export function Orders({ data, updateData, addItem }: OrdersProps) {
             <div className="p-6 print:p-0">
               {/* Print Layout (Hidden in UI, visible in print) */}
               <div className="hidden print:block text-black font-serif p-8 bg-white min-h-screen print-container">
-                <div className="flex justify-between items-start mb-2">
-                  <div className="w-1/3"></div>
-                  <div className="w-1/3 text-center">
-                    <h1 className="text-2xl font-bold uppercase tracking-wider">HÓA ĐƠN BÁN HÀNG</h1>
-                    <p className="text-sm italic mt-1">
-                      Ngày {viewOrder.date.split('/')[0]} tháng {viewOrder.date.split('/')[1]} năm {viewOrder.date.split('/')[2]}
-                    </p>
+                <div className="flex justify-between items-start mb-6">
+                  <div className="flex items-start gap-4">
+                    <img 
+                      src="https://storage.googleapis.com/static.antigravity.dev/dieuhuu1995@gmail.com/610176597039/dieuhuu1995@gmail.com_1742636402000_1.png" 
+                      alt="Shop Logo" 
+                      className="w-24 h-24 object-contain"
+                      referrerPolicy="no-referrer"
+                    />
+                    <div className="space-y-1 text-sm">
+                      <p className="font-bold text-lg uppercase">{data.shopInfo?.name || 'Hữu Laptop'}</p>
+                      <p><span className="font-semibold">Điện thoại:</span> {data.shopInfo?.phone}</p>
+                      <p><span className="font-semibold">Địa chỉ:</span> {data.shopInfo?.address}</p>
+                    </div>
                   </div>
-                  <div className="w-1/3 text-right text-sm">
-                    <p>Mã số: {viewOrder.id}</p>
-                    <p>Ký hiệu: </p>
-                    <p>Số: {viewOrder.id.slice(-4)}</p>
+                  <div className="text-right text-sm">
+                    <p className="font-bold text-xl uppercase mb-2">HÓA ĐƠN BÁN HÀNG</p>
+                    <p>Mã số: <span className="font-bold">{viewOrder.id}</span></p>
+                    <p>Ngày: {viewOrder.date}</p>
                   </div>
-                </div>
-
-                <div className="space-y-1 mb-4 text-sm">
-                  <p><span className="font-semibold">Đơn vị bán hàng:</span> {data.shopInfo?.name || 'Hữu Laptop'}</p>
-                  <p><span className="font-semibold">Điện thoại:</span> {data.shopInfo?.phone}</p>
-                  <p><span className="font-semibold">Địa chỉ:</span> {data.shopInfo?.address}</p>
                 </div>
 
                 <div className="border-t border-black my-4"></div>
 
-                <div className="grid grid-cols-2 gap-x-8 gap-y-1 mb-4 text-sm">
+                <div className="grid grid-cols-2 gap-x-8 gap-y-1 mb-6 text-sm">
                   <div className="col-span-1 space-y-1">
                     <p><span className="font-semibold">Họ tên người mua hàng:</span> {viewOrder.customerName}</p>
                     <p><span className="font-semibold">Tên đơn vị:</span> {data.customers.find(c => c.id === viewOrder.customerId)?.companyName || ''}</p>
@@ -696,7 +705,7 @@ export function Orders({ data, updateData, addItem }: OrdersProps) {
                   </div>
                 </div>
 
-                <table className="w-full border-collapse border border-black mb-4 text-sm">
+                <table className="w-full border-collapse border border-black mb-6 text-sm">
                   <thead>
                     <tr className="bg-gray-100">
                       <th className="border border-black p-2 text-center w-10">STT</th>
@@ -706,15 +715,6 @@ export function Orders({ data, updateData, addItem }: OrdersProps) {
                       <th className="border border-black p-2 text-right w-24">Đơn giá</th>
                       <th className="border border-black p-2 text-center w-20">Giảm giá</th>
                       <th className="border border-black p-2 text-right w-28">Thành tiền</th>
-                    </tr>
-                    <tr className="bg-gray-50 text-[10px]">
-                      <th className="border border-black p-1 text-center italic">1</th>
-                      <th className="border border-black p-1 text-center italic">2</th>
-                      <th className="border border-black p-1 text-center italic">3</th>
-                      <th className="border border-black p-1 text-center italic">4</th>
-                      <th className="border border-black p-1 text-center italic">5</th>
-                      <th className="border border-black p-1 text-center italic">6</th>
-                      <th className="border border-black p-1 text-center italic">7=4x5-6</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -747,22 +747,22 @@ export function Orders({ data, updateData, addItem }: OrdersProps) {
                   </tbody>
                   <tfoot>
                     <tr>
-                      <td colSpan={6} className="border border-black p-2 text-right font-bold">Cộng tiền hàng hóa, dịch vụ:</td>
+                      <td colSpan={6} className="border border-black p-2 text-right font-bold uppercase">Tổng cộng tiền hàng:</td>
                       <td className="border border-black p-2 text-right font-bold">{formatCurrency(viewOrder.total)}</td>
                     </tr>
                   </tfoot>
                 </table>
 
-                <div className="text-sm mb-6 space-y-2">
+                <div className="text-sm mb-8 space-y-2">
                   <p><span className="font-semibold italic">Số tiền viết bằng chữ:</span> {numberToVietnameseWords(viewOrder.total)}</p>
                   <p>
                     {viewOrder.paymentStatus === 'Đã thanh toán' 
-                      ? `Khách đã thanh toán qua ${viewOrder.paymentMethod}.` 
-                      : `Đơn hàng chưa thanh toán (Công nợ).`}
+                      ? `Hình thức thanh toán: ${viewOrder.paymentMethod}.` 
+                      : `Hình thức thanh toán: Công nợ.`}
                   </p>
                 </div>
 
-                <div className="grid grid-cols-2 text-center mb-16">
+                <div className="grid grid-cols-2 text-center mb-24">
                   <div>
                     <p className="font-bold">Người mua hàng</p>
                     <p className="text-xs italic">(Ký, ghi rõ họ tên)</p>
@@ -770,10 +770,9 @@ export function Orders({ data, updateData, addItem }: OrdersProps) {
                   <div>
                     <p className="font-bold">Người bán hàng</p>
                     <p className="text-xs italic">(Ký, ghi rõ họ tên)</p>
-                    <div className="mt-6">
+                    <div className="mt-8">
                       <p className="text-rose-600 font-bold uppercase text-lg">{data.shopInfo?.name || 'Hữu Laptop'}</p>
                       <p className="text-[10px] text-gray-500 italic">Đã được ký điện tử bởi hệ thống quản lý</p>
-                      <p className="text-xs mt-1">Ngày {viewOrder.date}</p>
                     </div>
                   </div>
                 </div>
@@ -784,17 +783,19 @@ export function Orders({ data, updateData, addItem }: OrdersProps) {
                       <p className="font-bold text-blue-800">Ngân hàng {data.shopInfo?.bankName || 'Techcombank'}</p>
                       <p className="font-bold">STK: {data.shopInfo?.bankAccount || '95 7777 6789'}</p>
                       <p className="font-bold">Tên: {data.shopInfo?.taxCode || 'DIEU HUU'}</p>
+                      <p className="text-xs text-gray-500 mt-2 italic">* Quét mã để thanh toán nhanh</p>
                     </div>
                     <div className="bg-white p-1 rounded-lg border border-gray-200">
                       <img 
-                        src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=vietqr://payment?bank=${data.shopInfo?.bankName || 'Techcombank'}&account=${data.shopInfo?.bankAccount || '9577776789'}&amount=${viewOrder.total}`} 
+                        src="https://storage.googleapis.com/static.antigravity.dev/dieuhuu1995@gmail.com/610176597039/dieuhuu1995@gmail.com_1742636402000_0.png" 
                         alt="Payment QR" 
-                        className="w-20 h-20"
+                        className="w-24 h-24 object-contain"
+                        referrerPolicy="no-referrer"
                       />
                     </div>
                   </div>
-                  <div className="text-xs italic text-gray-500 max-w-[250px] text-right">
-                    * Lưu ý: Quý khách vui lòng kiểm tra kỹ thông tin hàng hóa và số tiền trước khi thanh toán.
+                  <div className="text-[10px] text-gray-400 italic">
+                    Cảm ơn quý khách đã tin tưởng và sử dụng dịch vụ!
                   </div>
                 </div>
               </div>
@@ -1515,6 +1516,23 @@ export function Orders({ data, updateData, addItem }: OrdersProps) {
             </form>
           </div>
         </div>
+      )}
+      {confirmingDelete && (
+        <ConfirmModal 
+          isOpen={!!confirmingDelete}
+          title="Xác nhận xóa"
+          message="Bạn có chắc chắn muốn xóa đơn hàng này? Tất cả dữ liệu liên quan sẽ bị mất."
+          onConfirm={() => handleDelete(confirmingDelete)}
+          onCancel={() => setConfirmingDelete(null)}
+        />
+      )}
+
+      {toast && (
+        <Toast 
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
       )}
     </div>
   );

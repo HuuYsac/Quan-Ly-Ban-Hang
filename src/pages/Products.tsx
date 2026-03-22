@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { AppData, Product } from '../types';
 import { formatCurrency } from '../lib/utils';
 import { Package, Plus, Search, Edit, Trash2, AlertTriangle, CheckCircle2, X } from 'lucide-react';
+import { Toast, ToastType, ConfirmModal } from '../components/Notification';
 
 interface ProductsProps {
   data: AppData;
@@ -12,6 +13,12 @@ export function Products({ data, updateData }: ProductsProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ message: string; type: ToastType } | null>(null);
+  const [confirmingDelete, setConfirmingDelete] = useState<string | null>(null);
+
+  const showToast = (message: string, type: ToastType = 'success') => {
+    setToast({ message, type });
+  };
   const [formData, setFormData] = useState({
     name: '',
     category: '',
@@ -30,11 +37,11 @@ export function Products({ data, updateData }: ProductsProps) {
   const lowStockCount = data.products.filter(p => p.stock < p.minStock).length;
 
   const handleDelete = (id: string) => {
-    if (window.confirm('Bạn có chắc muốn xóa sản phẩm này?')) {
-      updateData({
-        products: data.products.filter(p => p.id !== id)
-      });
-    }
+    updateData({
+      products: data.products.filter(p => p.id !== id)
+    });
+    setConfirmingDelete(null);
+    showToast('Đã xóa sản phẩm thành công');
   };
 
   const handleEdit = (product: Product) => {
@@ -90,6 +97,7 @@ export function Products({ data, updateData }: ProductsProps) {
     
     setIsAddModalOpen(false);
     setEditingId(null);
+    showToast(editingId ? 'Đã cập nhật sản phẩm thành công' : 'Đã thêm sản phẩm thành công');
     setFormData({
       name: '', category: '', price: '', importPrice: '', stock: '', minStock: '10', supplier: ''
     });
@@ -198,7 +206,7 @@ export function Products({ data, updateData }: ProductsProps) {
                         <Edit size={16} />
                       </button>
                       <button 
-                        onClick={() => handleDelete(product.id)}
+                        onClick={() => setConfirmingDelete(product.id)}
                         className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
                       >
                         <Trash2 size={16} />
@@ -347,6 +355,23 @@ export function Products({ data, updateData }: ProductsProps) {
             </form>
           </div>
         </div>
+      )}
+      {confirmingDelete && (
+        <ConfirmModal 
+          isOpen={!!confirmingDelete}
+          title="Xác nhận xóa"
+          message="Bạn có chắc chắn muốn xóa sản phẩm này? Tất cả dữ liệu liên quan sẽ bị mất."
+          onConfirm={() => handleDelete(confirmingDelete)}
+          onCancel={() => setConfirmingDelete(null)}
+        />
+      )}
+
+      {toast && (
+        <Toast 
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
       )}
     </div>
   );

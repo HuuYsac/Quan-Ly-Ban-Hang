@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { AppData, Category } from '../types';
 import { FolderTree, Search, Plus, Edit, Trash2, X } from 'lucide-react';
+import { Toast, ToastType, ConfirmModal } from '../components/Notification';
 
 interface CategoriesProps {
   data: AppData;
@@ -11,6 +12,12 @@ export function Categories({ data, updateData }: CategoriesProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ message: string; type: ToastType } | null>(null);
+  const [confirmingDelete, setConfirmingDelete] = useState<string | null>(null);
+
+  const showToast = (message: string, type: ToastType = 'success') => {
+    setToast({ message, type });
+  };
   const [formData, setFormData] = useState({
     name: '',
     parent: ''
@@ -21,11 +28,11 @@ export function Categories({ data, updateData }: CategoriesProps) {
   );
 
   const handleDelete = (id: string) => {
-    if (window.confirm('Bạn có chắc muốn xóa danh mục này?')) {
-      updateData({
-        categories: data.categories.filter(c => c.id !== id)
-      });
-    }
+    updateData({
+      categories: data.categories.filter(c => c.id !== id)
+    });
+    setConfirmingDelete(null);
+    showToast('Đã xóa danh mục thành công');
   };
 
   const handleEdit = (category: Category) => {
@@ -66,6 +73,7 @@ export function Categories({ data, updateData }: CategoriesProps) {
     
     setIsAddModalOpen(false);
     setEditingId(null);
+    showToast(editingId ? 'Đã cập nhật danh mục thành công' : 'Đã thêm danh mục thành công');
     setFormData({
       name: '', parent: ''
     });
@@ -144,7 +152,7 @@ export function Categories({ data, updateData }: CategoriesProps) {
                         <Edit size={16} />
                       </button>
                       <button 
-                        onClick={() => handleDelete(category.id)}
+                        onClick={() => setConfirmingDelete(category.id)}
                         className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors" title="Xóa"
                       >
                         <Trash2 size={16} />
@@ -234,6 +242,23 @@ export function Categories({ data, updateData }: CategoriesProps) {
             </form>
           </div>
         </div>
+      )}
+      {confirmingDelete && (
+        <ConfirmModal 
+          isOpen={!!confirmingDelete}
+          title="Xác nhận xóa"
+          message="Bạn có chắc chắn muốn xóa danh mục này? Tất cả dữ liệu liên quan sẽ bị mất."
+          onConfirm={() => handleDelete(confirmingDelete)}
+          onCancel={() => setConfirmingDelete(null)}
+        />
+      )}
+
+      {toast && (
+        <Toast 
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
       )}
     </div>
   );

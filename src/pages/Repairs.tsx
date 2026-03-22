@@ -66,20 +66,26 @@ const Repairs: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (editingRepair) {
-      await updateItem('repairs', editingRepair.id, formData);
-    } else {
-      const newRepair: Repair = {
-        ...formData as Repair,
-        id: `RP${Date.now()}`,
-        createdAt: new Date().toISOString()
-      };
-      await addItem('repairs', newRepair);
+    try {
+      if (editingRepair) {
+        await updateItem('repairs', editingRepair.id, formData);
+      } else {
+        const newRepair: Repair = {
+          ...formData as Repair,
+          id: `RP${Date.now()}`,
+          createdAt: new Date().toISOString()
+        };
+        await addItem('repairs', newRepair);
+      }
+      
+      setIsModalOpen(false);
+      setEditingRepair(null);
+      resetForm();
+      alert(editingRepair ? 'Cập nhật phiếu thành công!' : 'Tạo phiếu sửa chữa thành công!');
+    } catch (error) {
+      console.error('Error saving repair:', error);
+      alert('Có lỗi xảy ra khi lưu phiếu. Vui lòng thử lại.');
     }
-    
-    setIsModalOpen(false);
-    setEditingRepair(null);
-    resetForm();
   };
 
   const resetForm = () => {

@@ -34,14 +34,16 @@
     display: block !important;
     z-index: 999999 !important;
     background: white !important;
+    font-family: 'Times New Roman', serif;
+    color: black !important;
   }
   * {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
   @page {
-    margin: 10mm;
-    size: auto;
+    size: A4;
+    margin: 15mm;
   }
   .print\:hidden {
     display: none !important;

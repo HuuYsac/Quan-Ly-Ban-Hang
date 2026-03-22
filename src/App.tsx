@@ -17,26 +17,43 @@ import { Debts } from './pages/Debts';
 import { Reports } from './pages/Reports';
 import { Settings } from './pages/Settings';
 import { CompanyInfo } from './pages/CompanyInfo';
-import { CSKH } from './pages/CSKH';
+import { CRM } from './pages/CRM';
 import Warranty from './pages/Warranty';
 import Repairs from './pages/Repairs';
 import { useAppStore } from './hooks/useAppStore';
 import { Auth } from './pages/Auth';
 import { auth } from './firebase';
 import { onAuthStateChanged, User, sendEmailVerification } from 'firebase/auth';
-import { Mail, LogOut, RefreshCw } from 'lucide-react';
+import { Mail, LogOut, RefreshCw, ShieldAlert } from 'lucide-react';
 
 export default function App() {
   const [activePage, setActivePage] = useState('dashboard');
   const { data, updateData, loading: dataLoading, addItem } = useAppStore();
   const [user, setUser] = useState<User | null>(null);
+  const [isApproved, setIsApproved] = useState<boolean | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [resending, setResending] = useState(false);
   const [resendMessage, setResendMessage] = useState('');
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
+      if (currentUser) {
+        // Check approval status
+        const { doc, getDoc } = await import('firebase/firestore');
+        const { db } = await import('./firebase');
+        const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
+        if (userDoc.exists()) {
+          setIsApproved(userDoc.data().approved !== false);
+        } else {
+          // If doc doesn't exist yet (just registered), it will be created with approved: false
+          // unless it's the owner
+          const ownerEmails = ['dieuhuu1995@gmail.com', 'huulaptop.info@gmail.com'];
+          setIsApproved(ownerEmails.includes(currentUser.email || ''));
+        }
+      } else {
+        setIsApproved(null);
+      }
       setAuthLoading(false);
     });
     return () => unsubscribe();
@@ -60,7 +77,7 @@ export default function App() {
     await auth.signOut();
   };
 
-  if (authLoading || (user && dataLoading)) {
+  if (authLoading || (user && dataLoading) || (user && isApproved === null)) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
@@ -118,6 +135,34 @@ export default function App() {
     );
   }
 
+  if (isApproved === false) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+        <div className="sm:mx-auto sm:w-full sm:max-w-md">
+          <div className="bg-white py-8 px-4 shadow-xl shadow-gray-200/50 sm:rounded-2xl sm:px-10 border border-gray-100 text-center">
+            <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-amber-100 mb-6">
+              <ShieldAlert className="h-8 w-8 text-amber-600" />
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Chờ phê duyệt</h2>
+            <p className="text-gray-600 mb-6">
+              Tài khoản của bạn (<strong>{user.email}</strong>) đã được đăng ký thành công nhưng đang chờ quản trị viên phê duyệt để truy cập vào hệ thống.
+            </p>
+            
+            <div className="space-y-3">
+              <button
+                onClick={handleLogout}
+                className="w-full flex justify-center items-center gap-2 py-2.5 px-4 border border-gray-300 rounded-xl shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+              >
+                <LogOut size={18} />
+                Đăng xuất
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const getPageTitle = () => {
     switch (activePage) {
       case 'dashboard': return { title: 'Hệ thống Quản lý', subtitle: 'Quản lý bán hàng doanh nghiệp Việt Nam' };
@@ -129,7 +174,7 @@ export default function App() {
       case 'debts': return { title: 'Quản lý Công nợ', subtitle: 'Theo dõi công nợ khách hàng và nhà cung cấp' };
       case 'orders': return { title: 'Quản lý Đơn hàng', subtitle: 'Danh sách và xử lý đơn hàng' };
       case 'reports': return { title: 'Báo cáo', subtitle: 'Thống kê doanh thu và hoạt động' };
-      case 'cskh': return { title: 'Chăm sóc khách hàng (CSKH)', subtitle: 'Tự động hóa thông báo và chăm sóc khách hàng định kỳ' };
+      case 'crm': return { title: 'Quản lý quan hệ khách hàng (CRM)', subtitle: 'Quản lý tiềm năng, chăm sóc khách hàng và khuyến mãi' };
       case 'warranty': return { title: 'Quản lý Bảo hành', subtitle: 'Theo dõi và kiểm tra thời hạn bảo hành sản phẩm' };
       case 'repairs': return { title: 'Quản lý Sửa chữa', subtitle: 'Theo dõi tiến độ sửa chữa và bảo hành thiết bị' };
       case 'settings': return { title: 'Cài đặt hệ thống', subtitle: 'Tùy chỉnh hệ thống và giao diện' };
@@ -158,8 +203,8 @@ export default function App() {
         return <Orders data={data} updateData={updateData} addItem={addItem} />;
       case 'reports':
         return <Reports data={data} updateData={updateData} />;
-      case 'cskh':
-        return <CSKH data={data} updateData={updateData} />;
+      case 'crm':
+        return <CRM data={data} updateData={updateData} />;
       case 'warranty':
         return <Warranty />;
       case 'repairs':

@@ -12,11 +12,13 @@ export function Customers({ data, updateData }: CustomersProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [confirmingDelete, setConfirmingDelete] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     name: '',
     phone: '',
     email: '',
     address: '',
+    facebook: '',
     type: 'ca-nhan' as 'ca-nhan' | 'doanh-nghiep',
     companyName: '',
     taxCode: '',
@@ -30,11 +32,10 @@ export function Customers({ data, updateData }: CustomersProps) {
   );
 
   const handleDelete = (id: string) => {
-    if (window.confirm('Bạn có chắc muốn xóa khách hàng này?')) {
-      updateData({
-        customers: data.customers.filter(c => c.id !== id)
-      });
-    }
+    updateData({
+      customers: data.customers.filter(c => c.id !== id)
+    });
+    setConfirmingDelete(null);
   };
 
   const handleEdit = (customer: Customer) => {
@@ -44,6 +45,7 @@ export function Customers({ data, updateData }: CustomersProps) {
       phone: customer.phone,
       email: customer.email || '',
       address: customer.address || '',
+      facebook: customer.facebook || '',
       type: customer.type,
       companyName: customer.companyName || '',
       taxCode: customer.taxCode || '',
@@ -62,6 +64,7 @@ export function Customers({ data, updateData }: CustomersProps) {
         phone: formData.phone,
         email: formData.email || '',
         address: formData.address || '',
+        facebook: formData.facebook || '',
         type: formData.type,
         tags: formData.tags.split(',').map(t => t.trim()).filter(t => t)
       };
@@ -85,6 +88,7 @@ export function Customers({ data, updateData }: CustomersProps) {
         phone: formData.phone,
         email: formData.email || '',
         address: formData.address || '',
+        facebook: formData.facebook || '',
         type: formData.type,
         debt: 0,
         tags: formData.tags.split(',').map(t => t.trim()).filter(t => t),
@@ -104,7 +108,7 @@ export function Customers({ data, updateData }: CustomersProps) {
     setIsAddModalOpen(false);
     setEditingId(null);
     setFormData({
-      name: '', phone: '', email: '', address: '', type: 'ca-nhan', companyName: '', taxCode: '', tags: ''
+      name: '', phone: '', email: '', address: '', facebook: '', type: 'ca-nhan', companyName: '', taxCode: '', tags: ''
     });
   };
 
@@ -184,7 +188,7 @@ export function Customers({ data, updateData }: CustomersProps) {
             onClick={() => {
               setEditingId(null);
               setFormData({
-                name: '', phone: '', email: '', address: '', type: 'ca-nhan', companyName: '', taxCode: '', tags: ''
+                name: '', phone: '', email: '', address: '', facebook: '', type: 'ca-nhan', companyName: '', taxCode: '', tags: ''
               });
               setIsAddModalOpen(true);
             }}
@@ -280,7 +284,7 @@ export function Customers({ data, updateData }: CustomersProps) {
                           <Edit size={16} />
                         </button>
                         <button 
-                          onClick={() => handleDelete(customer.id)}
+                          onClick={() => setConfirmingDelete(customer.id)}
                           className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors" title="Xóa"
                         >
                           <Trash2 size={16} />
@@ -353,6 +357,16 @@ export function Customers({ data, updateData }: CustomersProps) {
                     onChange={e => setFormData({...formData, email: e.target.value})}
                     className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                     placeholder="VD: email@example.com"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Messenger/FB</label>
+                  <input 
+                    type="text"
+                    value={formData.facebook}
+                    onChange={e => setFormData({...formData, facebook: e.target.value})}
+                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                    placeholder="Username hoặc Link"
                   />
                 </div>
                 <div>
@@ -435,6 +449,30 @@ export function Customers({ data, updateData }: CustomersProps) {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Confirmation Modal */}
+      {confirmingDelete && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[110] p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 space-y-4">
+            <h3 className="text-lg font-bold text-gray-900">Xác nhận xóa</h3>
+            <p className="text-sm text-gray-500">Bạn có chắc chắn muốn xóa khách hàng này? Tất cả dữ liệu liên quan sẽ bị mất.</p>
+            <div className="flex gap-3 pt-2">
+              <button 
+                onClick={() => setConfirmingDelete(null)}
+                className="flex-1 py-2 border border-gray-200 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50"
+              >
+                Hủy
+              </button>
+              <button 
+                onClick={() => handleDelete(confirmingDelete)}
+                className="flex-1 py-2 bg-rose-600 text-white rounded-xl text-sm font-bold hover:bg-rose-700 shadow-lg shadow-rose-600/20"
+              >
+                Xóa ngay
+              </button>
+            </div>
           </div>
         </div>
       )}

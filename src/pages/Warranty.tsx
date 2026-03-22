@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { formatCurrency } from '../lib/utils';
 import { Repair } from '../types';
+import { Toast, ToastType } from '../components/Notification';
 
 interface WarrantyItem {
   orderId: string;
@@ -42,6 +43,11 @@ const Warranty: React.FC = () => {
     technician: '',
     notes: ''
   });
+  const [toast, setToast] = useState<{ message: string; type: ToastType } | null>(null);
+
+  const showToast = (message: string, type: ToastType = 'success') => {
+    setToast({ message, type });
+  };
 
   const warranties = useMemo(() => {
     const items: WarrantyItem[] = [];
@@ -135,7 +141,7 @@ const Warranty: React.FC = () => {
     setIsRepairModalOpen(false);
     setSelectedWarranty(null);
     setRepairForm({ issue: '', technician: '', notes: '' });
-    alert('Đã tạo phiếu sửa chữa thành công!');
+    showToast('Đã tạo phiếu sửa chữa thành công!');
   };
 
   return (
@@ -398,6 +404,14 @@ const Warranty: React.FC = () => {
             </form>
           </div>
         </div>
+      )}
+
+      {toast && (
+        <Toast 
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
       )}
     </div>
   );

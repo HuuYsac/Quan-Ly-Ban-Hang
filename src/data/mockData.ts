@@ -199,5 +199,7 @@ export const initialData: AppData = {
     autoBackup: true,
     invoiceTemplate: 'standard'
   },
-  repairs: []
+  repairs: [],
+  leads: [],
+  careTasks: []
 };

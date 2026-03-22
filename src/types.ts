@@ -12,6 +12,7 @@ export interface Customer {
   phone: string;
   email: string;
   address: string;
+  facebook?: string;
   debt: number;
   companyName?: string;
   department?: string;
@@ -20,6 +21,7 @@ export interface Customer {
   totalOrders?: number;
   tags?: string[];
   devices?: Device[];
+  createdAt?: string;
 }
 
 export interface Supplier {
@@ -64,6 +66,7 @@ export interface OrderItem {
   name: string;
   quantity: number;
   price: number;
+  importPrice?: number;
   discount?: number;
   discountType?: 'percent' | 'amount';
   subtotal?: number;
@@ -142,6 +145,32 @@ export interface CSKHSettings {
   milestone3: number; // months
 }
 
+export interface Lead {
+  id: string;
+  name: string;
+  phone: string;
+  email?: string;
+  facebook?: string;
+  source: string;
+  status: 'Mới' | 'Đã liên hệ' | 'Đang thương lượng' | 'Thành công' | 'Thất bại';
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CareTask {
+  id: string;
+  customerId: string;
+  customerName: string;
+  orderId: string;
+  orderDate: string;
+  taskDate: string; // ISO string
+  type: 'milestone1' | 'milestone2' | 'milestone3';
+  status: 'pending' | 'completed';
+  description: string;
+  completedAt?: string;
+}
+
 export interface AppData {
   customers: Customer[];
   suppliers: Supplier[];
@@ -149,6 +178,8 @@ export interface AppData {
   categories: Category[];
   orders: Order[];
   repairs: Repair[];
+  leads: Lead[];
+  careTasks: CareTask[];
   sales: Sale[];
   shopInfo: ShopInfo;
   settings: Settings;

@@ -42,10 +42,12 @@ export function Auth() {
         const user = userCredential.user;
 
         // Create user profile in Firestore
+        const ownerEmails = ['dieuhuu1995@gmail.com', 'huulaptop.info@gmail.com'];
         await setDoc(doc(db, 'users', user.uid), {
           uid: user.uid,
           email: user.email,
           phone: phone,
+          approved: ownerEmails.includes(user.email || ''),
           createdAt: new Date().toISOString()
         });
 
@@ -93,12 +95,12 @@ export function Auth() {
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div className="flex justify-center">
-          <div className="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-600/20">
-            <span className="text-white font-bold text-2xl">P</span>
+          <div className="w-24 h-16 bg-blue-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-600/20 px-4">
+            <span className="text-white font-bold text-2xl tracking-tight">QLBH</span>
           </div>
         </div>
         <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-          {isLogin ? 'Đăng nhập vào hệ thống' : 'Đăng ký tài khoản mới'}
+          {isLogin ? 'Phần mềm quản lý bán hàng' : 'Đăng ký tài khoản mới'}
         </h2>
         <p className="mt-2 text-center text-sm text-gray-600">
           {isLogin ? 'Hoặc ' : 'Đã có tài khoản? '}
