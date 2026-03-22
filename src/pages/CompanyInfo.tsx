@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { AppData, ShopInfo } from '../types';
-import { Building, MapPin, Phone, Mail, Globe, FileText, CreditCard, Save, CheckCircle2 } from 'lucide-react';
+import { Building, MapPin, Phone, Mail, Globe, FileText, CreditCard, Save, CheckCircle2, Upload, X } from 'lucide-react';
 
 interface CompanyInfoProps {
   data: AppData;
@@ -17,7 +17,8 @@ export function CompanyInfo({ data, updateData }: CompanyInfoProps) {
       taxCode: '',
       website: '',
       bankAccount: '',
-      bankName: ''
+      bankName: '',
+      logo: ''
     }
   );
   const [isSaving, setIsSaving] = useState(false);
@@ -32,6 +33,25 @@ export function CompanyInfo({ data, updateData }: CompanyInfoProps) {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 1024 * 1024) { // 1MB limit for base64 storage
+        alert('Kích thước logo quá lớn. Vui lòng chọn file dưới 1MB.');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFormData(prev => ({ ...prev, logo: reader.result as string }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const removeLogo = () => {
+    setFormData(prev => ({ ...prev, logo: '' }));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -51,8 +71,9 @@ export function CompanyInfo({ data, updateData }: CompanyInfoProps) {
   };
 
   return (
-    <div className="animate-in fade-in duration-500 max-w-4xl mx-auto">
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+    <div>
+      <div className="animate-in fade-in duration-500 max-w-4xl mx-auto">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
         <div className="p-6 border-b border-gray-100 bg-gray-50/50">
           <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
             <Building className="text-blue-600" size={24} />
@@ -64,6 +85,46 @@ export function CompanyInfo({ data, updateData }: CompanyInfoProps) {
         </div>
 
         <form onSubmit={handleSubmit} className="p-6">
+          <div className="mb-8 flex flex-col items-center justify-center p-6 border-2 border-dashed border-gray-200 rounded-xl bg-gray-50/30">
+            <div className="relative group">
+              {formData.logo ? (
+                <div className="relative">
+                  <img 
+                    src={formData.logo} 
+                    alt="Shop Logo" 
+                    className="w-32 h-32 object-contain rounded-lg border border-gray-200 bg-white shadow-sm"
+                    referrerPolicy="no-referrer"
+                  />
+                  <button
+                    type="button"
+                    onClick={removeLogo}
+                    className="absolute -top-2 -right-2 p-1.5 bg-rose-500 text-white rounded-full shadow-md hover:bg-rose-600 transition-colors opacity-0 group-hover:opacity-100"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+              ) : (
+                <div className="w-32 h-32 flex flex-col items-center justify-center bg-white border border-gray-200 rounded-lg text-gray-400">
+                  <Building size={40} strokeWidth={1.5} />
+                  <span className="text-[10px] mt-2 font-medium uppercase tracking-wider">Chưa có logo</span>
+                </div>
+              )}
+              <label className="absolute bottom-0 right-0 p-2 bg-blue-600 text-white rounded-full shadow-lg cursor-pointer hover:bg-blue-700 transition-all hover:scale-110">
+                <Upload size={16} />
+                <input 
+                  type="file" 
+                  className="hidden" 
+                  accept="image/*"
+                  onChange={handleLogoChange}
+                />
+              </label>
+            </div>
+            <div className="mt-4 text-center">
+              <h4 className="text-sm font-semibold text-gray-900">Logo cửa hàng</h4>
+              <p className="text-xs text-gray-500 mt-1">Định dạng: JPG, PNG. Dung lượng tối đa: 1MB</p>
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
             {/* Tên cửa hàng */}
             <div className="md:col-span-2">
@@ -222,5 +283,6 @@ export function CompanyInfo({ data, updateData }: CompanyInfoProps) {
         </form>
       </div>
     </div>
-  );
+  </div>
+);
 }

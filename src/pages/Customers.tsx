@@ -56,37 +56,45 @@ export function Customers({ data, updateData }: CustomersProps) {
     e.preventDefault();
     
     if (editingId) {
+      const updatedCustomer: any = {
+        ...data.customers.find(c => c.id === editingId),
+        name: formData.name,
+        phone: formData.phone,
+        email: formData.email || '',
+        address: formData.address || '',
+        type: formData.type,
+        tags: formData.tags.split(',').map(t => t.trim()).filter(t => t)
+      };
+
+      if (formData.type === 'doanh-nghiep') {
+        updatedCustomer.companyName = formData.companyName || '';
+        updatedCustomer.taxCode = formData.taxCode || '';
+      } else {
+        // Remove these fields if switching back to individual
+        delete updatedCustomer.companyName;
+        delete updatedCustomer.taxCode;
+      }
+
       updateData({
-        customers: data.customers.map(c => 
-          c.id === editingId 
-            ? {
-                ...c,
-                name: formData.name,
-                phone: formData.phone,
-                email: formData.email,
-                address: formData.address,
-                type: formData.type,
-                companyName: formData.type === 'doanh-nghiep' ? formData.companyName : undefined,
-                taxCode: formData.type === 'doanh-nghiep' ? formData.taxCode : undefined,
-                tags: formData.tags.split(',').map(t => t.trim()).filter(t => t)
-              }
-            : c
-        )
+        customers: data.customers.map(c => c.id === editingId ? updatedCustomer : c)
       });
     } else {
-      const newCustomer: Customer = {
+      const newCustomer: any = {
         id: `KH${String(data.customers.length + 1).padStart(3, '0')}`,
         name: formData.name,
         phone: formData.phone,
-        email: formData.email,
-        address: formData.address,
+        email: formData.email || '',
+        address: formData.address || '',
         type: formData.type,
-        companyName: formData.type === 'doanh-nghiep' ? formData.companyName : undefined,
-        taxCode: formData.type === 'doanh-nghiep' ? formData.taxCode : undefined,
         debt: 0,
         tags: formData.tags.split(',').map(t => t.trim()).filter(t => t),
         devices: []
       };
+
+      if (formData.type === 'doanh-nghiep') {
+        newCustomer.companyName = formData.companyName || '';
+        newCustomer.taxCode = formData.taxCode || '';
+      }
       
       updateData({
         customers: [newCustomer, ...data.customers]
@@ -120,8 +128,9 @@ export function Customers({ data, updateData }: CustomersProps) {
   };
 
   return (
-    <div className="animate-in fade-in duration-500">
-      {/* Stats */}
+    <div>
+      <div className="animate-in fade-in duration-500">
+        {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
         <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100 flex items-center justify-between border-l-4 border-l-blue-500">
           <div>
@@ -291,11 +300,12 @@ export function Customers({ data, updateData }: CustomersProps) {
             </tbody>
           </table>
         </div>
+        </div>
       </div>
 
       {/* Add Customer Modal */}
       {isAddModalOpen && (
-        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-200">
             <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between z-10">
               <h3 className="text-lg font-bold text-gray-900">

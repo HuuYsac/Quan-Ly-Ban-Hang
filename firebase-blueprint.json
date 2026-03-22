@@ -11,12 +11,150 @@
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["uid", "email", "phone", "createdAt"]
+    },
+    "Customer": {
+      "title": "Customer",
+      "description": "Customer information",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "type": { "type": "string", "enum": ["ca-nhan", "doanh-nghiep"] },
+        "phone": { "type": "string" },
+        "email": { "type": "string" },
+        "address": { "type": "string" },
+        "debt": { "type": "number" },
+        "companyName": { "type": "string" },
+        "department": { "type": "string" },
+        "taxCode": { "type": "string" },
+        "notes": { "type": "string" },
+        "totalOrders": { "type": "number" },
+        "tags": { "type": "array", "items": { "type": "string" } },
+        "devices": { "type": "array", "items": { "type": "object" } }
+      },
+      "required": ["id", "name", "type", "phone", "email", "address", "debt"]
+    },
+    "Supplier": {
+      "title": "Supplier",
+      "description": "Supplier information",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "phone": { "type": "string" },
+        "email": { "type": "string" },
+        "address": { "type": "string" },
+        "products": { "type": "string" },
+        "debt": { "type": "number" }
+      },
+      "required": ["id", "name", "phone", "email", "address", "products", "debt"]
+    },
+    "Product": {
+      "title": "Product",
+      "description": "Product information",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "category": { "type": "string" },
+        "price": { "type": "number" },
+        "importPrice": { "type": "number" },
+        "stock": { "type": "number" },
+        "minStock": { "type": "number" },
+        "supplier": { "type": "string" }
+      },
+      "required": ["id", "name", "category", "price", "stock", "minStock"]
+    },
+    "Category": {
+      "title": "Category",
+      "description": "Product category",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "parent": { "type": "string" }
+      },
+      "required": ["id", "name"]
+    },
+    "Order": {
+      "title": "Order",
+      "description": "Sales order",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "customerId": { "type": "string" },
+        "customerName": { "type": "string" },
+        "date": { "type": "string" },
+        "time": { "type": "string" },
+        "products": { "type": "array", "items": { "type": "object" } },
+        "total": { "type": "number" },
+        "status": { "type": "string" },
+        "paymentMethod": { "type": "string" },
+        "paymentStatus": { "type": "string" }
+      },
+      "required": ["id", "customerId", "customerName", "date", "time", "products", "total", "status", "paymentMethod", "paymentStatus"]
+    },
+    "ShopInfo": {
+      "title": "ShopInfo",
+      "description": "Shop information",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "address": { "type": "string" },
+        "phone": { "type": "string" },
+        "email": { "type": "string" },
+        "taxCode": { "type": "string" },
+        "website": { "type": "string" },
+        "bankAccount": { "type": "string" },
+        "bankName": { "type": "string" }
+      }
+    },
+    "Settings": {
+      "title": "Settings",
+      "description": "App settings",
+      "type": "object",
+      "properties": {
+        "currency": { "type": "string" },
+        "dateFormat": { "type": "string" },
+        "theme": { "type": "string" },
+        "notifications": { "type": "boolean" },
+        "autoBackup": { "type": "boolean" },
+        "invoiceTemplate": { "type": "string" }
+      }
     }
   },
   "firestore": {
     "users/{userId}": {
       "schema": { "$ref": "#/entities/User" },
       "description": "Stores user profiles"
+    },
+    "users/{userId}/customers/{customerId}": {
+      "schema": { "$ref": "#/entities/Customer" },
+      "description": "User's customers"
+    },
+    "users/{userId}/suppliers/{supplierId}": {
+      "schema": { "$ref": "#/entities/Supplier" },
+      "description": "User's suppliers"
+    },
+    "users/{userId}/products/{productId}": {
+      "schema": { "$ref": "#/entities/Product" },
+      "description": "User's products"
+    },
+    "users/{userId}/categories/{categoryId}": {
+      "schema": { "$ref": "#/entities/Category" },
+      "description": "User's categories"
+    },
+    "users/{userId}/orders/{orderId}": {
+      "schema": { "$ref": "#/entities/Order" },
+      "description": "User's orders"
+    },
+    "users/{userId}/config/shopInfo": {
+      "schema": { "$ref": "#/entities/ShopInfo" },
+      "description": "User's shop info"
+    },
+    "users/{userId}/config/settings": {
+      "schema": { "$ref": "#/entities/Settings" },
+      "description": "User's app settings"
     }
   }
 }

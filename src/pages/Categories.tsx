@@ -72,8 +72,9 @@ export function Categories({ data, updateData }: CategoriesProps) {
   };
 
   return (
-    <div className="animate-in fade-in duration-500">
-      {/* Stats */}
+    <div>
+      <div className="animate-in fade-in duration-500">
+        {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
         <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100 flex items-center justify-between border-l-4 border-l-blue-500">
           <div>
@@ -162,11 +163,12 @@ export function Categories({ data, updateData }: CategoriesProps) {
             </tbody>
           </table>
         </div>
+        </div>
       </div>
 
       {/* Add Category Modal */}
       {isAddModalOpen && (
-        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-200">
             <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between z-10">
               <h3 className="text-lg font-bold text-gray-900">

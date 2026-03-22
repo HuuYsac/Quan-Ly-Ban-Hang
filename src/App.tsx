@@ -17,6 +17,9 @@ import { Debts } from './pages/Debts';
 import { Reports } from './pages/Reports';
 import { Settings } from './pages/Settings';
 import { CompanyInfo } from './pages/CompanyInfo';
+import { CSKH } from './pages/CSKH';
+import Warranty from './pages/Warranty';
+import Repairs from './pages/Repairs';
 import { useAppStore } from './hooks/useAppStore';
 import { Auth } from './pages/Auth';
 import { auth } from './firebase';
@@ -25,16 +28,16 @@ import { Mail, LogOut, RefreshCw } from 'lucide-react';
 
 export default function App() {
   const [activePage, setActivePage] = useState('dashboard');
-  const { data, updateData } = useAppStore();
+  const { data, updateData, loading: dataLoading, addItem } = useAppStore();
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [authLoading, setAuthLoading] = useState(true);
   const [resending, setResending] = useState(false);
   const [resendMessage, setResendMessage] = useState('');
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
-      setLoading(false);
+      setAuthLoading(false);
     });
     return () => unsubscribe();
   }, []);
@@ -57,10 +60,13 @@ export default function App() {
     await auth.signOut();
   };
 
-  if (loading) {
+  if (authLoading || (user && dataLoading)) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <div className="w-10 h-10 border-4 border-blue-600/30 border-t-blue-600 rounded-full animate-spin" />
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-10 h-10 border-4 border-blue-600/30 border-t-blue-600 rounded-full animate-spin" />
+          <p className="text-sm text-gray-500 font-medium animate-pulse">Đang tải dữ liệu...</p>
+        </div>
       </div>
     );
   }
@@ -123,6 +129,9 @@ export default function App() {
       case 'debts': return { title: 'Quản lý Công nợ', subtitle: 'Theo dõi công nợ khách hàng và nhà cung cấp' };
       case 'orders': return { title: 'Quản lý Đơn hàng', subtitle: 'Danh sách và xử lý đơn hàng' };
       case 'reports': return { title: 'Báo cáo', subtitle: 'Thống kê doanh thu và hoạt động' };
+      case 'cskh': return { title: 'Chăm sóc khách hàng (CSKH)', subtitle: 'Tự động hóa thông báo và chăm sóc khách hàng định kỳ' };
+      case 'warranty': return { title: 'Quản lý Bảo hành', subtitle: 'Theo dõi và kiểm tra thời hạn bảo hành sản phẩm' };
+      case 'repairs': return { title: 'Quản lý Sửa chữa', subtitle: 'Theo dõi tiến độ sửa chữa và bảo hành thiết bị' };
       case 'settings': return { title: 'Cài đặt hệ thống', subtitle: 'Tùy chỉnh hệ thống và giao diện' };
       case 'company-info': return { title: 'Thông tin Shop', subtitle: 'Cập nhật thông tin cửa hàng/doanh nghiệp' };
       default: return { title: 'Đang phát triển', subtitle: 'Tính năng này sẽ sớm ra mắt' };
@@ -146,9 +155,15 @@ export default function App() {
       case 'debts':
         return <Debts data={data} updateData={updateData} />;
       case 'orders':
-        return <Orders data={data} updateData={updateData} />;
+        return <Orders data={data} updateData={updateData} addItem={addItem} />;
       case 'reports':
         return <Reports data={data} updateData={updateData} />;
+      case 'cskh':
+        return <CSKH data={data} updateData={updateData} />;
+      case 'warranty':
+        return <Warranty />;
+      case 'repairs':
+        return <Repairs />;
       case 'settings':
         return <Settings data={data} updateData={updateData} />;
       case 'company-info':
@@ -168,12 +183,12 @@ export default function App() {
 
   return (
     <div className="flex min-h-screen bg-slate-50 font-sans text-gray-900">
-      <Sidebar activePage={activePage} setActivePage={setActivePage} />
+      <Sidebar activePage={activePage} setActivePage={setActivePage} data={data} />
       
-      <div className="flex-1 ml-64 flex flex-col min-h-screen">
+      <div className="flex-1 ml-64 flex flex-col min-h-screen print:ml-0">
         <Header title={title} subtitle={subtitle} onNavigate={setActivePage} />
         
-        <main className="flex-1 p-8 max-w-7xl mx-auto w-full">
+        <main className="flex-1 p-8 max-w-7xl mx-auto w-full print:p-0">
           {renderPage()}
         </main>
       </div>

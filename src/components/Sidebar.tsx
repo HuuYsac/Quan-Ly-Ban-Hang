@@ -8,20 +8,26 @@ import {
   ClipboardList, 
   CreditCard, 
   ShoppingCart, 
+  HeartHandshake,
+  ShieldCheck,
+  Wrench,
   BarChart3, 
   Settings, 
   Building,
-  LogOut
+  LogOut,
+  Store
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { auth } from '../firebase';
+import { AppData } from '../types';
 
 interface SidebarProps {
   activePage: string;
   setActivePage: (page: string) => void;
+  data: AppData;
 }
 
-export function Sidebar({ activePage, setActivePage }: SidebarProps) {
+export function Sidebar({ activePage, setActivePage, data }: SidebarProps) {
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, section: 'Tổng quan' },
     { id: 'customers', label: 'Khách hàng', icon: Users, section: 'Quản lý cơ bản' },
@@ -31,6 +37,9 @@ export function Sidebar({ activePage, setActivePage }: SidebarProps) {
     { id: 'inventory', label: 'Kho hàng', icon: ClipboardList, section: 'Quản lý cơ bản' },
     { id: 'debts', label: 'Công nợ', icon: CreditCard, section: 'Nghiệp vụ' },
     { id: 'orders', label: 'Quản lý đơn hàng', icon: ShoppingCart, section: 'Nghiệp vụ' },
+    { id: 'warranty', label: 'Quản lý bảo hành', icon: ShieldCheck, section: 'Nghiệp vụ' },
+    { id: 'repairs', label: 'Quản lý sửa chữa', icon: Wrench, section: 'Nghiệp vụ' },
+    { id: 'cskh', label: 'Chăm sóc khách hàng', icon: HeartHandshake, section: 'Nghiệp vụ' },
     { id: 'reports', label: 'Báo cáo', icon: BarChart3, section: 'Báo cáo' },
     { id: 'settings', label: 'Cài đặt', icon: Settings, section: 'Hệ thống' },
     { id: 'company-info', label: 'Thông Tin Shop', icon: Building, section: 'Hệ thống' },
@@ -45,15 +54,26 @@ export function Sidebar({ activePage, setActivePage }: SidebarProps) {
   };
 
   return (
-    <div className="w-64 bg-white shadow-lg flex flex-col fixed h-screen z-10">
+    <div className="w-64 bg-white shadow-lg flex flex-col fixed h-screen z-10 print:hidden">
       <div className="p-6 bg-gradient-to-br from-blue-800 to-blue-500 text-white text-center">
         <div className="flex items-center justify-center gap-3 mb-2">
-          <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center text-2xl">
-            📋
-          </div>
+          {data.shopInfo?.logo ? (
+            <div className="w-16 h-16 bg-white rounded-xl flex items-center justify-center overflow-hidden shadow-inner p-2">
+              <img 
+                src={data.shopInfo.logo} 
+                alt="Shop Logo" 
+                className="w-full h-full object-contain"
+                referrerPolicy="no-referrer"
+              />
+            </div>
+          ) : (
+            <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center text-2xl">
+              <Store size={24} />
+            </div>
+          )}
         </div>
-        <h1 className="text-xl font-bold m-0">Hữu Laptop</h1>
-        <p className="text-sm opacity-90">Quản lý bán hàng offline</p>
+        <h1 className="text-xl font-bold m-0 truncate">{data.shopInfo?.name || 'Hữu Laptop'}</h1>
+        <p className="text-sm opacity-90">Hệ thống quản lý</p>
       </div>
 
       <nav className="flex-1 p-4 overflow-y-auto">

@@ -188,7 +188,8 @@ export const initialData: AppData = {
     taxCode: '0312345678',
     website: 'www.shopcongnghe.vn',
     bankAccount: '19031234567890',
-    bankName: 'Techcombank - CN Quận 1'
+    bankName: 'Techcombank - CN Quận 1',
+    logo: ''
   },
   settings: {
     currency: 'VND',
@@ -197,5 +198,6 @@ export const initialData: AppData = {
     notifications: true,
     autoBackup: true,
     invoiceTemplate: 'standard'
-  }
+  },
+  repairs: []
 };

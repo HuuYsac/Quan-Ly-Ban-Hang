@@ -65,7 +65,31 @@ export interface OrderItem {
   quantity: number;
   price: number;
   discount?: number;
+  discountType?: 'percent' | 'amount';
   subtotal?: number;
+  serviceTag?: string;
+  cpu?: string;
+  ram?: string;
+  ssd?: string;
+  screen?: string;
+  purchaseDate?: string;
+  warrantyMonths?: number;
+}
+
+export interface Repair {
+  id: string;
+  customerId: string;
+  customerName: string;
+  customerPhone: string;
+  productName: string;
+  serviceTag: string;
+  issue: string;
+  receivedDate: string;
+  returnDate?: string;
+  technician?: string;
+  status: 'Đang sửa' | 'Đã xong' | 'Đã trả khách' | 'Hủy';
+  notes?: string;
+  createdAt: string;
 }
 
 export interface Order {
@@ -100,6 +124,7 @@ export interface ShopInfo {
   website: string;
   bankAccount: string;
   bankName: string;
+  logo?: string;
 }
 
 export interface Settings {
@@ -111,13 +136,21 @@ export interface Settings {
   invoiceTemplate: string;
 }
 
+export interface CSKHSettings {
+  milestone1: number; // days
+  milestone2: number; // months
+  milestone3: number; // months
+}
+
 export interface AppData {
   customers: Customer[];
   suppliers: Supplier[];
   products: Product[];
   categories: Category[];
   orders: Order[];
+  repairs: Repair[];
   sales: Sale[];
   shopInfo: ShopInfo;
   settings: Settings;
+  cskhSettings?: CSKHSettings;
 }

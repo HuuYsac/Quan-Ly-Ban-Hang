@@ -9,7 +9,7 @@ interface HeaderProps {
 
 export function Header({ title, subtitle, onNavigate }: HeaderProps) {
   return (
-    <header className="bg-white px-8 py-5 border-b border-gray-200 flex justify-between items-center sticky top-0 z-10">
+    <header className="bg-white px-8 py-5 border-b border-gray-200 flex justify-between items-center sticky top-0 z-10 print:hidden">
       <div>
         <h1 className="text-2xl font-bold text-gray-900">{title}</h1>
         <p className="text-sm text-gray-500 mt-1">{subtitle}</p>
