@@ -116,28 +116,38 @@ export function useAppStore() {
 
           // If owner, seed shared collections if they are empty
           if (isOwner) {
-            const customersSnap = await getDocs(query(collection(db, 'customers'), limit(1)));
-            if (customersSnap.empty) {
+            const shopInfoSnap = await getDoc(doc(db, 'config', 'shopInfo'));
+            if (!shopInfoSnap.exists()) {
               const seedBatch = writeBatch(db);
               
-              initialData.customers.forEach(c => seedBatch.set(doc(db, 'customers', c.id), c));
-              initialData.suppliers.forEach(s => seedBatch.set(doc(db, 'suppliers', s.id), s));
-              initialData.products.forEach(p => seedBatch.set(doc(db, 'products', p.id), p));
-              initialData.categories.forEach(cat => seedBatch.set(doc(db, 'categories', cat.id), cat));
-              initialData.orders.forEach(o => seedBatch.set(doc(db, 'orders', o.id), o));
-              initialData.repairs.forEach(r => seedBatch.set(doc(db, 'repairs', r.id), r));
-              initialData.leads.forEach(l => seedBatch.set(doc(db, 'leads', l.id), l));
-              initialData.careTasks.forEach(ct => seedBatch.set(doc(db, 'careTasks', ct.id), ct));
-              initialData.sales.forEach(s => seedBatch.set(doc(db, 'sales', s.id), s));
-              initialData.promotions.forEach(p => seedBatch.set(doc(db, 'promotions', p.id), p));
+              // Seed minimal config only
+              seedBatch.set(doc(db, 'config', 'shopInfo'), {
+                name: 'Hữu Laptop',
+                address: '',
+                phone: '',
+                email: '',
+                taxCode: '',
+                website: '',
+                bankAccount: '',
+                bankName: '',
+                logo: ''
+              });
               
-              seedBatch.set(doc(db, 'config', 'shopInfo'), initialData.shopInfo);
-              seedBatch.set(doc(db, 'config', 'settings'), initialData.settings);
+              seedBatch.set(doc(db, 'config', 'settings'), {
+                currency: 'VND',
+                dateFormat: 'DD/MM/YYYY',
+                theme: 'light',
+                notifications: true,
+                autoBackup: true,
+                invoiceTemplate: 'standard'
+              });
+
               seedBatch.set(doc(db, 'config', 'cskhSettings'), {
                 milestone1: 7,
                 milestone2: 3,
                 milestone3: 6
               });
+
               seedBatch.set(doc(db, 'config', 'notificationSettings'), {
                 zaloAccessToken: '',
                 zaloOaId: '',
@@ -351,7 +361,12 @@ export function useAppStore() {
   };
 
   const resetDatabase = async () => {
-    if (!user || user.email !== 'dieuhuu1995@gmail.com') return;
+    if (!user) return;
+    
+    const userDoc = await getDoc(doc(db, 'users', user.uid));
+    const isAdmin = user.email === 'dieuhuu1995@gmail.com' || user.email === 'huulaptop.info@gmail.com' || userDoc.data()?.role === 'admin';
+    
+    if (!isAdmin) return;
     
     setLoading(true);
     try {
@@ -369,24 +384,32 @@ export function useAppStore() {
         await batch.commit();
       }
 
-      // Re-seed
+      // Re-seed with blank data
       const seedBatch = writeBatch(db);
-      initialData.customers.forEach(c => seedBatch.set(doc(db, 'customers', c.id), c));
-      initialData.suppliers.forEach(s => seedBatch.set(doc(db, 'suppliers', s.id), s));
-      initialData.products.forEach(p => seedBatch.set(doc(db, 'products', p.id), p));
-      initialData.categories.forEach(cat => seedBatch.set(doc(db, 'categories', cat.id), cat));
-      initialData.orders.forEach(o => seedBatch.set(doc(db, 'orders', o.id), o));
-      initialData.repairs.forEach(r => seedBatch.set(doc(db, 'repairs', r.id), r));
-      initialData.leads.forEach(l => seedBatch.set(doc(db, 'leads', l.id), l));
-      initialData.careTasks.forEach(ct => seedBatch.set(doc(db, 'careTasks', ct.id), ct));
-      initialData.sales.forEach(s => seedBatch.set(doc(db, 'sales', s.id), s));
-      initialData.promotions.forEach(p => seedBatch.set(doc(db, 'promotions', p.id), p));
       
-      seedBatch.set(doc(db, 'config', 'shopInfo'), initialData.shopInfo);
-      seedBatch.set(doc(db, 'config', 'settings'), initialData.settings);
+      seedBatch.set(doc(db, 'config', 'shopInfo'), {
+        name: 'Hữu Laptop',
+        address: '',
+        phone: '',
+        email: '',
+        taxCode: '',
+        website: '',
+        bankAccount: '',
+        bankName: '',
+        logo: ''
+      });
+
+      seedBatch.set(doc(db, 'config', 'settings'), {
+        currency: 'VND',
+        dateFormat: 'DD/MM/YYYY',
+        theme: 'light',
+        notifications: true,
+        autoBackup: true,
+        invoiceTemplate: 'standard'
+      });
       
       await seedBatch.commit();
-      console.log('Database reset successfully');
+      console.log('Database reset successfully to blank state');
     } catch (error) {
       console.error('Error resetting database:', error);
     } finally {

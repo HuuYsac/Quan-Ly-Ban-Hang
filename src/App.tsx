@@ -222,7 +222,7 @@ export default function App() {
         if (!isStaffOrAdmin) return <AccessDenied />;
         return <Customers data={data} updateData={updateData} />;
       case 'suppliers':
-        if (!isStaffOrAdmin) return <AccessDenied />;
+        if (!isAdmin) return <AccessDenied />;
         return <Suppliers data={data} updateData={updateData} isAdmin={isAdmin} />;
       case 'products':
         if (!isStaffOrAdmin) return <AccessDenied />;
@@ -253,7 +253,7 @@ export default function App() {
         return <Repairs />;
       case 'settings':
         if (!isAdmin) return <AccessDenied />;
-        return <Settings data={data} updateData={updateData} resetDatabase={resetDatabase} />;
+        return <Settings data={data} updateData={updateData} resetDatabase={resetDatabase} isAdmin={isAdmin} />;
       case 'company-info':
         if (!isAdmin) return <AccessDenied />;
         return <CompanyInfo data={data} updateData={updateData} />;

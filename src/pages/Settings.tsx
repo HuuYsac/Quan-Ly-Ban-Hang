@@ -3,14 +3,16 @@ import { AppData, Settings as SettingsType } from '../types';
 import { Settings as SettingsIcon, DollarSign, Calendar, Moon, Sun, Monitor, Bell, HardDrive, FileText, Save, CheckCircle2, Users as UsersIcon, ShieldCheck, ShieldX, Trash2 } from 'lucide-react';
 import { auth, db } from '../firebase';
 import { collection, getDocs, doc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { ConfirmModal } from '../components/Notification';
 
 interface SettingsProps {
   data: AppData;
   updateData: (newData: Partial<AppData>) => void;
   resetDatabase?: () => Promise<void>;
+  isAdmin: boolean;
 }
 
-export function Settings({ data, updateData, resetDatabase }: SettingsProps) {
+export function Settings({ data, updateData, resetDatabase, isAdmin }: SettingsProps) {
   const [formData, setFormData] = useState<SettingsType>(
     data.settings || {
       currency: 'VND',
@@ -25,7 +27,8 @@ export function Settings({ data, updateData, resetDatabase }: SettingsProps) {
   const [showSuccess, setShowSuccess] = useState(false);
   const [users, setUsers] = useState<any[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
-  const isAdmin = auth.currentUser?.email === 'dieuhuu1995@gmail.com' || auth.currentUser?.email === 'huulaptop.info@gmail.com';
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<string | null>(null);
 
   useEffect(() => {
     if (isAdmin) {
@@ -61,13 +64,18 @@ export function Settings({ data, updateData, resetDatabase }: SettingsProps) {
   };
 
   const deleteUser = async (userId: string) => {
-    if (window.confirm('Bạn có chắc chắn muốn xóa người dùng này?')) {
-      try {
-        await deleteDoc(doc(db, 'users', userId));
-        setUsers(prev => prev.filter(u => u.id !== userId));
-      } catch (error) {
-        console.error('Error deleting user:', error);
-      }
+    setUserToDelete(userId);
+  };
+
+  const confirmDeleteUser = async () => {
+    if (!userToDelete) return;
+    try {
+      await deleteDoc(doc(db, 'users', userToDelete));
+      setUsers(prev => prev.filter(u => u.id === userToDelete ? false : true));
+    } catch (error) {
+      console.error('Error deleting user:', error);
+    } finally {
+      setUserToDelete(null);
     }
   };
 
@@ -371,11 +379,7 @@ export function Settings({ data, updateData, resetDatabase }: SettingsProps) {
                   </p>
                   <button
                     type="button"
-                    onClick={() => {
-                      if (window.confirm('CẢNH BÁO: Bạn có chắc chắn muốn XÓA SẠCH toàn bộ dữ liệu và khôi phục về mặc định?')) {
-                        resetDatabase?.();
-                      }
-                    }}
+                    onClick={() => setShowResetConfirm(true)}
                     className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium transition-colors shadow-sm shadow-red-600/20"
                   >
                     Xóa sạch & Khôi phục dữ liệu gốc
@@ -409,6 +413,29 @@ export function Settings({ data, updateData, resetDatabase }: SettingsProps) {
           </div>
         </form>
       </div>
+
+      <ConfirmModal
+        isOpen={showResetConfirm}
+        title="Xác nhận xóa sạch dữ liệu"
+        message="CẢNH BÁO: Bạn có chắc chắn muốn XÓA SẠCH toàn bộ dữ liệu và khôi phục về mặc định? Hành động này không thể hoàn tác."
+        onConfirm={async () => {
+          setShowResetConfirm(false);
+          await resetDatabase?.();
+        }}
+        onCancel={() => setShowResetConfirm(false)}
+        confirmText="Xóa sạch dữ liệu"
+        type="danger"
+      />
+
+      <ConfirmModal
+        isOpen={!!userToDelete}
+        title="Xác nhận xóa người dùng"
+        message="Bạn có chắc chắn muốn xóa người dùng này khỏi hệ thống?"
+        onConfirm={confirmDeleteUser}
+        onCancel={() => setUserToDelete(null)}
+        confirmText="Xóa người dùng"
+        type="danger"
+      />
     </div>
   );
 }
