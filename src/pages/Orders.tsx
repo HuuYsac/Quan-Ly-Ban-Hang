@@ -1058,14 +1058,14 @@ export function Orders({ data, updateData, addItem, isAdmin }: OrdersProps) {
                   {orderItems.map((item, index) => (
                     <div key={index} className="bg-gray-50 p-3 sm:p-4 rounded-xl border border-gray-100 space-y-4">
                       <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
-                        <div className="sm:col-span-5">
+                        <div className="sm:col-span-6">
                           <label className="block text-xs text-gray-500 mb-1 font-bold uppercase">Sản phẩm *</label>
                           <div className="flex gap-2">
                             <select 
                               required
                               value={item.productId}
                               onChange={e => handleItemChange(index, 'productId', e.target.value)}
-                              className="flex-1 px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm"
+                              className="flex-1 min-w-0 px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm"
                             >
                               <option value="">Chọn sản phẩm</option>
                               {data.products.map(p => (
@@ -1093,8 +1093,8 @@ export function Orders({ data, updateData, addItem, isAdmin }: OrdersProps) {
                           </div>
                         </div>
                         
-                        <div className="grid grid-cols-3 sm:col-span-6 gap-2">
-                          <div>
+                        <div className="grid grid-cols-5 sm:col-span-5 gap-2">
+                          <div className="col-span-1">
                             <label className="block text-xs text-gray-500 mb-1 font-bold uppercase">SL</label>
                             <input 
                               type="number" required min="1"
@@ -1104,7 +1104,7 @@ export function Orders({ data, updateData, addItem, isAdmin }: OrdersProps) {
                             />
                           </div>
 
-                          <div className="col-span-2 flex gap-1">
+                          <div className="col-span-4 flex gap-1">
                             <div className="flex-1">
                               <label className="block text-xs text-gray-500 mb-1 font-bold uppercase">Giảm giá</label>
                               <input 
