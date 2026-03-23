@@ -135,7 +135,7 @@ export function Suppliers({ data, updateData }: SuppliersProps) {
         </div>
 
         {/* Table */}
-        <div className="overflow-x-auto">
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-gray-50 text-gray-500 text-sm uppercase tracking-wider">
@@ -179,37 +179,80 @@ export function Suppliers({ data, updateData }: SuppliersProps) {
                   </td>
                 </tr>
               ))}
-              {filteredSuppliers.length === 0 && (
-                <tr>
-                  <td colSpan={4} className="p-8 text-center text-gray-500">
-                    Không tìm thấy nhà cung cấp nào.
-                  </td>
-                </tr>
-              )}
             </tbody>
           </table>
         </div>
+
+        {/* Mobile Cards */}
+        <div className="md:hidden divide-y divide-gray-100">
+          {filteredSuppliers.map((supplier) => (
+            <div key={supplier.id} className="p-4 space-y-3">
+              <div className="flex items-start justify-between">
+                <div>
+                  <div className="font-medium text-gray-900">{supplier.name}</div>
+                  <div className="text-xs text-gray-500 mt-1">{supplier.id}</div>
+                </div>
+                <div className="flex items-center gap-1">
+                  <button 
+                    onClick={() => handleEdit(supplier)}
+                    className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
+                  >
+                    <Edit size={18} />
+                  </button>
+                  <button 
+                    onClick={() => handleDelete(supplier.id)}
+                    className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                  >
+                    <Trash2 size={18} />
+                  </button>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 gap-2 text-sm">
+                <div className="flex items-center gap-2 text-gray-700">
+                  <span className="text-gray-400 w-5">📞</span>
+                  <span>{supplier.phone}</span>
+                </div>
+                <div className="flex items-center gap-2 text-gray-700">
+                  <span className="text-gray-400 w-5">✉️</span>
+                  <span className="truncate">{supplier.email}</span>
+                </div>
+                <div className="mt-1">
+                  <p className="text-gray-500 text-xs uppercase tracking-wider mb-1">Sản phẩm cung cấp</p>
+                  <div className="text-sm text-gray-700 bg-gray-100 px-3 py-1 rounded-full inline-block">
+                    {supplier.products}
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+          {filteredSuppliers.length === 0 && (
+            <div className="p-8 text-center text-gray-500 text-sm">
+              Không tìm thấy nhà cung cấp nào.
+            </div>
+          )}
         </div>
       </div>
+    </div>
 
-      {/* Add Supplier Modal */}
-      {isAddModalOpen && (
-        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-200">
-            <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between z-10">
-              <h3 className="text-lg font-bold text-gray-900">
-                {editingId ? 'Chỉnh sửa nhà cung cấp' : 'Thêm nhà cung cấp mới'}
-              </h3>
-              <button 
-                onClick={() => {
-                  setIsAddModalOpen(false);
-                  setEditingId(null);
-                }}
-                className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
-              >
-                <X size={20} />
-              </button>
-            </div>
+    {/* Add Supplier Modal */}
+    {isAddModalOpen && (
+      <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-[100] sm:p-4">
+        <div className="bg-white sm:rounded-2xl shadow-xl w-full max-w-2xl h-full sm:h-auto sm:max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-200">
+          <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between z-10">
+            <h3 className="text-lg font-bold text-gray-900">
+              {editingId ? 'Chỉnh sửa nhà cung cấp' : 'Thêm nhà cung cấp mới'}
+            </h3>
+            <button 
+              onClick={() => {
+                setIsAddModalOpen(false);
+                setEditingId(null);
+              }}
+              className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
+            >
+              <X size={20} />
+            </button>
+          </div>
             
             <form onSubmit={handleSubmit} className="p-6 space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

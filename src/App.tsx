@@ -18,6 +18,7 @@ import { Reports } from './pages/Reports';
 import { Settings } from './pages/Settings';
 import { CompanyInfo } from './pages/CompanyInfo';
 import { CRM } from './pages/CRM';
+import { Members } from './pages/Members';
 import Warranty from './pages/Warranty';
 import Repairs from './pages/Repairs';
 import { useAppStore } from './hooks/useAppStore';
@@ -31,6 +32,7 @@ export default function App() {
   const { data, updateData, loading: dataLoading, addItem } = useAppStore();
   const [user, setUser] = useState<User | null>(null);
   const [isApproved, setIsApproved] = useState<boolean | null>(null);
+  const [isAdmin, setIsAdmin] = useState<boolean>(false);
   const [authLoading, setAuthLoading] = useState(true);
   const [resending, setResending] = useState(false);
   const [resendMessage, setResendMessage] = useState('');
@@ -43,16 +45,21 @@ export default function App() {
         const { doc, getDoc } = await import('firebase/firestore');
         const { db } = await import('./firebase');
         const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
+        const ownerEmail = 'dieuhuu1995@gmail.com';
         if (userDoc.exists()) {
-          setIsApproved(userDoc.data().approved !== false);
+          const userData = userDoc.data();
+          setIsApproved(userData.approved !== false);
+          setIsAdmin(currentUser.email === ownerEmail || userData.role === 'admin');
         } else {
           // If doc doesn't exist yet (just registered), it will be created with approved: false
           // unless it's the owner
-          const ownerEmail = 'dieuhuu1995@gmail.com';
-          setIsApproved(currentUser.email === ownerEmail);
+          const isOwner = currentUser.email === ownerEmail;
+          setIsApproved(isOwner);
+          setIsAdmin(isOwner);
         }
       } else {
         setIsApproved(null);
+        setIsAdmin(false);
       }
       setAuthLoading(false);
     });
@@ -166,6 +173,7 @@ export default function App() {
   const getPageTitle = () => {
     switch (activePage) {
       case 'dashboard': return { title: 'Hệ thống Quản lý', subtitle: 'Quản lý bán hàng doanh nghiệp Việt Nam' };
+      case 'members': return { title: 'Quản lý Thành viên', subtitle: 'Phê duyệt và quản lý quyền hạn thành viên' };
       case 'customers': return { title: 'Quản lý Khách hàng', subtitle: 'Hồ sơ, thiết bị và lịch sử bảo hành' };
       case 'suppliers': return { title: 'Quản lý Nhà cung cấp', subtitle: 'Danh sách và thông tin nhà cung cấp' };
       case 'products': return { title: 'Quản lý Sản phẩm', subtitle: 'Danh mục và kho hàng sản phẩm' };
@@ -187,6 +195,8 @@ export default function App() {
     switch (activePage) {
       case 'dashboard':
         return <Dashboard data={data} onNavigate={setActivePage} />;
+      case 'members':
+        return <Members />;
       case 'customers':
         return <Customers data={data} updateData={updateData} />;
       case 'suppliers':
@@ -228,7 +238,7 @@ export default function App() {
 
   return (
     <div className="flex min-h-screen bg-slate-50 font-sans text-gray-900">
-      <Sidebar activePage={activePage} setActivePage={setActivePage} data={data} />
+      <Sidebar activePage={activePage} setActivePage={setActivePage} data={data} isAdmin={isAdmin} />
       
       <div className="flex-1 ml-64 flex flex-col min-h-screen print:ml-0">
         <Header title={title} subtitle={subtitle} onNavigate={setActivePage} />

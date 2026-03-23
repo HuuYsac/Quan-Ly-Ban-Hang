@@ -43,11 +43,14 @@ export function Auth() {
 
         // Create user profile in Firestore
         const ownerEmail = 'dieuhuu1995@gmail.com';
+        const isAdmin = user.email === ownerEmail;
         await setDoc(doc(db, 'users', user.uid), {
           uid: user.uid,
           email: user.email,
           phone: phone,
-          approved: user.email === ownerEmail,
+          role: isAdmin ? 'admin' : 'user',
+          position: isAdmin ? 'Quản trị viên hệ thống' : '',
+          approved: isAdmin,
           createdAt: new Date().toISOString()
         });
 

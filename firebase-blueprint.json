@@ -8,9 +8,12 @@
         "uid": { "type": "string" },
         "email": { "type": "string", "format": "email" },
         "phone": { "type": "string" },
+        "role": { "type": "string", "enum": ["admin", "user"] },
+        "position": { "type": "string" },
+        "approved": { "type": "boolean" },
         "createdAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["uid", "email", "phone", "createdAt"]
+      "required": ["uid", "email", "phone", "createdAt", "approved"]
     },
     "Customer": {
       "title": "Customer",
@@ -121,6 +124,36 @@
         "autoBackup": { "type": "boolean" },
         "invoiceTemplate": { "type": "string" }
       }
+    },
+    "NotificationSettings": {
+      "title": "Notification Settings",
+      "description": "Settings for Zalo and SMS notifications",
+      "type": "object",
+      "properties": {
+        "zaloAccessToken": { "type": "string" },
+        "zaloOaId": { "type": "string" },
+        "smsApiKey": { "type": "string" },
+        "smsProvider": { "type": "string", "enum": ["esms", "twilio", "other"] },
+        "autoSendWarranty": { "type": "boolean" },
+        "daysBeforeExpiry": { "type": "number" },
+        "messageTemplate": { "type": "string" }
+      }
+    },
+    "WarrantyNotification": {
+      "title": "Warranty Notification",
+      "description": "Record of a sent warranty notification",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "customerId": { "type": "string" },
+        "orderId": { "type": "string" },
+        "serviceTag": { "type": "string" },
+        "sentAt": { "type": "string", "format": "date-time" },
+        "status": { "type": "string", "enum": ["success", "failed"] },
+        "type": { "type": "string", "enum": ["zalo", "sms"] },
+        "message": { "type": "string" }
+      },
+      "required": ["id", "customerId", "sentAt", "status", "type"]
     }
   },
   "firestore": {
@@ -148,6 +181,10 @@
       "schema": { "$ref": "#/entities/Order" },
       "description": "User's orders"
     },
+    "users/{userId}/warrantyNotifications/{notificationId}": {
+      "schema": { "$ref": "#/entities/WarrantyNotification" },
+      "description": "History of sent warranty notifications"
+    },
     "users/{userId}/config/shopInfo": {
       "schema": { "$ref": "#/entities/ShopInfo" },
       "description": "User's shop info"
@@ -155,6 +192,10 @@
     "users/{userId}/config/settings": {
       "schema": { "$ref": "#/entities/Settings" },
       "description": "User's app settings"
+    },
+    "users/{userId}/config/notificationSettings": {
+      "schema": { "$ref": "#/entities/NotificationSettings" },
+      "description": "User's notification settings"
     }
   }
 }

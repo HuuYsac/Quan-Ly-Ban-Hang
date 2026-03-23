@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { AppData, Customer, Supplier, Product, Category, Order, ShopInfo, Settings, CSKHSettings } from '../types';
+import { AppData, Customer, Supplier, Product, Category, Order, ShopInfo, Settings, CSKHSettings, NotificationSettings, WarrantyNotification } from '../types';
 import { initialData } from '../data/mockData';
 import { db, auth } from '../firebase';
 import { 
@@ -92,6 +92,7 @@ export function useAppStore() {
     // Check if user data exists, if not, seed it
     const checkAndSeed = async () => {
       const docSnap = await getDoc(userRef);
+      let approved = false;
       if (!docSnap.exists()) {
         // New user, seed with initial data
         try {
@@ -134,14 +135,27 @@ export function useAppStore() {
             milestone2: 3,
             milestone3: 6
           });
+          batch.set(doc(db, 'users', user.uid, 'config', 'notificationSettings'), {
+            zaloAccessToken: '',
+            zaloOaId: '',
+            smsApiKey: '',
+            smsProvider: 'esms',
+            autoSendWarranty: false,
+            daysBeforeExpiry: 7,
+            messageTemplate: 'Chào {customerName}, sản phẩm {productName} (S/N: {serviceTag}) của bạn sắp hết hạn bảo hành vào ngày {expiryDate}. Vui lòng liên hệ chúng tôi để được hỗ trợ.'
+          });
           
           // Create user profile
           const ownerEmail = 'dieuhuu1995@gmail.com';
+          const isAdmin = user.email === ownerEmail;
+          approved = isAdmin;
           batch.set(userRef, {
             uid: user.uid,
             email: user.email,
             phone: user.phoneNumber || '00000000',
-            approved: user.email === ownerEmail,
+            role: isAdmin ? 'admin' : 'user',
+            position: isAdmin ? 'Quản trị viên hệ thống' : '',
+            approved: isAdmin,
             createdAt: new Date().toISOString()
           });
 
@@ -149,67 +163,89 @@ export function useAppStore() {
         } catch (error) {
           console.error('Error seeding data:', error);
         }
+      } else {
+        approved = docSnap.data()?.approved === true;
       }
+      return approved;
     };
 
-    checkAndSeed();
+    const startSync = async () => {
+      const approved = await checkAndSeed();
+      
+      // Listen to collections
+      const unsubscribers: (() => void)[] = [];
 
-    // Listen to collections
-    const unsubscribers: (() => void)[] = [];
+      const syncCollection = (name: string, key: keyof AppData) => {
+        const colRef = collection(db, 'users', user.uid, name);
+        const unsub = onSnapshot(colRef, (snapshot) => {
+          const items = snapshot.docs.map(doc => doc.data());
+          setData(prev => ({ ...prev, [key]: items }));
+        }, (error) => {
+          handleFirestoreError(error, OperationType.GET, `users/${user.uid}/${name}`);
+        });
+        unsubscribers.push(unsub);
+      };
 
-    const syncCollection = (name: string, key: keyof AppData) => {
-      const colRef = collection(db, 'users', user.uid, name);
-      const unsub = onSnapshot(colRef, (snapshot) => {
-        const items = snapshot.docs.map(doc => doc.data());
-        setData(prev => ({ ...prev, [key]: items }));
+      syncCollection('customers', 'customers');
+      syncCollection('suppliers', 'suppliers');
+      syncCollection('products', 'products');
+      syncCollection('categories', 'categories');
+      syncCollection('orders', 'orders');
+      syncCollection('repairs', 'repairs');
+      syncCollection('leads', 'leads');
+      syncCollection('careTasks', 'careTasks');
+      syncCollection('sales', 'sales');
+      syncCollection('warrantyNotifications', 'warrantyNotifications');
+
+      // Listen to config
+      const unsubShop = onSnapshot(doc(db, 'users', user.uid, 'config', 'shopInfo'), (doc) => {
+        if (doc.exists()) {
+          setData(prev => ({ ...prev, shopInfo: doc.data() as ShopInfo }));
+        }
       }, (error) => {
-        handleFirestoreError(error, OperationType.GET, `users/${user.uid}/${name}`);
+        handleFirestoreError(error, OperationType.GET, `users/${user.uid}/config/shopInfo`);
       });
-      unsubscribers.push(unsub);
+      unsubscribers.push(unsubShop);
+
+      const unsubSettings = onSnapshot(doc(db, 'users', user.uid, 'config', 'settings'), (doc) => {
+        if (doc.exists()) {
+          setData(prev => ({ ...prev, settings: doc.data() as Settings }));
+        }
+        setLoading(false);
+      }, (error) => {
+        handleFirestoreError(error, OperationType.GET, `users/${user.uid}/config/settings`);
+        setLoading(false);
+      });
+      unsubscribers.push(unsubSettings);
+
+      const unsubCSKH = onSnapshot(doc(db, 'users', user.uid, 'config', 'cskhSettings'), (doc) => {
+        if (doc.exists()) {
+          setData(prev => ({ ...prev, cskhSettings: doc.data() as CSKHSettings }));
+        }
+      }, (error) => {
+        handleFirestoreError(error, OperationType.GET, `users/${user.uid}/config/cskhSettings`);
+      });
+      unsubscribers.push(unsubCSKH);
+
+      const unsubNotify = onSnapshot(doc(db, 'users', user.uid, 'config', 'notificationSettings'), (doc) => {
+        if (doc.exists()) {
+          setData(prev => ({ ...prev, notificationSettings: doc.data() as NotificationSettings }));
+        }
+      }, (error) => {
+        handleFirestoreError(error, OperationType.GET, `users/${user.uid}/config/notificationSettings`);
+      });
+      unsubscribers.push(unsubNotify);
+
+      return unsubscribers;
     };
 
-    syncCollection('customers', 'customers');
-    syncCollection('suppliers', 'suppliers');
-    syncCollection('products', 'products');
-    syncCollection('categories', 'categories');
-    syncCollection('orders', 'orders');
-    syncCollection('repairs', 'repairs');
-    syncCollection('leads', 'leads');
-    syncCollection('careTasks', 'careTasks');
-    syncCollection('sales', 'sales');
-
-    // Listen to config
-    const unsubShop = onSnapshot(doc(db, 'users', user.uid, 'config', 'shopInfo'), (doc) => {
-      if (doc.exists()) {
-        setData(prev => ({ ...prev, shopInfo: doc.data() as ShopInfo }));
-      }
-    }, (error) => {
-      handleFirestoreError(error, OperationType.GET, `users/${user.uid}/config/shopInfo`);
+    let currentUnsubscribers: (() => void)[] = [];
+    startSync().then(unsubs => {
+      currentUnsubscribers = unsubs;
     });
-    unsubscribers.push(unsubShop);
-
-    const unsubSettings = onSnapshot(doc(db, 'users', user.uid, 'config', 'settings'), (doc) => {
-      if (doc.exists()) {
-        setData(prev => ({ ...prev, settings: doc.data() as Settings }));
-      }
-      setLoading(false);
-    }, (error) => {
-      handleFirestoreError(error, OperationType.GET, `users/${user.uid}/config/settings`);
-      setLoading(false);
-    });
-    unsubscribers.push(unsubSettings);
-
-    const unsubCSKH = onSnapshot(doc(db, 'users', user.uid, 'config', 'cskhSettings'), (doc) => {
-      if (doc.exists()) {
-        setData(prev => ({ ...prev, cskhSettings: doc.data() as CSKHSettings }));
-      }
-    }, (error) => {
-      handleFirestoreError(error, OperationType.GET, `users/${user.uid}/config/cskhSettings`);
-    });
-    unsubscribers.push(unsubCSKH);
 
     return () => {
-      unsubscribers.forEach(unsub => unsub());
+      currentUnsubscribers.forEach(unsub => unsub());
     };
   }, [user]);
 
@@ -226,6 +262,9 @@ export function useAppStore() {
       }
       if (newData.cskhSettings) {
         await setDoc(doc(db, 'users', user.uid, 'config', 'cskhSettings'), newData.cskhSettings, { merge: true });
+      }
+      if (newData.notificationSettings) {
+        await setDoc(doc(db, 'users', user.uid, 'config', 'notificationSettings'), newData.notificationSettings, { merge: true });
       }
 
       // Handle collections
@@ -265,6 +304,7 @@ export function useAppStore() {
       await syncCollection('leads', 'leads');
       await syncCollection('careTasks', 'careTasks');
       await syncCollection('sales', 'sales');
+      await syncCollection('warrantyNotifications', 'warrantyNotifications');
 
     } catch (error) {
       console.error('Error updating data:', error);

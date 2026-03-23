@@ -549,8 +549,8 @@ export function Orders({ data, updateData, addItem }: OrdersProps) {
           </button>
         </div>
 
-        {/* Table */}
-        <div className="overflow-x-auto">
+        {/* Table/Cards */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-gray-50 text-gray-500 text-sm uppercase tracking-wider">
@@ -640,24 +640,98 @@ export function Orders({ data, updateData, addItem }: OrdersProps) {
             </tbody>
           </table>
         </div>
+
+        {/* Mobile Cards */}
+        <div className="md:hidden divide-y divide-gray-100">
+          {filteredOrders.map((order) => (
+            <div key={order.id} className="p-4 space-y-3">
+              <div className="flex justify-between items-start">
+                <div>
+                  <div className="font-bold text-gray-900">{order.id}</div>
+                  <div className="text-sm text-gray-600">{order.customerName}</div>
+                  <div className="text-xs text-gray-500">{order.date} {order.time}</div>
+                </div>
+                <div className="text-right">
+                  <div className="font-bold text-blue-600">{formatCurrency(order.total)}</div>
+                  <div className="mt-1">
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium
+                      ${order.status === 'Hoàn thành' ? 'bg-emerald-100 text-emerald-800' : 
+                        order.status === 'Hủy' ? 'bg-red-100 text-red-800' : 
+                        'bg-amber-100 text-amber-800'}`}
+                    >
+                      {order.status}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="flex items-center justify-between gap-2 pt-2">
+                <button 
+                  onClick={() => togglePaymentStatus(order.id)}
+                  className={`flex-1 py-1.5 rounded-lg text-xs font-semibold transition-colors
+                    ${order.paymentStatus === 'Đã thanh toán' 
+                      ? 'bg-emerald-500 text-white' 
+                      : 'bg-amber-500 text-white'}`}
+                >
+                  {order.paymentStatus === 'Đã thanh toán' ? '✓ Đã thanh toán' : 'Công nợ'}
+                </button>
+                <div className="flex gap-1">
+                  <button 
+                    onClick={() => {
+                      setViewOrder(order);
+                      setTimeout(handlePrint, 300);
+                    }}
+                    className="p-2 text-emerald-600 bg-emerald-50 rounded-lg border border-emerald-100"
+                  >
+                    <Printer size={16} />
+                  </button>
+                  <button 
+                    onClick={() => setViewOrder(order)}
+                    className="p-2 text-blue-600 bg-blue-50 rounded-lg border border-blue-100"
+                  >
+                    <Eye size={16} />
+                  </button>
+                  <button 
+                    onClick={() => handleEdit(order)}
+                    className="p-2 text-blue-600 bg-blue-50 rounded-lg border border-blue-100"
+                  >
+                    <Edit size={16} />
+                  </button>
+                  <button 
+                    onClick={() => setConfirmingDelete(order.id)}
+                    className="p-2 text-red-600 bg-red-50 rounded-lg border border-red-100"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+          {filteredOrders.length === 0 && (
+            <div className="p-8 text-center text-gray-500 text-sm">
+              Không tìm thấy đơn hàng nào.
+            </div>
+          )}
+        </div>
         </div>
       </div>
 
       {/* View Order Modal */}
       {viewOrder && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[9999] p-4 print:bg-white print:p-0 print:static print:block">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-200 print:shadow-none print:max-h-none print:overflow-visible print:w-full print:max-w-none relative">
-            <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between z-30 print:hidden">
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[9999] sm:p-4 print:bg-white print:p-0 print:static print:block">
+          <div className="bg-white sm:rounded-2xl shadow-2xl w-full max-w-3xl h-full sm:h-auto sm:max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-200 print:shadow-none print:max-h-none print:overflow-visible print:w-full print:max-w-none relative">
+            <div className="sticky top-0 bg-white border-b border-gray-100 px-4 sm:px-6 py-4 flex items-center justify-between z-30 print:hidden">
               <h3 className="text-lg font-bold text-gray-900">Chi tiết đơn hàng #{viewOrder.id}</h3>
               <div className="flex gap-2">
                 <button 
                   type="button"
                   onClick={handlePrint}
                   disabled={isPrinting}
-                  className="relative z-50 flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white rounded-lg font-medium transition-all shadow-lg shadow-emerald-600/20 cursor-pointer disabled:opacity-50"
+                  className="relative z-50 flex items-center gap-2 px-3 sm:px-4 py-2 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white rounded-lg font-medium transition-all shadow-lg shadow-emerald-600/20 cursor-pointer disabled:opacity-50 text-sm sm:text-base"
                 >
                   <Printer size={18} className={isPrinting ? 'animate-pulse' : ''} />
-                  <span>{isPrinting ? 'Đang chuẩn bị...' : 'In hóa đơn'}</span>
+                  <span className="hidden sm:inline">{isPrinting ? 'Đang chuẩn bị...' : 'In hóa đơn'}</span>
+                  <span className="sm:hidden">{isPrinting ? '...' : 'In'}</span>
                 </button>
                 <button 
                   type="button"
@@ -668,64 +742,72 @@ export function Orders({ data, updateData, addItem }: OrdersProps) {
                 </button>
               </div>
             </div>
-            <div className="p-6 print:p-0">
+            <div className="p-4 sm:p-6 print:p-0">
               {/* Print Layout (Hidden in UI, visible in print) */}
-              <div className="hidden print:block text-black font-serif p-8 bg-white min-h-screen print-container">
-                <div className="flex justify-between items-start mb-6">
-                  <div className="flex items-start gap-4">
+              <div className="hidden print:block text-black font-sans p-8 bg-white min-h-screen print-container">
+                {/* Header */}
+                <div className="flex justify-between items-center mb-8 border-b-2 border-blue-600 pb-6">
+                  <div className="flex items-center gap-6">
                     <img 
-                      src="https://storage.googleapis.com/static.antigravity.dev/dieuhuu1995@gmail.com/610176597039/dieuhuu1995@gmail.com_1742636402000_1.png" 
+                      src="/Logo Huu Laptop-01.png" 
                       alt="Shop Logo" 
-                      className="w-24 h-24 object-contain"
+                      className="w-32 h-32 object-contain"
                       referrerPolicy="no-referrer"
+                      onError={(e) => {
+                        if (data.shopInfo?.logo) {
+                          (e.target as HTMLImageElement).src = data.shopInfo.logo;
+                        }
+                      }}
                     />
-                    <div className="space-y-1 text-sm">
-                      <p className="font-bold text-lg uppercase">{data.shopInfo?.name || 'Hữu Laptop'}</p>
-                      <p><span className="font-semibold">Điện thoại:</span> {data.shopInfo?.phone}</p>
-                      <p><span className="font-semibold">Địa chỉ:</span> {data.shopInfo?.address}</p>
+                    <div>
+                      <h1 className="text-2xl font-black text-blue-700 uppercase tracking-tight">{data.shopInfo?.name || 'Hữu Laptop'}</h1>
+                      <p className="text-sm font-medium text-gray-600 mt-1">{data.shopInfo?.address}</p>
+                      <p className="text-sm font-bold text-gray-800">Hotline: {data.shopInfo?.phone}</p>
+                      {data.shopInfo?.website && <p className="text-xs text-blue-600">{data.shopInfo.website}</p>}
                     </div>
                   </div>
-                  <div className="text-right text-sm">
-                    <p className="font-bold text-xl uppercase mb-2">HÓA ĐƠN BÁN HÀNG</p>
-                    <p>Mã số: <span className="font-bold">{viewOrder.id}</span></p>
-                    <p>Ngày: {viewOrder.date}</p>
+                  <div className="text-right">
+                    <h2 className="text-3xl font-black text-gray-900 uppercase mb-1">Hóa Đơn Bán Hàng</h2>
+                    <p className="text-sm text-gray-500">Mã đơn: <span className="font-bold text-black">#{viewOrder.id}</span></p>
+                    <p className="text-sm text-gray-500">Ngày lập: <span className="font-bold text-black">{viewOrder.date}</span></p>
                   </div>
                 </div>
 
-                <div className="border-t border-black my-4"></div>
-
-                <div className="grid grid-cols-2 gap-x-8 gap-y-1 mb-6 text-sm">
-                  <div className="col-span-1 space-y-1">
-                    <p><span className="font-semibold">Họ tên người mua hàng:</span> {viewOrder.customerName}</p>
-                    <p><span className="font-semibold">Tên đơn vị:</span> {data.customers.find(c => c.id === viewOrder.customerId)?.companyName || ''}</p>
-                    <p><span className="font-semibold">Địa chỉ:</span> {data.customers.find(c => c.id === viewOrder.customerId)?.address || ''}</p>
+                {/* Customer Info */}
+                <div className="grid grid-cols-2 gap-8 mb-8 bg-gray-50 p-4 rounded-xl border border-gray-100">
+                  <div>
+                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Thông tin khách hàng</h3>
+                    <p className="text-base font-bold text-gray-900">{viewOrder.customerName}</p>
+                    <p className="text-sm text-gray-600">{data.customers.find(c => c.id === viewOrder.customerId)?.phone}</p>
+                    <p className="text-sm text-gray-600">{data.customers.find(c => c.id === viewOrder.customerId)?.address}</p>
                   </div>
-                  <div className="col-span-1 text-right">
-                    <p><span className="font-semibold">Số điện thoại:</span> {data.customers.find(c => c.id === viewOrder.customerId)?.phone || ''}</p>
+                  <div className="text-right">
+                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Hình thức thanh toán</h3>
+                    <p className="text-base font-bold text-gray-900">{viewOrder.paymentMethod}</p>
+                    <p className={`text-sm font-bold ${viewOrder.paymentStatus === 'Đã thanh toán' ? 'text-emerald-600' : 'text-rose-600'}`}>
+                      {viewOrder.paymentStatus}
+                    </p>
                   </div>
                 </div>
 
-                <table className="w-full border-collapse border border-black mb-6 text-sm">
+                {/* Products Table */}
+                <table className="w-full mb-8 overflow-hidden rounded-xl border border-gray-200 border-collapse">
                   <thead>
-                    <tr className="bg-gray-100">
-                      <th className="border border-black p-2 text-center w-10">STT</th>
-                      <th className="border border-black p-2 text-left">Tên hàng hóa, dịch vụ</th>
-                      <th className="border border-black p-2 text-center w-16">ĐVT</th>
-                      <th className="border border-black p-2 text-center w-12">SL</th>
-                      <th className="border border-black p-2 text-right w-24">Đơn giá</th>
-                      <th className="border border-black p-2 text-center w-20">Giảm giá</th>
-                      <th className="border border-black p-2 text-right w-28">Thành tiền</th>
+                    <tr className="bg-blue-600 text-white">
+                      <th className="p-3 text-left text-xs font-bold uppercase">Sản phẩm</th>
+                      <th className="p-3 text-center text-xs font-bold uppercase w-20">SL</th>
+                      <th className="p-3 text-right text-xs font-bold uppercase w-32">Đơn giá</th>
+                      <th className="p-3 text-right text-xs font-bold uppercase w-32">Thành tiền</th>
                     </tr>
                   </thead>
-                  <tbody>
+                  <tbody className="divide-y divide-gray-100">
                     {viewOrder.products.map((item, idx) => (
-                      <tr key={idx}>
-                        <td className="border border-black p-2 text-center">{idx + 1}</td>
-                        <td className="border border-black p-2">
-                          <div className="font-semibold">{item.name}</div>
-                          {(item.serviceTag || item.cpu || item.ram || item.ssd || item.screen) && (
-                            <div className="text-[10px] mt-1 flex flex-wrap gap-x-2 border-t border-gray-200 pt-1">
-                              {item.serviceTag && <span className="font-bold">S/N: {item.serviceTag}</span>}
+                      <tr key={idx} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}>
+                        <td className="p-4">
+                          <div className="font-bold text-gray-900">{item.name}</div>
+                          {item.serviceTag && <div className="text-[10px] text-blue-600 font-bold mt-1">S/N: {item.serviceTag}</div>}
+                          {(item.cpu || item.ram || item.ssd || item.screen) && (
+                            <div className="text-[10px] text-gray-500 mt-0.5 flex flex-wrap gap-x-2">
                               {item.cpu && <span>CPU: {item.cpu}</span>}
                               {item.ram && <span>RAM: {item.ram}</span>}
                               {item.ssd && <span>SSD: {item.ssd}</span>}
@@ -733,69 +815,61 @@ export function Orders({ data, updateData, addItem }: OrdersProps) {
                             </div>
                           )}
                         </td>
-                        <td className="border border-black p-2 text-center">Cái</td>
-                        <td className="border border-black p-2 text-center">{item.quantity}</td>
-                        <td className="border border-black p-2 text-right">{formatCurrency(item.price).replace('₫', '').trim()}</td>
-                        <td className="border border-black p-2 text-center">
-                          {item.discountType === 'amount' 
-                            ? formatCurrency(item.discount || 0).replace('₫', '').trim() 
-                            : `${item.discount || 0}%`}
-                        </td>
-                        <td className="border border-black p-2 text-right">{formatCurrency(item.subtotal || 0).replace('₫', '').trim()}</td>
+                        <td className="p-4 text-center font-medium text-gray-900">{item.quantity}</td>
+                        <td className="p-4 text-right font-medium text-gray-900">{formatCurrency(item.price).replace('₫', '').trim()}</td>
+                        <td className="p-4 text-right font-bold text-gray-900">{formatCurrency(item.subtotal || 0).replace('₫', '').trim()}</td>
                       </tr>
                     ))}
                   </tbody>
                   <tfoot>
-                    <tr>
-                      <td colSpan={6} className="border border-black p-2 text-right font-bold uppercase">Tổng cộng tiền hàng:</td>
-                      <td className="border border-black p-2 text-right font-bold">{formatCurrency(viewOrder.total)}</td>
+                    <tr className="bg-gray-50 border-t-2 border-gray-200">
+                      <td colSpan={3} className="p-4 text-right font-bold text-gray-600 uppercase">Tổng cộng:</td>
+                      <td className="p-4 text-right font-black text-xl text-blue-700">{formatCurrency(viewOrder.total)}</td>
                     </tr>
                   </tfoot>
                 </table>
 
-                <div className="text-sm mb-8 space-y-2">
-                  <p><span className="font-semibold italic">Số tiền viết bằng chữ:</span> {numberToVietnameseWords(viewOrder.total)}</p>
-                  <p>
-                    {viewOrder.paymentStatus === 'Đã thanh toán' 
-                      ? `Hình thức thanh toán: ${viewOrder.paymentMethod}.` 
-                      : `Hình thức thanh toán: Công nợ.`}
+                {/* Amount in words */}
+                <div className="mb-12 p-4 bg-blue-50/50 rounded-xl border border-blue-100">
+                  <p className="text-sm text-gray-700 italic">
+                    <span className="font-bold not-italic text-blue-800">Bằng chữ: </span>
+                    {numberToVietnameseWords(viewOrder.total)}
                   </p>
                 </div>
 
-                <div className="grid grid-cols-2 text-center mb-24">
+                {/* Signatures */}
+                <div className="grid grid-cols-2 gap-8 text-center mb-20">
                   <div>
-                    <p className="font-bold">Người mua hàng</p>
-                    <p className="text-xs italic">(Ký, ghi rõ họ tên)</p>
+                    <p className="font-bold text-gray-900 mb-20">Người mua hàng</p>
+                    <p className="text-sm text-gray-400 italic">(Ký và ghi rõ họ tên)</p>
                   </div>
                   <div>
-                    <p className="font-bold">Người bán hàng</p>
-                    <p className="text-xs italic">(Ký, ghi rõ họ tên)</p>
-                    <div className="mt-8">
-                      <p className="text-rose-600 font-bold uppercase text-lg">{data.shopInfo?.name || 'Hữu Laptop'}</p>
-                      <p className="text-[10px] text-gray-500 italic">Đã được ký điện tử bởi hệ thống quản lý</p>
-                    </div>
+                    <p className="font-bold text-gray-900 mb-20">Người bán hàng</p>
+                    <p className="text-sm text-gray-400 italic">(Ký và ghi rõ họ tên)</p>
                   </div>
                 </div>
 
-                <div className="flex justify-between items-end mt-12 pt-6 border-t border-dashed border-gray-300">
-                  <div className="border-2 border-rose-500 rounded-2xl p-4 flex gap-6 items-center bg-rose-50/30">
-                    <div className="text-sm space-y-1">
-                      <p className="font-bold text-blue-800">Ngân hàng {data.shopInfo?.bankName || 'Techcombank'}</p>
-                      <p className="font-bold">STK: {data.shopInfo?.bankAccount || '95 7777 6789'}</p>
-                      <p className="font-bold">Tên: {data.shopInfo?.taxCode || 'DIEU HUU'}</p>
-                      <p className="text-xs text-gray-500 mt-2 italic">* Quét mã để thanh toán nhanh</p>
-                    </div>
-                    <div className="bg-white p-1 rounded-lg border border-gray-200">
+                {/* Payment Info & QR */}
+                <div className="flex justify-between items-end pt-8 border-t border-dashed border-gray-200">
+                  <div className="flex items-center gap-6 bg-rose-50 p-4 rounded-2xl border border-rose-100">
+                    <div className="bg-white p-2 rounded-xl shadow-sm">
                       <img 
-                        src="https://storage.googleapis.com/static.antigravity.dev/dieuhuu1995@gmail.com/610176597039/dieuhuu1995@gmail.com_1742636402000_0.png" 
+                        src="/QR Code HLT 01.png" 
                         alt="Payment QR" 
                         className="w-24 h-24 object-contain"
                         referrerPolicy="no-referrer"
                       />
                     </div>
+                    <div>
+                      <p className="text-xs font-bold text-rose-400 uppercase tracking-wider mb-1">Thông tin chuyển khoản</p>
+                      <p className="text-sm font-black text-gray-900">{data.shopInfo?.bankName || 'Techcombank'}</p>
+                      <p className="text-lg font-black text-blue-700">{data.shopInfo?.bankAccount || '95 7777 6789'}</p>
+                      <p className="text-sm font-bold text-gray-700">{data.shopInfo?.taxCode || 'DIEU HUU'}</p>
+                    </div>
                   </div>
-                  <div className="text-[10px] text-gray-400 italic">
-                    Cảm ơn quý khách đã tin tưởng và sử dụng dịch vụ!
+                  <div className="text-right">
+                    <p className="text-sm font-bold text-gray-900 mb-1">Cảm ơn quý khách!</p>
+                    <p className="text-xs text-gray-400 italic">Hẹn gặp lại quý khách lần sau.</p>
                   </div>
                 </div>
               </div>
@@ -880,9 +954,9 @@ export function Orders({ data, updateData, addItem }: OrdersProps) {
 
       {/* Add Order Modal */}
       {isAddModalOpen && (
-        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-200">
-            <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between z-10">
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-[100] sm:p-4">
+          <div className="bg-white sm:rounded-2xl shadow-xl w-full max-w-4xl h-full sm:h-auto sm:max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-200">
+            <div className="sticky top-0 bg-white border-b border-gray-100 px-4 sm:px-6 py-4 flex items-center justify-between z-10">
               <h3 className="text-lg font-bold text-gray-900">{editingId ? 'Chỉnh sửa đơn hàng' : 'Tạo đơn hàng mới'}</h3>
               <button 
                 onClick={() => {
@@ -895,8 +969,8 @@ export function Orders({ data, updateData, addItem }: OrdersProps) {
               </button>
             </div>
             
-            <form onSubmit={handleSubmit} className="p-6 space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-1">Khách hàng *</label>
                   <div className="flex gap-2">
@@ -904,7 +978,7 @@ export function Orders({ data, updateData, addItem }: OrdersProps) {
                       required
                       value={formData.customerId}
                       onChange={e => setFormData({...formData, customerId: e.target.value})}
-                      className="flex-1 px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                      className="flex-1 px-3 sm:px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm sm:text-base"
                     >
                       <option value="">Chọn khách hàng</option>
                       {data.customers.map(c => (
@@ -920,11 +994,11 @@ export function Orders({ data, updateData, addItem }: OrdersProps) {
                     <button 
                       type="button"
                       onClick={() => setIsAddCustomerModalOpen(true)}
-                      className="px-3 py-2 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 rounded-lg border border-emerald-200 transition-colors flex items-center gap-1 whitespace-nowrap text-sm font-medium"
+                      className="px-2 sm:px-3 py-2 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 rounded-lg border border-emerald-200 transition-colors flex items-center gap-1 whitespace-nowrap text-xs sm:text-sm font-medium"
                       title="Thêm khách hàng mới"
                     >
                       <Plus size={16} />
-                      Khách mới
+                      <span className="hidden sm:inline">Khách mới</span>
                     </button>
                   </div>
                 </div>
@@ -934,7 +1008,7 @@ export function Orders({ data, updateData, addItem }: OrdersProps) {
                   <select 
                     value={formData.paymentMethod}
                     onChange={e => setFormData({...formData, paymentMethod: e.target.value})}
-                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                    className="w-full px-3 sm:px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm sm:text-base"
                   >
                     <option value="Tiền mặt">Tiền mặt</option>
                     <option value="Chuyển khoản">Chuyển khoản</option>
@@ -981,9 +1055,9 @@ export function Orders({ data, updateData, addItem }: OrdersProps) {
                 
                 <div className="space-y-3">
                   {orderItems.map((item, index) => (
-                    <div key={index} className="bg-gray-50 p-4 rounded-xl border border-gray-100 space-y-4">
-                      <div className="flex flex-wrap md:flex-nowrap gap-3 items-end">
-                        <div className="w-full md:flex-1">
+                    <div key={index} className="bg-gray-50 p-3 sm:p-4 rounded-xl border border-gray-100 space-y-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
+                        <div className="sm:col-span-5">
                           <label className="block text-xs text-gray-500 mb-1 font-bold uppercase">Sản phẩm *</label>
                           <div className="flex gap-2">
                             <select 
@@ -1018,63 +1092,55 @@ export function Orders({ data, updateData, addItem }: OrdersProps) {
                           </div>
                         </div>
                         
-                        <div className="w-24">
-                          <label className="block text-xs text-gray-500 mb-1 font-bold uppercase">Số lượng</label>
-                          <input 
-                            type="number" required min="1"
-                            value={item.quantity}
-                            onChange={e => handleItemChange(index, 'quantity', Number(e.target.value))}
-                            className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm"
-                          />
-                        </div>
-
-                        <div className="w-44 flex gap-1">
-                          <div className="flex-1">
-                            <label className="block text-xs text-gray-500 mb-1 font-bold uppercase">Giảm giá</label>
+                        <div className="grid grid-cols-3 sm:col-span-6 gap-2">
+                          <div>
+                            <label className="block text-xs text-gray-500 mb-1 font-bold uppercase">SL</label>
                             <input 
-                              type="number" min="0"
-                              value={item.discount}
-                              onChange={e => handleItemChange(index, 'discount', Number(e.target.value))}
+                              type="number" required min="1"
+                              value={item.quantity}
+                              onChange={e => handleItemChange(index, 'quantity', Number(e.target.value))}
                               className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm"
                             />
                           </div>
-                          <div className="w-16">
-                            <label className="block text-xs text-gray-500 mb-1 font-bold uppercase">Loại</label>
-                            <select
-                              value={item.discountType || 'percent'}
-                              onChange={e => handleItemChange(index, 'discountType', e.target.value)}
-                              className="w-full px-2 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-xs h-[38px]"
-                            >
-                              <option value="percent">%</option>
-                              <option value="amount">đ</option>
-                            </select>
+
+                          <div className="col-span-2 flex gap-1">
+                            <div className="flex-1">
+                              <label className="block text-xs text-gray-500 mb-1 font-bold uppercase">Giảm giá</label>
+                              <input 
+                                type="number" min="0"
+                                value={item.discount}
+                                onChange={e => handleItemChange(index, 'discount', Number(e.target.value))}
+                                className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm"
+                              />
+                            </div>
+                            <div className="w-12">
+                              <label className="block text-xs text-gray-500 mb-1 font-bold uppercase">Loại</label>
+                              <select
+                                value={item.discountType || 'percent'}
+                                onChange={e => handleItemChange(index, 'discountType', e.target.value)}
+                                className="w-full px-1 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-xs h-[38px]"
+                              >
+                                <option value="percent">%</option>
+                                <option value="amount">đ</option>
+                              </select>
+                            </div>
                           </div>
                         </div>
 
-                        <div className="w-32">
-                          <label className="block text-xs text-gray-500 mb-1 font-bold uppercase">Thành tiền</label>
-                          <div className="px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm font-semibold text-gray-900">
-                            {formatCurrency(
-                              item.discountType === 'percent' 
-                                ? item.quantity * item.price * (1 - (item.discount || 0) / 100)
-                                : Math.max(0, (item.quantity * item.price) - (item.discount || 0))
-                            )}
-                          </div>
+                        <div className="sm:col-span-1 flex justify-end">
+                          <button 
+                            type="button"
+                            onClick={() => handleRemoveItem(index)}
+                            disabled={orderItems.length === 1}
+                            className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
+                          >
+                            <Trash2 size={18} />
+                          </button>
                         </div>
-
-                        <button 
-                          type="button"
-                          onClick={() => handleRemoveItem(index)}
-                          disabled={orderItems.length === 1}
-                          className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
-                        >
-                          <Trash2 size={18} />
-                        </button>
                       </div>
 
-                      {/* Hardware Specs Row */}
-                      <div className="grid grid-cols-1 md:grid-cols-5 gap-3 pt-3 border-t border-gray-200/50">
-                        <div>
+                      <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 pt-3 border-t border-gray-200/50">
+                        <div className="col-span-2 sm:col-span-1">
                           <label className="block text-[10px] font-bold text-blue-600 uppercase mb-1">Service Tag *</label>
                           <input 
                             type="text" required
@@ -1126,8 +1192,7 @@ export function Orders({ data, updateData, addItem }: OrdersProps) {
                         </div>
                       </div>
 
-                      {/* Warranty Row */}
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-3 border-t border-gray-200/50">
+                      <div className="grid grid-cols-2 gap-3 pt-3 border-t border-gray-200/50">
                         <div>
                           <label className="block text-[10px] font-bold text-emerald-600 uppercase mb-1">Ngày mua hàng</label>
                           <input 
@@ -1138,7 +1203,7 @@ export function Orders({ data, updateData, addItem }: OrdersProps) {
                           />
                         </div>
                         <div>
-                          <label className="block text-[10px] font-bold text-emerald-600 uppercase mb-1">Thời gian bảo hành</label>
+                          <label className="block text-[10px] font-bold text-emerald-600 uppercase mb-1">Bảo hành</label>
                           <select
                             value={item.warrantyMonths}
                             onChange={e => handleItemChange(index, 'warrantyMonths', Number(e.target.value))}
@@ -1153,29 +1218,40 @@ export function Orders({ data, updateData, addItem }: OrdersProps) {
                           </select>
                         </div>
                       </div>
+                      
+                      <div className="pt-2 flex justify-between items-center text-sm">
+                        <span className="text-gray-500">Thành tiền:</span>
+                        <span className="font-bold text-gray-900">
+                          {formatCurrency(
+                            item.discountType === 'percent' 
+                              ? item.quantity * item.price * (1 - (item.discount || 0) / 100)
+                              : Math.max(0, (item.quantity * item.price) - (item.discount || 0))
+                          )}
+                        </span>
+                      </div>
                     </div>
                   ))}
                 </div>
               </div>
 
-              <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-                <div className="text-lg text-gray-900">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-gray-100">
+                <div className="text-lg text-gray-900 w-full sm:w-auto text-center sm:text-left">
                   Tổng cộng: <span className="font-bold text-blue-600 text-xl ml-2">{formatCurrency(calculateTotal())}</span>
                 </div>
-                <div className="flex gap-3">
+                <div className="flex gap-3 w-full sm:w-auto">
                   <button 
                     type="button"
                     onClick={() => {
                       setIsAddModalOpen(false);
                       setEditingId(null);
                     }}
-                    className="px-5 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium transition-colors"
+                    className="flex-1 sm:flex-none px-5 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium transition-colors"
                   >
                     Hủy
                   </button>
                   <button 
                     type="submit"
-                    className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors shadow-sm shadow-blue-600/20"
+                    className="flex-1 sm:flex-none px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors shadow-sm shadow-blue-600/20"
                   >
                     {editingId ? 'Cập nhật' : 'Tạo đơn hàng'}
                   </button>

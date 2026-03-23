@@ -158,7 +158,7 @@ export function Products({ data, updateData }: ProductsProps) {
         </div>
 
         {/* Table */}
-        <div className="overflow-x-auto">
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-gray-50 text-gray-500 text-sm uppercase tracking-wider">
@@ -215,37 +215,94 @@ export function Products({ data, updateData }: ProductsProps) {
                   </td>
                 </tr>
               ))}
-              {filteredProducts.length === 0 && (
-                <tr>
-                  <td colSpan={5} className="p-8 text-center text-gray-500">
-                    Không tìm thấy sản phẩm nào.
-                  </td>
-                </tr>
-              )}
             </tbody>
           </table>
         </div>
+
+        {/* Mobile Cards */}
+        <div className="md:hidden divide-y divide-gray-100">
+          {filteredProducts.map((product) => (
+            <div key={product.id} className="p-4 space-y-3">
+              <div className="flex items-start justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center text-gray-500 shrink-0">
+                    <Package size={20} />
+                  </div>
+                  <div>
+                    <div className="font-medium text-gray-900">{product.name}</div>
+                    <div className="text-xs text-gray-500">{product.id}</div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1">
+                  <button 
+                    onClick={() => handleEdit(product)}
+                    className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
+                  >
+                    <Edit size={18} />
+                  </button>
+                  <button 
+                    onClick={() => setConfirmingDelete(product.id)}
+                    className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                  >
+                    <Trash2 size={18} />
+                  </button>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <p className="text-gray-500 text-xs uppercase tracking-wider mb-1">Danh mục</p>
+                  <p className="text-gray-700 font-medium">{product.category}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-gray-500 text-xs uppercase tracking-wider mb-1">Giá bán</p>
+                  <p className="text-blue-600 font-bold">{formatCurrency(product.price)}</p>
+                </div>
+                <div>
+                  <p className="text-gray-500 text-xs uppercase tracking-wider mb-1">Tồn kho</p>
+                  <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
+                    {product.stock < product.minStock ? (
+                      <AlertTriangle size={14} className="text-amber-500" />
+                    ) : (
+                      <CheckCircle2 size={14} className="text-emerald-500" />
+                    )}
+                    {product.stock}
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="text-gray-500 text-xs uppercase tracking-wider mb-1">Nhà cung cấp</p>
+                  <p className="text-gray-700 truncate">{product.supplier || 'N/A'}</p>
+                </div>
+              </div>
+            </div>
+          ))}
+          {filteredProducts.length === 0 && (
+            <div className="p-8 text-center text-gray-500 text-sm">
+              Không tìm thấy sản phẩm nào.
+            </div>
+          )}
         </div>
       </div>
+    </div>
 
-      {/* Add Product Modal */}
-      {isAddModalOpen && (
-        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-200">
-            <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between z-10">
-              <h3 className="text-lg font-bold text-gray-900">
-                {editingId ? 'Chỉnh sửa sản phẩm' : 'Thêm sản phẩm mới'}
-              </h3>
-              <button 
-                onClick={() => {
-                  setIsAddModalOpen(false);
-                  setEditingId(null);
-                }}
-                className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
-              >
-                <X size={20} />
-              </button>
-            </div>
+    {/* Add Product Modal */}
+    {isAddModalOpen && (
+      <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-[100] sm:p-4">
+        <div className="bg-white sm:rounded-2xl shadow-xl w-full max-w-2xl h-full sm:h-auto sm:max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-200">
+          <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between z-10">
+            <h3 className="text-lg font-bold text-gray-900">
+              {editingId ? 'Chỉnh sửa sản phẩm' : 'Thêm sản phẩm mới'}
+            </h3>
+            <button 
+              onClick={() => {
+                setIsAddModalOpen(false);
+                setEditingId(null);
+              }}
+              className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
+            >
+              <X size={20} />
+            </button>
+          </div>
             
             <form onSubmit={handleSubmit} className="p-6 space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

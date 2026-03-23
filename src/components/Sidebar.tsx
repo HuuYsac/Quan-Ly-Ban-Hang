@@ -15,7 +15,8 @@ import {
   Settings, 
   Building,
   LogOut,
-  Store
+  Store,
+  UserCog
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { auth } from '../firebase';
@@ -25,12 +26,14 @@ interface SidebarProps {
   activePage: string;
   setActivePage: (page: string) => void;
   data: AppData;
+  isAdmin: boolean;
 }
 
-export function Sidebar({ activePage, setActivePage, data }: SidebarProps) {
+export function Sidebar({ activePage, setActivePage, data, isAdmin }: SidebarProps) {
   const [showLogoutConfirm, setShowLogoutConfirm] = React.useState(false);
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, section: 'Tổng quan' },
+    { id: 'members', label: 'Thành viên', icon: UserCog, section: 'Hệ thống', adminOnly: true },
     { id: 'customers', label: 'Khách hàng', icon: Users, section: 'Quản lý cơ bản' },
     { id: 'suppliers', label: 'Nhà cung cấp', icon: Building2, section: 'Quản lý cơ bản' },
     { id: 'products', label: 'Sản phẩm', icon: Package, section: 'Quản lý cơ bản' },
@@ -46,7 +49,7 @@ export function Sidebar({ activePage, setActivePage, data }: SidebarProps) {
     { id: 'company-info', label: 'Thông Tin Shop', icon: Building, section: 'Hệ thống' },
   ];
 
-  const sections = Array.from(new Set(navItems.map(item => item.section)));
+  const sections = Array.from(new Set(navItems.filter(item => !item.adminOnly || isAdmin).map(item => item.section)));
 
   const handleLogout = async () => {
     setShowLogoutConfirm(true);
@@ -85,7 +88,7 @@ export function Sidebar({ activePage, setActivePage, data }: SidebarProps) {
             <h3 className="text-xs font-semibold text-gray-500 mb-3 uppercase tracking-wider px-2">
               {section}
             </h3>
-            {navItems.filter(item => item.section === section).map(item => {
+            {navItems.filter(item => item.section === section && (!item.adminOnly || isAdmin)).map(item => {
               const Icon = item.icon;
               const isActive = activePage === item.id;
               return (
