@@ -44,16 +44,17 @@ interface FirestoreErrorInfo {
   }
 }
 
-function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
+function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null, user?: User | null) {
+  const currentUser = user || auth.currentUser;
   const errInfo: FirestoreErrorInfo = {
     error: error instanceof Error ? error.message : String(error),
     authInfo: {
-      userId: auth.currentUser?.uid,
-      email: auth.currentUser?.email,
-      emailVerified: auth.currentUser?.emailVerified,
-      isAnonymous: auth.currentUser?.isAnonymous,
-      tenantId: auth.currentUser?.tenantId,
-      providerInfo: auth.currentUser?.providerData.map(provider => ({
+      userId: currentUser?.uid,
+      email: currentUser?.email,
+      emailVerified: currentUser?.emailVerified,
+      isAnonymous: currentUser?.isAnonymous,
+      tenantId: currentUser?.tenantId,
+      providerInfo: currentUser?.providerData.map(provider => ({
         providerId: provider.providerId,
         displayName: provider.displayName,
         email: provider.email,
@@ -64,8 +65,6 @@ function handleFirestoreError(error: unknown, operationType: OperationType, path
     path
   }
   console.error('Firestore Error: ', JSON.stringify(errInfo));
-  // We don't necessarily want to throw here as it might crash the whole app
-  // but we should log it clearly.
 }
 
 export function useAppStore() {
@@ -183,7 +182,7 @@ export function useAppStore() {
           const users = snapshot.docs.map(doc => ({ ...doc.data(), uid: doc.id } as any));
           setData(prev => ({ ...prev, users }));
         }, (error) => {
-          handleFirestoreError(error, OperationType.GET, 'users');
+          handleFirestoreError(error, OperationType.GET, 'users', user);
         });
         unsubscribers.push(usersUnsubscribe);
       }
@@ -197,7 +196,7 @@ export function useAppStore() {
           const items = snapshot.docs.map(doc => doc.data());
           setData(prev => ({ ...prev, [key]: items }));
         }, (error) => {
-          handleFirestoreError(error, OperationType.GET, name);
+          handleFirestoreError(error, OperationType.GET, name, user);
         });
         unsubscribers.push(unsub);
       };
@@ -220,7 +219,7 @@ export function useAppStore() {
           setData(prev => ({ ...prev, shopInfo: doc.data() as ShopInfo }));
         }
       }, (error) => {
-        handleFirestoreError(error, OperationType.GET, 'config/shopInfo');
+        handleFirestoreError(error, OperationType.GET, 'config/shopInfo', user);
       });
       unsubscribers.push(unsubShop);
 
@@ -230,7 +229,7 @@ export function useAppStore() {
         }
         setLoading(false);
       }, (error) => {
-        handleFirestoreError(error, OperationType.GET, 'config/settings');
+        handleFirestoreError(error, OperationType.GET, 'config/settings', user);
         setLoading(false);
       });
       unsubscribers.push(unsubSettings);
@@ -240,7 +239,7 @@ export function useAppStore() {
           setData(prev => ({ ...prev, cskhSettings: doc.data() as CSKHSettings }));
         }
       }, (error) => {
-        handleFirestoreError(error, OperationType.GET, 'config/cskhSettings');
+        handleFirestoreError(error, OperationType.GET, 'config/cskhSettings', user);
       });
       unsubscribers.push(unsubCSKH);
 
@@ -249,19 +248,26 @@ export function useAppStore() {
           setData(prev => ({ ...prev, notificationSettings: doc.data() as NotificationSettings }));
         }
       }, (error) => {
-        handleFirestoreError(error, OperationType.GET, 'config/notificationSettings');
+        handleFirestoreError(error, OperationType.GET, 'config/notificationSettings', user);
       });
       unsubscribers.push(unsubNotify);
 
       return unsubscribers;
     };
 
+    let isMounted = true;
     let currentUnsubscribers: (() => void)[] = [];
+
     startSync().then(unsubs => {
+      if (!isMounted) {
+        unsubs.forEach(unsub => unsub());
+        return;
+      }
       currentUnsubscribers = unsubs;
     });
 
     return () => {
+      isMounted = false;
       currentUnsubscribers.forEach(unsub => unsub());
     };
   }, [user]);

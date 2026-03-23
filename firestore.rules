@@ -47,24 +47,28 @@ service cloud.firestore {
     // Check if user is approved
     function isApproved() {
       return isAuthenticated() && (
-        (request.auth.token.email == 'dieuhuu1995@gmail.com' && request.auth.token.email_verified == true) ||
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.approved == true
+        request.auth.token.email == 'dieuhuu1995@gmail.com' ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.approved == true)
       );
     }
 
     // Check if user is admin
     function isAdmin() {
       return isAuthenticated() && (
-        (request.auth.token.email == 'dieuhuu1995@gmail.com' && request.auth.token.email_verified == true) ||
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
+        request.auth.token.email == 'dieuhuu1995@gmail.com' ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin')
       );
     }
 
     // Check if user is staff or admin
     function isStaff() {
-      return isAuthenticated() && isApproved() && (
+      return isAuthenticated() && (
         isAdmin() ||
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'staff'
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'staff' &&
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.approved == true)
       );
     }
 
