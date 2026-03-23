@@ -350,5 +350,49 @@ export function useAppStore() {
     await deleteDoc(itemRef);
   };
 
-  return { data, updateData, loading, addItem, updateItem, deleteItem };
+  const resetDatabase = async () => {
+    if (!user || user.email !== 'dieuhuu1995@gmail.com') return;
+    
+    setLoading(true);
+    try {
+      const collections = [
+        'customers', 'suppliers', 'products', 'categories', 'orders', 
+        'repairs', 'leads', 'careTasks', 'sales', 'warrantyNotifications', 'promotions'
+      ];
+
+      for (const colName of collections) {
+        const querySnapshot = await getDocs(collection(db, colName));
+        const batch = writeBatch(db);
+        querySnapshot.forEach((doc) => {
+          batch.delete(doc.ref);
+        });
+        await batch.commit();
+      }
+
+      // Re-seed
+      const seedBatch = writeBatch(db);
+      initialData.customers.forEach(c => seedBatch.set(doc(db, 'customers', c.id), c));
+      initialData.suppliers.forEach(s => seedBatch.set(doc(db, 'suppliers', s.id), s));
+      initialData.products.forEach(p => seedBatch.set(doc(db, 'products', p.id), p));
+      initialData.categories.forEach(cat => seedBatch.set(doc(db, 'categories', cat.id), cat));
+      initialData.orders.forEach(o => seedBatch.set(doc(db, 'orders', o.id), o));
+      initialData.repairs.forEach(r => seedBatch.set(doc(db, 'repairs', r.id), r));
+      initialData.leads.forEach(l => seedBatch.set(doc(db, 'leads', l.id), l));
+      initialData.careTasks.forEach(ct => seedBatch.set(doc(db, 'careTasks', ct.id), ct));
+      initialData.sales.forEach(s => seedBatch.set(doc(db, 'sales', s.id), s));
+      initialData.promotions.forEach(p => seedBatch.set(doc(db, 'promotions', p.id), p));
+      
+      seedBatch.set(doc(db, 'config', 'shopInfo'), initialData.shopInfo);
+      seedBatch.set(doc(db, 'config', 'settings'), initialData.settings);
+      
+      await seedBatch.commit();
+      console.log('Database reset successfully');
+    } catch (error) {
+      console.error('Error resetting database:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return { data, updateData, loading, addItem, updateItem, deleteItem, resetDatabase };
 }

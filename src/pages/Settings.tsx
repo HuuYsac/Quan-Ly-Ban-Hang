@@ -7,9 +7,10 @@ import { collection, getDocs, doc, updateDoc, deleteDoc } from 'firebase/firesto
 interface SettingsProps {
   data: AppData;
   updateData: (newData: Partial<AppData>) => void;
+  resetDatabase?: () => Promise<void>;
 }
 
-export function Settings({ data, updateData }: SettingsProps) {
+export function Settings({ data, updateData, resetDatabase }: SettingsProps) {
   const [formData, setFormData] = useState<SettingsType>(
     data.settings || {
       currency: 'VND',
@@ -255,106 +256,131 @@ export function Settings({ data, updateData }: SettingsProps) {
 
             {/* User Management (Admin Only) */}
             {isAdmin && (
-              <div className="mt-12">
-                <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wider mb-4 pb-2 border-b border-gray-100 flex items-center gap-2">
-                  <UsersIcon size={18} className="text-blue-600" />
-                  Quản lý người dùng (Admin)
-                </h3>
-                
-                {loadingUsers ? (
-                  <div className="flex justify-center py-8">
-                    <div className="w-8 h-8 border-4 border-blue-600/30 border-t-blue-600 rounded-full animate-spin" />
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {/* Table View (Desktop) */}
-                    <div className="hidden md:block overflow-x-auto">
-                      <table className="w-full text-left border-collapse">
-                        <thead>
-                          <tr className="bg-gray-50 text-gray-500 text-xs uppercase tracking-wider">
-                            <th className="p-3 font-medium">Email</th>
-                            <th className="p-3 font-medium">SĐT</th>
-                            <th className="p-3 font-medium">Trạng thái</th>
-                            <th className="p-3 font-medium text-center">Thao tác</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-100">
-                          {users.map(u => (
-                            <tr key={u.id} className="hover:bg-gray-50 transition-colors">
-                              <td className="p-3 text-sm font-medium text-gray-900">{u.email}</td>
-                              <td className="p-3 text-sm text-gray-600">{u.phone}</td>
-                              <td className="p-3">
-                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${u.approved ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}`}>
-                                  {u.approved ? 'Đã phê duyệt' : 'Chờ phê duyệt'}
-                                </span>
-                              </td>
-                              <td className="p-3">
-                                <div className="flex items-center justify-center gap-2">
-                                  <button
-                                    type="button"
-                                    onClick={() => toggleApproval(u.id, u.approved)}
-                                    className={`p-1.5 rounded-md transition-colors ${u.approved ? 'text-amber-600 hover:bg-amber-50' : 'text-emerald-600 hover:bg-emerald-50'}`}
-                                    title={u.approved ? 'Hủy phê duyệt' : 'Phê duyệt'}
-                                  >
-                                    {u.approved ? <ShieldX size={16} /> : <ShieldCheck size={16} />}
-                                  </button>
-                                  {u.email !== 'dieuhuu1995@gmail.com' && u.email !== 'huulaptop.info@gmail.com' && (
+              <div className="mt-12 space-y-12">
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wider mb-4 pb-2 border-b border-gray-100 flex items-center gap-2">
+                    <UsersIcon size={18} className="text-blue-600" />
+                    Quản lý người dùng (Admin)
+                  </h3>
+                  
+                  {loadingUsers ? (
+                    <div className="flex justify-center py-8">
+                      <div className="w-8 h-8 border-4 border-blue-600/30 border-t-blue-600 rounded-full animate-spin" />
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {/* Table View (Desktop) */}
+                      <div className="hidden md:block overflow-x-auto">
+                        <table className="w-full text-left border-collapse">
+                          <thead>
+                            <tr className="bg-gray-50 text-gray-500 text-xs uppercase tracking-wider">
+                              <th className="p-3 font-medium">Email</th>
+                              <th className="p-3 font-medium">SĐT</th>
+                              <th className="p-3 font-medium">Trạng thái</th>
+                              <th className="p-3 font-medium text-center">Thao tác</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-gray-100">
+                            {users.map(u => (
+                              <tr key={u.id} className="hover:bg-gray-50 transition-colors">
+                                <td className="p-3 text-sm font-medium text-gray-900">{u.email}</td>
+                                <td className="p-3 text-sm text-gray-600">{u.phone}</td>
+                                <td className="p-3">
+                                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${u.approved ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}`}>
+                                    {u.approved ? 'Đã phê duyệt' : 'Chờ phê duyệt'}
+                                  </span>
+                                </td>
+                                <td className="p-3">
+                                  <div className="flex items-center justify-center gap-2">
                                     <button
                                       type="button"
-                                      onClick={() => deleteUser(u.id)}
-                                      className="p-1.5 text-red-600 hover:bg-red-50 rounded-md transition-colors"
-                                      title="Xóa người dùng"
+                                      onClick={() => toggleApproval(u.id, u.approved)}
+                                      className={`p-1.5 rounded-md transition-colors ${u.approved ? 'text-amber-600 hover:bg-amber-50' : 'text-emerald-600 hover:bg-emerald-50'}`}
+                                      title={u.approved ? 'Hủy phê duyệt' : 'Phê duyệt'}
                                     >
-                                      <Trash2 size={16} />
+                                      {u.approved ? <ShieldX size={16} /> : <ShieldCheck size={16} />}
                                     </button>
-                                  )}
-                                </div>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
+                                    {u.email !== 'dieuhuu1995@gmail.com' && u.email !== 'huulaptop.info@gmail.com' && (
+                                      <button
+                                        type="button"
+                                        onClick={() => deleteUser(u.id)}
+                                        className="p-1.5 text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                                        title="Xóa người dùng"
+                                      >
+                                        <Trash2 size={16} />
+                                      </button>
+                                    )}
+                                  </div>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
 
-                    {/* Card View (Mobile) */}
-                    <div className="md:hidden space-y-4">
-                      {users.map(u => (
-                        <div key={u.id} className="bg-gray-50 p-4 rounded-xl border border-gray-100 space-y-3">
-                          <div className="flex justify-between items-start">
-                            <div className="flex flex-col">
-                              <span className="text-sm font-bold text-gray-900 truncate max-w-[200px]">{u.email}</span>
-                              <span className="text-xs text-gray-500">{u.phone}</span>
+                      {/* Card View (Mobile) */}
+                      <div className="md:hidden space-y-4">
+                        {users.map(u => (
+                          <div key={u.id} className="bg-gray-50 p-4 rounded-xl border border-gray-100 space-y-3">
+                            <div className="flex justify-between items-start">
+                              <div className="flex flex-col">
+                                <span className="text-sm font-bold text-gray-900 truncate max-w-[200px]">{u.email}</span>
+                                <span className="text-xs text-gray-500">{u.phone}</span>
+                              </div>
+                              <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${u.approved ? 'bg-emerald-100 text-emerald-600' : 'bg-amber-100 text-amber-600'}`}>
+                                {u.approved ? 'Đã duyệt' : 'Chờ duyệt'}
+                              </span>
                             </div>
-                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${u.approved ? 'bg-emerald-100 text-emerald-600' : 'bg-amber-100 text-amber-600'}`}>
-                              {u.approved ? 'Đã duyệt' : 'Chờ duyệt'}
-                            </span>
-                          </div>
-                          
-                          <div className="flex justify-end gap-2 pt-2 border-t border-gray-200">
-                            <button
-                              type="button"
-                              onClick={() => toggleApproval(u.id, u.approved)}
-                              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${u.approved ? 'bg-amber-50 text-amber-600' : 'bg-emerald-50 text-emerald-600'}`}
-                            >
-                              {u.approved ? <ShieldX size={14} /> : <ShieldCheck size={14} />}
-                              {u.approved ? 'Hủy duyệt' : 'Phê duyệt'}
-                            </button>
-                            {u.email !== 'dieuhuu1995@gmail.com' && u.email !== 'huulaptop.info@gmail.com' && (
+                            
+                            <div className="flex justify-end gap-2 pt-2 border-t border-gray-200">
                               <button
                                 type="button"
-                                onClick={() => deleteUser(u.id)}
-                                className="flex items-center gap-2 px-3 py-1.5 bg-red-50 text-red-600 rounded-lg text-xs font-medium transition-colors"
+                                onClick={() => toggleApproval(u.id, u.approved)}
+                                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${u.approved ? 'bg-amber-50 text-amber-600' : 'bg-emerald-50 text-emerald-600'}`}
                               >
-                                <Trash2 size={14} />
-                                Xóa
+                                {u.approved ? <ShieldX size={14} /> : <ShieldCheck size={14} />}
+                                {u.approved ? 'Hủy duyệt' : 'Phê duyệt'}
                               </button>
-                            )}
+                              {u.email !== 'dieuhuu1995@gmail.com' && u.email !== 'huulaptop.info@gmail.com' && (
+                                <button
+                                  type="button"
+                                  onClick={() => deleteUser(u.id)}
+                                  className="flex items-center gap-2 px-3 py-1.5 bg-red-50 text-red-600 rounded-lg text-xs font-medium transition-colors"
+                                >
+                                  <Trash2 size={14} />
+                                  Xóa
+                                </button>
+                              )}
+                            </div>
                           </div>
-                        </div>
-                      ))}
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
+
+                {/* Database Reset Section */}
+                <div className="p-4 bg-red-50 rounded-xl border border-red-100">
+                  <h3 className="text-sm font-bold text-red-800 flex items-center gap-2 mb-2">
+                    <Trash2 size={18} />
+                    Khu vực nguy hiểm
+                  </h3>
+                  <p className="text-xs text-red-600 mb-4">
+                    Xóa sạch toàn bộ dữ liệu hiện tại và khôi phục về trạng thái ban đầu của Admin. 
+                    Hành động này không thể hoàn tác.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (window.confirm('CẢNH BÁO: Bạn có chắc chắn muốn XÓA SẠCH toàn bộ dữ liệu và khôi phục về mặc định?')) {
+                        resetDatabase?.();
+                      }
+                    }}
+                    className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium transition-colors shadow-sm shadow-red-600/20"
+                  >
+                    Xóa sạch & Khôi phục dữ liệu gốc
+                  </button>
+                </div>
               </div>
             )}
           </div>

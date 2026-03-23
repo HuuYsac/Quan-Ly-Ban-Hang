@@ -43,7 +43,7 @@ function AccessDenied() {
 
 export default function App() {
   const [activePage, setActivePage] = useState('dashboard');
-  const { data, updateData, loading: dataLoading, addItem } = useAppStore();
+  const { data, updateData, loading: dataLoading, addItem, resetDatabase } = useAppStore();
   const [user, setUser] = useState<User | null>(null);
   const [isApproved, setIsApproved] = useState<boolean | null>(null);
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
@@ -253,7 +253,7 @@ export default function App() {
         return <Repairs />;
       case 'settings':
         if (!isAdmin) return <AccessDenied />;
-        return <Settings data={data} updateData={updateData} />;
+        return <Settings data={data} updateData={updateData} resetDatabase={resetDatabase} />;
       case 'company-info':
         if (!isAdmin) return <AccessDenied />;
         return <CompanyInfo data={data} updateData={updateData} />;
