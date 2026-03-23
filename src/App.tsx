@@ -222,23 +222,23 @@ export default function App() {
         if (!isStaffOrAdmin) return <AccessDenied />;
         return <Customers data={data} updateData={updateData} />;
       case 'suppliers':
-        if (!isStaffOrAdmin) return <AccessDenied />;
+        if (!isAdmin) return <AccessDenied />;
         return <Suppliers data={data} updateData={updateData} />;
       case 'products':
         if (!isStaffOrAdmin) return <AccessDenied />;
-        return <Products data={data} updateData={updateData} />;
+        return <Products data={data} updateData={updateData} isAdmin={isAdmin} />;
       case 'categories':
         if (!isStaffOrAdmin) return <AccessDenied />;
         return <Categories data={data} updateData={updateData} />;
       case 'inventory':
         if (!isStaffOrAdmin) return <AccessDenied />;
-        return <Inventory data={data} updateData={updateData} />;
+        return <Inventory data={data} updateData={updateData} isAdmin={isAdmin} />;
       case 'debts':
         if (!isStaffOrAdmin) return <AccessDenied />;
-        return <Debts data={data} updateData={updateData} />;
+        return <Debts data={data} updateData={updateData} isAdmin={isAdmin} />;
       case 'orders':
         if (!isStaffOrAdmin) return <AccessDenied />;
-        return <Orders data={data} updateData={updateData} addItem={addItem} />;
+        return <Orders data={data} updateData={updateData} addItem={addItem} isAdmin={isAdmin} />;
       case 'reports':
         if (!isAdmin) return <AccessDenied />;
         return <Reports data={data} updateData={updateData} />;

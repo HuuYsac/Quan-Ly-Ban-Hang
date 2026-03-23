@@ -11,7 +11,8 @@ import {
   getDoc,
   writeBatch,
   query,
-  getDocs
+  getDocs,
+  limit
 } from 'firebase/firestore';
 import { onAuthStateChanged, User } from 'firebase/auth';
 
@@ -93,73 +94,64 @@ export function useAppStore() {
     const checkAndSeed = async () => {
       const docSnap = await getDoc(userRef);
       let approved = false;
+      const ownerEmail = 'dieuhuu1995@gmail.com';
+      const isOwner = user.email === ownerEmail;
+
       if (!docSnap.exists()) {
-        // New user, seed with initial data
+        // New user, create profile
         try {
           const batch = writeBatch(db);
           
-          // Seed collections
-          initialData.customers.forEach(c => {
-            batch.set(doc(db, 'users', user.uid, 'customers', c.id), c);
-          });
-          initialData.suppliers.forEach(s => {
-            batch.set(doc(db, 'users', user.uid, 'suppliers', s.id), s);
-          });
-          initialData.products.forEach(p => {
-            batch.set(doc(db, 'users', user.uid, 'products', p.id), p);
-          });
-          initialData.categories.forEach(cat => {
-            batch.set(doc(db, 'users', user.uid, 'categories', cat.id), cat);
-          });
-          initialData.orders.forEach(o => {
-            batch.set(doc(db, 'users', user.uid, 'orders', o.id), o);
-          });
-          initialData.repairs.forEach(r => {
-            batch.set(doc(db, 'users', user.uid, 'repairs', r.id), r);
-          });
-          initialData.leads.forEach(l => {
-            batch.set(doc(db, 'users', user.uid, 'leads', l.id), l);
-          });
-          initialData.careTasks.forEach(ct => {
-            batch.set(doc(db, 'users', user.uid, 'careTasks', ct.id), ct);
-          });
-          initialData.sales.forEach(s => {
-            batch.set(doc(db, 'users', user.uid, 'sales', s.id), s);
-          });
-          
-          // Seed config
-          batch.set(doc(db, 'users', user.uid, 'config', 'shopInfo'), initialData.shopInfo);
-          batch.set(doc(db, 'users', user.uid, 'config', 'settings'), initialData.settings);
-          batch.set(doc(db, 'users', user.uid, 'config', 'cskhSettings'), {
-            milestone1: 7,
-            milestone2: 3,
-            milestone3: 6
-          });
-          batch.set(doc(db, 'users', user.uid, 'config', 'notificationSettings'), {
-            zaloAccessToken: '',
-            zaloOaId: '',
-            smsApiKey: '',
-            smsProvider: 'esms',
-            autoSendWarranty: false,
-            daysBeforeExpiry: 7,
-            messageTemplate: 'Chào {customerName}, sản phẩm {productName} (S/N: {serviceTag}) của bạn sắp hết hạn bảo hành vào ngày {expiryDate}. Vui lòng liên hệ chúng tôi để được hỗ trợ.'
-          });
-          
-          // Create user profile
-          const ownerEmail = 'dieuhuu1995@gmail.com';
-          const isAdmin = user.email === ownerEmail;
-          approved = isAdmin;
           batch.set(userRef, {
             uid: user.uid,
             email: user.email,
             phone: user.phoneNumber || '00000000',
-            role: isAdmin ? 'admin' : 'user',
-            position: isAdmin ? 'Quản trị viên hệ thống' : '',
-            approved: isAdmin,
+            role: isOwner ? 'admin' : 'user',
+            position: isOwner ? 'Quản trị viên hệ thống' : '',
+            approved: isOwner,
             createdAt: new Date().toISOString()
           });
 
           await batch.commit();
+          approved = isOwner;
+
+          // If owner, seed shared collections if they are empty
+          if (isOwner) {
+            const customersSnap = await getDocs(query(collection(db, 'customers'), limit(1)));
+            if (customersSnap.empty) {
+              const seedBatch = writeBatch(db);
+              
+              initialData.customers.forEach(c => seedBatch.set(doc(db, 'customers', c.id), c));
+              initialData.suppliers.forEach(s => seedBatch.set(doc(db, 'suppliers', s.id), s));
+              initialData.products.forEach(p => seedBatch.set(doc(db, 'products', p.id), p));
+              initialData.categories.forEach(cat => seedBatch.set(doc(db, 'categories', cat.id), cat));
+              initialData.orders.forEach(o => seedBatch.set(doc(db, 'orders', o.id), o));
+              initialData.repairs.forEach(r => seedBatch.set(doc(db, 'repairs', r.id), r));
+              initialData.leads.forEach(l => seedBatch.set(doc(db, 'leads', l.id), l));
+              initialData.careTasks.forEach(ct => seedBatch.set(doc(db, 'careTasks', ct.id), ct));
+              initialData.sales.forEach(s => seedBatch.set(doc(db, 'sales', s.id), s));
+              initialData.promotions.forEach(p => seedBatch.set(doc(db, 'promotions', p.id), p));
+              
+              seedBatch.set(doc(db, 'config', 'shopInfo'), initialData.shopInfo);
+              seedBatch.set(doc(db, 'config', 'settings'), initialData.settings);
+              seedBatch.set(doc(db, 'config', 'cskhSettings'), {
+                milestone1: 7,
+                milestone2: 3,
+                milestone3: 6
+              });
+              seedBatch.set(doc(db, 'config', 'notificationSettings'), {
+                zaloAccessToken: '',
+                zaloOaId: '',
+                smsApiKey: '',
+                smsProvider: 'esms',
+                autoSendWarranty: false,
+                daysBeforeExpiry: 7,
+                messageTemplate: 'Chào {customerName}, sản phẩm {productName} (S/N: {serviceTag}) của bạn sắp hết hạn bảo hành vào ngày {expiryDate}. Vui lòng liên hệ chúng tôi để được hỗ trợ.'
+              });
+              
+              await seedBatch.commit();
+            }
+          }
         } catch (error) {
           console.error('Error seeding data:', error);
         }
@@ -171,13 +163,19 @@ export function useAppStore() {
 
     const startSync = async () => {
       const approved = await checkAndSeed();
+      if (!approved && user.email !== 'dieuhuu1995@gmail.com') {
+        setLoading(false);
+        return [];
+      }
       
       // Listen to collections
       const unsubscribers: (() => void)[] = [];
 
       // Sync users collection for admins
       const ownerEmail = 'dieuhuu1995@gmail.com';
-      const isAdminUser = user.email === ownerEmail;
+      const userDoc = await getDoc(userRef);
+      const userData = userDoc.data();
+      const isAdminUser = user.email === ownerEmail || userData?.role === 'admin';
 
       if (isAdminUser) {
         const usersRef = collection(db, 'users');
@@ -191,12 +189,15 @@ export function useAppStore() {
       }
 
       const syncCollection = (name: string, key: keyof AppData) => {
-        const colRef = collection(db, 'users', user.uid, name);
+        // Only sync suppliers for admins
+        if (name === 'suppliers' && !isAdminUser) return;
+
+        const colRef = collection(db, name);
         const unsub = onSnapshot(colRef, (snapshot) => {
           const items = snapshot.docs.map(doc => doc.data());
           setData(prev => ({ ...prev, [key]: items }));
         }, (error) => {
-          handleFirestoreError(error, OperationType.GET, `users/${user.uid}/${name}`);
+          handleFirestoreError(error, OperationType.GET, name);
         });
         unsubscribers.push(unsub);
       };
@@ -211,43 +212,44 @@ export function useAppStore() {
       syncCollection('careTasks', 'careTasks');
       syncCollection('sales', 'sales');
       syncCollection('warrantyNotifications', 'warrantyNotifications');
+      syncCollection('promotions', 'promotions');
 
-      // Listen to config
-      const unsubShop = onSnapshot(doc(db, 'users', user.uid, 'config', 'shopInfo'), (doc) => {
+      // Listen to shared config
+      const unsubShop = onSnapshot(doc(db, 'config', 'shopInfo'), (doc) => {
         if (doc.exists()) {
           setData(prev => ({ ...prev, shopInfo: doc.data() as ShopInfo }));
         }
       }, (error) => {
-        handleFirestoreError(error, OperationType.GET, `users/${user.uid}/config/shopInfo`);
+        handleFirestoreError(error, OperationType.GET, 'config/shopInfo');
       });
       unsubscribers.push(unsubShop);
 
-      const unsubSettings = onSnapshot(doc(db, 'users', user.uid, 'config', 'settings'), (doc) => {
+      const unsubSettings = onSnapshot(doc(db, 'config', 'settings'), (doc) => {
         if (doc.exists()) {
           setData(prev => ({ ...prev, settings: doc.data() as Settings }));
         }
         setLoading(false);
       }, (error) => {
-        handleFirestoreError(error, OperationType.GET, `users/${user.uid}/config/settings`);
+        handleFirestoreError(error, OperationType.GET, 'config/settings');
         setLoading(false);
       });
       unsubscribers.push(unsubSettings);
 
-      const unsubCSKH = onSnapshot(doc(db, 'users', user.uid, 'config', 'cskhSettings'), (doc) => {
+      const unsubCSKH = onSnapshot(doc(db, 'config', 'cskhSettings'), (doc) => {
         if (doc.exists()) {
           setData(prev => ({ ...prev, cskhSettings: doc.data() as CSKHSettings }));
         }
       }, (error) => {
-        handleFirestoreError(error, OperationType.GET, `users/${user.uid}/config/cskhSettings`);
+        handleFirestoreError(error, OperationType.GET, 'config/cskhSettings');
       });
       unsubscribers.push(unsubCSKH);
 
-      const unsubNotify = onSnapshot(doc(db, 'users', user.uid, 'config', 'notificationSettings'), (doc) => {
+      const unsubNotify = onSnapshot(doc(db, 'config', 'notificationSettings'), (doc) => {
         if (doc.exists()) {
           setData(prev => ({ ...prev, notificationSettings: doc.data() as NotificationSettings }));
         }
       }, (error) => {
-        handleFirestoreError(error, OperationType.GET, `users/${user.uid}/config/notificationSettings`);
+        handleFirestoreError(error, OperationType.GET, 'config/notificationSettings');
       });
       unsubscribers.push(unsubNotify);
 
@@ -270,16 +272,16 @@ export function useAppStore() {
     try {
       // Handle shopInfo and settings which are single docs
       if (newData.shopInfo) {
-        await setDoc(doc(db, 'users', user.uid, 'config', 'shopInfo'), newData.shopInfo, { merge: true });
+        await setDoc(doc(db, 'config', 'shopInfo'), newData.shopInfo, { merge: true });
       }
       if (newData.settings) {
-        await setDoc(doc(db, 'users', user.uid, 'config', 'settings'), newData.settings, { merge: true });
+        await setDoc(doc(db, 'config', 'settings'), newData.settings, { merge: true });
       }
       if (newData.cskhSettings) {
-        await setDoc(doc(db, 'users', user.uid, 'config', 'cskhSettings'), newData.cskhSettings, { merge: true });
+        await setDoc(doc(db, 'config', 'cskhSettings'), newData.cskhSettings, { merge: true });
       }
       if (newData.notificationSettings) {
-        await setDoc(doc(db, 'users', user.uid, 'config', 'notificationSettings'), newData.notificationSettings, { merge: true });
+        await setDoc(doc(db, 'config', 'notificationSettings'), newData.notificationSettings, { merge: true });
       }
 
       // Handle collections
@@ -296,13 +298,13 @@ export function useAppStore() {
           
           // Set/Update new and existing items
           newItems.forEach(item => {
-            const itemRef = doc(db, 'users', user.uid, collectionName, item.id);
+            const itemRef = doc(db, collectionName, item.id);
             batch.set(itemRef, item);
           });
           
           // Delete removed items
           deletedItems.forEach(item => {
-            const itemRef = doc(db, 'users', user.uid, collectionName, item.id);
+            const itemRef = doc(db, collectionName, item.id);
             batch.delete(itemRef);
           });
           
@@ -320,6 +322,7 @@ export function useAppStore() {
       await syncCollection('careTasks', 'careTasks');
       await syncCollection('sales', 'sales');
       await syncCollection('warrantyNotifications', 'warrantyNotifications');
+      await syncCollection('promotions', 'promotions');
 
     } catch (error) {
       console.error('Error updating data:', error);
@@ -329,17 +332,17 @@ export function useAppStore() {
   // Add more granular update methods
   const addItem = async (collectionName: string, item: any) => {
     if (!user) return;
-    await setDoc(doc(db, 'users', user.uid, collectionName, item.id), item);
+    await setDoc(doc(db, collectionName, item.id), item);
   };
 
   const updateItem = async (collectionName: string, id: string, item: any) => {
     if (!user) return;
-    await updateDoc(doc(db, 'users', user.uid, collectionName, id), item);
+    await updateDoc(doc(db, collectionName, id), item);
   };
 
   const deleteItem = async (collectionName: string, id: string) => {
     if (!user) return;
-    const itemRef = doc(db, 'users', user.uid, collectionName, id);
+    const itemRef = doc(db, collectionName, id);
     const { deleteDoc } = await import('firebase/firestore');
     await deleteDoc(itemRef);
   };

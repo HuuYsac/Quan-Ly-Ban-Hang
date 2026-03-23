@@ -8,9 +8,10 @@ interface OrdersProps {
   data: AppData;
   updateData: (newData: Partial<AppData>) => void;
   addItem?: (collectionName: string, item: any) => Promise<void>;
+  isAdmin?: boolean;
 }
 
-export function Orders({ data, updateData, addItem }: OrdersProps) {
+export function Orders({ data, updateData, addItem, isAdmin }: OrdersProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isAddCustomerModalOpen, setIsAddCustomerModalOpen] = useState(false);
@@ -1423,16 +1424,18 @@ export function Orders({ data, updateData, addItem }: OrdersProps) {
                     placeholder="0"
                   />
                 </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider">Giá nhập</label>
-                  <input 
-                    type="number" min="0"
-                    value={productFormData.importPrice}
-                    onChange={e => setProductFormData({...productFormData, importPrice: e.target.value})}
-                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-                    placeholder="0"
-                  />
-                </div>
+                {isAdmin && (
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider">Giá nhập</label>
+                    <input 
+                      type="number" min="0"
+                      value={productFormData.importPrice}
+                      onChange={e => setProductFormData({...productFormData, importPrice: e.target.value})}
+                      className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                      placeholder="0"
+                    />
+                  </div>
+                )}
                 <div>
                   <label className="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider">Tồn kho ban đầu</label>
                   <input 

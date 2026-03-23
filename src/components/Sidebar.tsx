@@ -36,7 +36,7 @@ export function Sidebar({ activePage, setActivePage, data, isAdmin, userRole }: 
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, section: 'Tổng quan', allowedRoles: ['admin', 'staff', 'user'] },
     { id: 'members', label: 'Thành viên', icon: UserCog, section: 'Hệ thống', allowedRoles: ['admin'] },
     { id: 'customers', label: 'Khách hàng', icon: Users, section: 'Quản lý cơ bản', allowedRoles: ['admin', 'staff'] },
-    { id: 'suppliers', label: 'Nhà cung cấp', icon: Building2, section: 'Quản lý cơ bản', allowedRoles: ['admin', 'staff'] },
+    { id: 'suppliers', label: 'Nhà cung cấp', icon: Building2, section: 'Quản lý cơ bản', allowedRoles: ['admin'] },
     { id: 'products', label: 'Sản phẩm', icon: Package, section: 'Quản lý cơ bản', allowedRoles: ['admin', 'staff'] },
     { id: 'categories', label: 'Danh mục', icon: FolderTree, section: 'Quản lý cơ bản', allowedRoles: ['admin', 'staff'] },
     { id: 'inventory', label: 'Kho hàng', icon: ClipboardList, section: 'Quản lý cơ bản', allowedRoles: ['admin', 'staff'] },

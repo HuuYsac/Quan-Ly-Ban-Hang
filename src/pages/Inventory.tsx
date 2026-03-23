@@ -6,9 +6,10 @@ import { formatCurrency } from '../lib/utils';
 interface InventoryProps {
   data: AppData;
   updateData: (newData: Partial<AppData>) => void;
+  isAdmin?: boolean;
 }
 
-export function Inventory({ data, updateData }: InventoryProps) {
+export function Inventory({ data, updateData, isAdmin }: InventoryProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [filter, setFilter] = useState<'all' | 'low' | 'out'>('all');
 
@@ -29,15 +30,17 @@ export function Inventory({ data, updateData }: InventoryProps) {
     <div className="animate-in fade-in duration-500">
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-        <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100 flex items-center justify-between border-l-4 border-l-blue-500">
-          <div>
-            <p className="text-sm font-medium text-gray-500 mb-1">Tổng giá trị tồn kho (Ước tính)</p>
-            <h3 className="text-2xl font-bold text-gray-900">{formatCurrency(totalValue)}</h3>
+        {isAdmin && (
+          <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100 flex items-center justify-between border-l-4 border-l-blue-500">
+            <div>
+              <p className="text-sm font-medium text-gray-500 mb-1">Tổng giá trị tồn kho (Ước tính)</p>
+              <h3 className="text-2xl font-bold text-gray-900">{formatCurrency(totalValue)}</h3>
+            </div>
+            <div className="w-12 h-12 bg-blue-50 rounded-full flex items-center justify-center text-blue-600">
+              <ClipboardList size={24} />
+            </div>
           </div>
-          <div className="w-12 h-12 bg-blue-50 rounded-full flex items-center justify-center text-blue-600">
-            <ClipboardList size={24} />
-          </div>
-        </div>
+        )}
         
         <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100 flex items-center justify-between border-l-4 border-l-amber-500">
           <div>

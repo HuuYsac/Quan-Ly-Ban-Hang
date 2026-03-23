@@ -7,9 +7,10 @@ import { Toast, ToastType, ConfirmModal } from '../components/Notification';
 interface ProductsProps {
   data: AppData;
   updateData: (newData: Partial<AppData>) => void;
+  isAdmin?: boolean;
 }
 
-export function Products({ data, updateData }: ProductsProps) {
+export function Products({ data, updateData, isAdmin }: ProductsProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -164,6 +165,7 @@ export function Products({ data, updateData }: ProductsProps) {
               <tr className="bg-gray-50 text-gray-500 text-sm uppercase tracking-wider">
                 <th className="p-4 font-medium">Sản phẩm</th>
                 <th className="p-4 font-medium">Danh mục</th>
+                {isAdmin && <th className="p-4 font-medium text-right">Giá nhập</th>}
                 <th className="p-4 font-medium text-right">Giá bán</th>
                 <th className="p-4 font-medium text-center">Tồn kho</th>
                 <th className="p-4 font-medium text-center">Thao tác</th>
@@ -184,6 +186,11 @@ export function Products({ data, updateData }: ProductsProps) {
                     </div>
                   </td>
                   <td className="p-4 text-sm text-gray-600">{product.category}</td>
+                  {isAdmin && (
+                    <td className="p-4 text-sm font-medium text-gray-500 text-right">
+                      {product.importPrice ? formatCurrency(product.importPrice) : 'N/A'}
+                    </td>
+                  )}
                   <td className="p-4 text-sm font-semibold text-gray-900 text-right">
                     {formatCurrency(product.price)}
                   </td>
@@ -258,6 +265,12 @@ export function Products({ data, updateData }: ProductsProps) {
                   <p className="text-gray-500 text-xs uppercase tracking-wider mb-1">Giá bán</p>
                   <p className="text-blue-600 font-bold">{formatCurrency(product.price)}</p>
                 </div>
+                {isAdmin && (
+                  <div>
+                    <p className="text-gray-500 text-xs uppercase tracking-wider mb-1">Giá nhập</p>
+                    <p className="text-gray-700 font-medium">{product.importPrice ? formatCurrency(product.importPrice) : 'N/A'}</p>
+                  </div>
+                )}
                 <div>
                   <p className="text-gray-500 text-xs uppercase tracking-wider mb-1">Tồn kho</p>
                   <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
@@ -357,16 +370,18 @@ export function Products({ data, updateData }: ProductsProps) {
                   />
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Giá nhập (VNĐ)</label>
-                  <input 
-                    type="number" min="0"
-                    value={formData.importPrice}
-                    onChange={e => setFormData({...formData, importPrice: e.target.value})}
-                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-                    placeholder="VD: 20000000"
-                  />
-                </div>
+                {isAdmin && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Giá nhập (VNĐ)</label>
+                    <input 
+                      type="number" min="0"
+                      value={formData.importPrice}
+                      onChange={e => setFormData({...formData, importPrice: e.target.value})}
+                      className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                      placeholder="VD: 20000000"
+                    />
+                  </div>
+                )}
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Tồn kho ban đầu *</label>

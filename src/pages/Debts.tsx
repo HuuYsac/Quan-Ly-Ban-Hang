@@ -6,9 +6,10 @@ import { formatCurrency } from '../lib/utils';
 interface DebtsProps {
   data: AppData;
   updateData: (newData: Partial<AppData>) => void;
+  isAdmin?: boolean;
 }
 
-export function Debts({ data, updateData }: DebtsProps) {
+export function Debts({ data, updateData, isAdmin }: DebtsProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState<'customers' | 'suppliers'>('customers');
   const [isCollectModalOpen, setIsCollectModalOpen] = useState(false);
@@ -98,15 +99,17 @@ export function Debts({ data, updateData }: DebtsProps) {
           </div>
         </div>
         
-        <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100 flex items-center justify-between border-l-4 border-l-rose-500">
-          <div>
-            <p className="text-sm font-medium text-gray-500 mb-1">Nợ nhà cung cấp (Phải trả)</p>
-            <h3 className="text-2xl font-bold text-gray-900">{formatCurrency(totalSupplierDebt)}</h3>
+        {isAdmin && (
+          <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100 flex items-center justify-between border-l-4 border-l-rose-500">
+            <div>
+              <p className="text-sm font-medium text-gray-500 mb-1">Nợ nhà cung cấp (Phải trả)</p>
+              <h3 className="text-2xl font-bold text-gray-900">{formatCurrency(totalSupplierDebt)}</h3>
+            </div>
+            <div className="w-12 h-12 bg-rose-50 rounded-full flex items-center justify-center text-rose-600">
+              <ArrowUpRight size={24} />
+            </div>
           </div>
-          <div className="w-12 h-12 bg-rose-50 rounded-full flex items-center justify-center text-rose-600">
-            <ArrowUpRight size={24} />
-          </div>
-        </div>
+        )}
       </div>
 
       {/* Actions & Search */}
@@ -119,12 +122,14 @@ export function Debts({ data, updateData }: DebtsProps) {
             >
               Phải thu khách hàng
             </button>
-            <button 
-              onClick={() => setActiveTab('suppliers')}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ${activeTab === 'suppliers' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
-            >
-              Phải trả nhà cung cấp
-            </button>
+            {isAdmin && (
+              <button 
+                onClick={() => setActiveTab('suppliers')}
+                className={`px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ${activeTab === 'suppliers' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+              >
+                Phải trả nhà cung cấp
+              </button>
+            )}
           </div>
           <div className="relative w-full sm:w-96">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
