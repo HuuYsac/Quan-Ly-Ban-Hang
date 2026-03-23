@@ -7,11 +7,13 @@ import { Toast, ToastType, ConfirmModal } from '../components/Notification';
 interface OrdersProps {
   data: AppData;
   updateData: (newData: Partial<AppData>) => void;
-  addItem?: (collectionName: string, item: any) => Promise<void>;
+  addItem: (collectionName: string, item: any) => Promise<void>;
+  updateItem: (collectionName: string, id: string, item: any) => Promise<void>;
+  deleteItem: (collectionName: string, id: string) => Promise<void>;
   isAdmin?: boolean;
 }
 
-export function Orders({ data, updateData, addItem, isAdmin }: OrdersProps) {
+export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAdmin }: OrdersProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isAddCustomerModalOpen, setIsAddCustomerModalOpen] = useState(false);
@@ -72,56 +74,69 @@ export function Orders({ data, updateData, addItem, isAdmin }: OrdersProps) {
     o.customerName.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     const orderToDelete = data.orders.find(o => o.id === id);
     if (!orderToDelete) return;
 
-    // Revert stock
-    const updatedProducts = [...data.products];
-    orderToDelete.products.forEach(item => {
-      const pIdx = updatedProducts.findIndex(p => p.id === item.productId);
-      if (pIdx > -1) {
-        updatedProducts[pIdx] = { ...updatedProducts[pIdx], stock: updatedProducts[pIdx].stock + item.quantity };
+    try {
+      // Revert stock
+      for (const item of orderToDelete.products) {
+        const product = data.products.find(p => p.id === item.productId);
+        if (product) {
+          await updateItem('products', product.id, {
+            ...product,
+            stock: product.stock + item.quantity
+          });
+        }
       }
-    });
 
-    // Revert debt
-    const updatedCustomers = [...data.customers];
-    if (orderToDelete.paymentStatus === 'Công nợ') {
-      const cIdx = updatedCustomers.findIndex(c => c.id === orderToDelete.customerId);
-      if (cIdx > -1) {
-        updatedCustomers[cIdx] = { ...updatedCustomers[cIdx], debt: updatedCustomers[cIdx].debt - orderToDelete.total };
+      // Revert debt
+      if (orderToDelete.paymentStatus === 'Công nợ') {
+        const customer = data.customers.find(c => c.id === orderToDelete.customerId);
+        if (customer) {
+          await updateItem('customers', customer.id, {
+            ...customer,
+            debt: customer.debt - orderToDelete.total
+          });
+        }
       }
+
+      await deleteItem('orders', id);
+      setConfirmingDelete(null);
+      showToast('Đã xóa đơn hàng thành công');
+    } catch (error) {
+      console.error('Lỗi khi xóa đơn hàng:', error);
+      showToast('Có lỗi xảy ra khi xóa đơn hàng', 'error');
     }
-
-    updateData({
-      orders: data.orders.filter(o => o.id !== id),
-      products: updatedProducts,
-      customers: updatedCustomers
-    });
-    setConfirmingDelete(null);
-    showToast('Đã xóa đơn hàng thành công');
   };
 
-  const togglePaymentStatus = (id: string) => {
+  const togglePaymentStatus = async (id: string) => {
     const order = data.orders.find(o => o.id === id);
     if (!order) return;
 
     const newPaymentStatus = order.paymentStatus === 'Đã thanh toán' ? 'Công nợ' : 'Đã thanh toán';
     const newStatus = newPaymentStatus === 'Đã thanh toán' ? 'Hoàn thành' : 'Đang xử lý';
 
-    // Update debt
-    const updatedCustomers = [...data.customers];
-    const cIdx = updatedCustomers.findIndex(c => c.id === order.customerId);
-    if (cIdx > -1) {
-      const debtChange = newPaymentStatus === 'Công nợ' ? order.total : -order.total;
-      updatedCustomers[cIdx] = { ...updatedCustomers[cIdx], debt: updatedCustomers[cIdx].debt + debtChange };
-    }
+    try {
+      // Update debt
+      const customer = data.customers.find(c => c.id === order.customerId);
+      if (customer) {
+        const debtChange = newPaymentStatus === 'Công nợ' ? order.total : -order.total;
+        await updateItem('customers', customer.id, {
+          ...customer,
+          debt: customer.debt + debtChange
+        });
+      }
 
-    updateData({
-      orders: data.orders.map(o => o.id === id ? { ...o, paymentStatus: newPaymentStatus, status: newStatus } : o),
-      customers: updatedCustomers
-    });
+      await updateItem('orders', id, {
+        ...order,
+        paymentStatus: newPaymentStatus,
+        status: newStatus
+      });
+    } catch (error) {
+      console.error('Lỗi khi cập nhật trạng thái thanh toán:', error);
+      showToast('Có lỗi xảy ra khi cập nhật trạng thái', 'error');
+    }
   };
 
   const handleAddItem = () => setOrderItems([...orderItems, { 
@@ -193,9 +208,12 @@ export function Orders({ data, updateData, addItem, isAdmin }: OrdersProps) {
     try {
       setIsSubmittingCustomer(true);
       
-      // Generate a more unique ID to avoid collisions
-      const nextId = data.customers.length + 1;
-      const newId = `KH${String(nextId).padStart(3, '0')}`;
+      // Robust ID generation
+      const maxId = data.customers.reduce((max, c) => {
+        const idNum = parseInt(c.id.replace('KH', ''));
+        return isNaN(idNum) ? max : Math.max(max, idNum);
+      }, 0);
+      const newId = `KH${String(maxId + 1).padStart(3, '0')}`;
       
       const newCustomer: any = {
         id: newId,
@@ -206,7 +224,8 @@ export function Orders({ data, updateData, addItem, isAdmin }: OrdersProps) {
         type: customerFormData.type,
         debt: 0,
         tags: customerFormData.tags.split(',').map(t => t.trim()).filter(t => t),
-        devices: []
+        devices: [],
+        createdAt: new Date().toISOString()
       };
 
       if (customerFormData.type === 'doanh-nghiep') {
@@ -214,13 +233,7 @@ export function Orders({ data, updateData, addItem, isAdmin }: OrdersProps) {
         newCustomer.taxCode = customerFormData.taxCode || '';
       }
 
-      if (addItem) {
-        await addItem('customers', newCustomer);
-      } else {
-        await updateData({
-          customers: [newCustomer, ...data.customers]
-        });
-      }
+      await addItem('customers', newCustomer);
 
       // Store it locally so the select can show it immediately
       setNewlyCreatedCustomer(newCustomer);
@@ -229,6 +242,7 @@ export function Orders({ data, updateData, addItem, isAdmin }: OrdersProps) {
       setCustomerFormData({
         name: '', phone: '', email: '', address: '', type: 'ca-nhan', companyName: '', taxCode: '', tags: ''
       });
+      showToast('Đã thêm khách hàng mới');
     } catch (error) {
       console.error('Error creating customer:', error);
       showToast('Có lỗi xảy ra khi tạo khách hàng. Vui lòng thử lại.', 'error');
@@ -244,8 +258,12 @@ export function Orders({ data, updateData, addItem, isAdmin }: OrdersProps) {
     try {
       setIsSubmittingProduct(true);
       
-      const nextId = data.products.length + 1;
-      const newId = `SP${String(nextId).padStart(3, '0')}`;
+      // Robust ID generation
+      const maxId = data.products.reduce((max, p) => {
+        const idNum = parseInt(p.id.replace('SP', ''));
+        return isNaN(idNum) ? max : Math.max(max, idNum);
+      }, 0);
+      const newId = `SP${String(maxId + 1).padStart(3, '0')}`;
       
       const newProduct: any = {
         id: newId,
@@ -255,16 +273,11 @@ export function Orders({ data, updateData, addItem, isAdmin }: OrdersProps) {
         importPrice: productFormData.importPrice ? Number(productFormData.importPrice) : undefined,
         stock: Number(productFormData.stock) || 0,
         minStock: Number(productFormData.minStock) || 10,
-        supplier: productFormData.supplier || ''
+        supplier: productFormData.supplier || '',
+        createdAt: new Date().toISOString()
       };
 
-      if (addItem) {
-        await addItem('products', newProduct);
-      } else {
-        await updateData({
-          products: [newProduct, ...data.products]
-        });
-      }
+      await addItem('products', newProduct);
 
       setNewlyCreatedProduct(newProduct);
       
@@ -283,6 +296,7 @@ export function Orders({ data, updateData, addItem, isAdmin }: OrdersProps) {
         name: '', category: '', price: '', importPrice: '', stock: '', minStock: '10', supplier: ''
       });
       setCurrentOrderItemIndex(null);
+      showToast('Đã thêm sản phẩm mới');
     } catch (error) {
       console.error('Error creating product:', error);
       showToast('Có lỗi xảy ra khi tạo sản phẩm. Vui lòng thử lại.', 'error');
@@ -298,8 +312,12 @@ export function Orders({ data, updateData, addItem, isAdmin }: OrdersProps) {
     try {
       setIsSubmittingSupplier(true);
       
-      const nextId = data.suppliers.length + 1;
-      const newId = `NCC${String(nextId).padStart(3, '0')}`;
+      // Robust ID generation
+      const maxId = data.suppliers.reduce((max, s) => {
+        const idNum = parseInt(s.id.replace('NCC', ''));
+        return isNaN(idNum) ? max : Math.max(max, idNum);
+      }, 0);
+      const newId = `NCC${String(maxId + 1).padStart(3, '0')}`;
       
       const newSupplier: any = {
         id: newId,
@@ -309,16 +327,11 @@ export function Orders({ data, updateData, addItem, isAdmin }: OrdersProps) {
         address: supplierFormData.address || '',
         products: supplierFormData.products || '',
         notes: supplierFormData.notes || '',
-        debt: 0
+        debt: 0,
+        createdAt: new Date().toISOString()
       };
 
-      if (addItem) {
-        await addItem('suppliers', newSupplier);
-      } else {
-        await updateData({
-          suppliers: [newSupplier, ...data.suppliers]
-        });
-      }
+      await addItem('suppliers', newSupplier);
 
       setNewlyCreatedSupplier(newSupplier);
       setProductFormData({ ...productFormData, supplier: newSupplier.name });
@@ -326,6 +339,7 @@ export function Orders({ data, updateData, addItem, isAdmin }: OrdersProps) {
       setSupplierFormData({
         name: '', phone: '', email: '', address: '', products: '', notes: ''
       });
+      showToast('Đã thêm nhà cung cấp mới');
     } catch (error) {
       console.error('Error creating supplier:', error);
       showToast('Có lỗi xảy ra khi tạo nhà cung cấp. Vui lòng thử lại.', 'error');
@@ -371,7 +385,7 @@ export function Orders({ data, updateData, addItem, isAdmin }: OrdersProps) {
     setIsAddModalOpen(true);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.customerId) return showToast('Vui lòng chọn khách hàng', 'warning');
     
@@ -381,130 +395,154 @@ export function Orders({ data, updateData, addItem, isAdmin }: OrdersProps) {
     const customer = data.customers.find(c => c.id === formData.customerId);
     if (!customer) return;
 
-    let total = 0;
-    const finalItems = validItems.map(item => {
-      let subtotal = item.quantity * item.price;
-      if (item.discountType === 'percent') {
-        subtotal = subtotal * (1 - (item.discount || 0) / 100);
+    try {
+      let total = 0;
+      const finalItems = validItems.map(item => {
+        let subtotal = item.quantity * item.price;
+        if (item.discountType === 'percent') {
+          subtotal = subtotal * (1 - (item.discount || 0) / 100);
+        } else {
+          subtotal = Math.max(0, subtotal - (item.discount || 0));
+        }
+        total += subtotal;
+        return { ...item, subtotal };
+      });
+
+      if (editingId) {
+        const oldOrder = data.orders.find(o => o.id === editingId);
+        if (!oldOrder) return;
+
+        // 1. Revert old order stock
+        for (const item of oldOrder.products) {
+          const product = data.products.find(p => p.id === item.productId);
+          if (product) {
+            await updateItem('products', product.id, {
+              ...product,
+              stock: product.stock + item.quantity
+            });
+          }
+        }
+
+        // 2. Revert old order debt
+        if (oldOrder.paymentStatus === 'Công nợ') {
+          const oldCustomer = data.customers.find(c => c.id === oldOrder.customerId);
+          if (oldCustomer) {
+            await updateItem('customers', oldCustomer.id, {
+              ...oldCustomer,
+              debt: oldCustomer.debt - oldOrder.total
+            });
+          }
+        }
+
+        // 3. Apply new order stock
+        for (const item of finalItems) {
+          const product = data.products.find(p => p.id === item.productId);
+          if (product) {
+            await updateItem('products', product.id, {
+              ...product,
+              stock: product.stock - item.quantity
+            });
+          }
+        }
+
+        // 4. Apply new order debt
+        if (formData.paymentStatus === 'Công nợ') {
+          const currentCustomer = data.customers.find(c => c.id === customer.id);
+          if (currentCustomer) {
+            await updateItem('customers', currentCustomer.id, {
+              ...currentCustomer,
+              debt: currentCustomer.debt + total
+            });
+          }
+        }
+
+        // 5. Update order
+        await updateItem('orders', editingId, {
+          ...oldOrder,
+          customerId: customer.id,
+          customerName: customer.name,
+          products: finalItems,
+          total,
+          status: formData.paymentStatus === 'Đã thanh toán' ? 'Hoàn thành' : 'Đang xử lý',
+          paymentMethod: formData.paymentMethod,
+          paymentStatus: formData.paymentStatus,
+          notes: formData.notes,
+          updatedAt: new Date().toISOString()
+        });
+
       } else {
-        subtotal = Math.max(0, subtotal - (item.discount || 0));
-      }
-      total += subtotal;
-      return { ...item, subtotal };
-    });
+        const now = new Date();
+        // Robust ID generation for order
+        const maxId = data.orders.reduce((max, o) => {
+          const idNum = parseInt(o.id.replace('DH', ''));
+          return isNaN(idNum) ? max : Math.max(max, idNum);
+        }, 0);
+        const newOrderId = `DH${String(maxId + 1).padStart(3, '0')}`;
 
-    const updatedProducts = [...data.products];
-    const updatedCustomers = [...data.customers];
-    let newOrders = [...data.orders];
+        const newOrder: Order = {
+          id: newOrderId,
+          customerId: customer.id,
+          customerName: customer.name,
+          date: now.toISOString().split('T')[0],
+          time: now.toTimeString().split(' ')[0].substring(0, 5),
+          products: finalItems,
+          total,
+          status: formData.paymentStatus === 'Đã thanh toán' ? 'Hoàn thành' : 'Đang xử lý',
+          paymentMethod: formData.paymentMethod,
+          paymentStatus: formData.paymentStatus,
+          notes: formData.notes,
+          createdAt: now.toISOString(),
+          updatedAt: now.toISOString()
+        };
 
-    if (editingId) {
-      const oldOrder = data.orders.find(o => o.id === editingId);
-      if (!oldOrder) return;
-
-      // 1. Revert old order stock
-      oldOrder.products.forEach(item => {
-        const pIdx = updatedProducts.findIndex(p => p.id === item.productId);
-        if (pIdx > -1) {
-          updatedProducts[pIdx] = { ...updatedProducts[pIdx], stock: updatedProducts[pIdx].stock + item.quantity };
+        // Apply new order stock
+        for (const item of finalItems) {
+          const product = data.products.find(p => p.id === item.productId);
+          if (product) {
+            await updateItem('products', product.id, {
+              ...product,
+              stock: product.stock - item.quantity
+            });
+          }
         }
-      });
 
-      // 2. Revert old order debt
-      if (oldOrder.paymentStatus === 'Công nợ') {
-        const cIdx = updatedCustomers.findIndex(c => c.id === oldOrder.customerId);
-        if (cIdx > -1) {
-          updatedCustomers[cIdx] = { ...updatedCustomers[cIdx], debt: updatedCustomers[cIdx].debt - oldOrder.total };
+        // Apply new order debt
+        if (formData.paymentStatus === 'Công nợ') {
+          const currentCustomer = data.customers.find(c => c.id === customer.id);
+          if (currentCustomer) {
+            await updateItem('customers', currentCustomer.id, {
+              ...currentCustomer,
+              debt: currentCustomer.debt + total
+            });
+          }
         }
-      }
 
-      // 3. Apply new order stock
-      finalItems.forEach(item => {
-        const pIdx = updatedProducts.findIndex(p => p.id === item.productId);
-        if (pIdx > -1) {
-          updatedProducts[pIdx] = { ...updatedProducts[pIdx], stock: updatedProducts[pIdx].stock - item.quantity };
-        }
-      });
-
-      // 4. Apply new order debt
-      if (formData.paymentStatus === 'Công nợ') {
-        const cIdx = updatedCustomers.findIndex(c => c.id === customer.id);
-        if (cIdx > -1) {
-          updatedCustomers[cIdx] = { ...updatedCustomers[cIdx], debt: updatedCustomers[cIdx].debt + total };
-        }
-      }
-
-      // 5. Update order
-      newOrders = newOrders.map(o => o.id === editingId ? {
-        ...o,
-        customerId: customer.id,
-        customerName: customer.name,
-        products: finalItems,
-        total,
-        status: formData.paymentStatus === 'Đã thanh toán' ? 'Hoàn thành' : 'Đang xử lý',
-        paymentMethod: formData.paymentMethod,
-        paymentStatus: formData.paymentStatus,
-        notes: formData.notes
-      } : o);
-
-    } else {
-      const now = new Date();
-      const newOrder: Order = {
-        id: `DH${String(data.orders.length + 1).padStart(3, '0')}`,
-        customerId: customer.id,
-        customerName: customer.name,
-        date: now.toISOString().split('T')[0],
-        time: now.toTimeString().split(' ')[0].substring(0, 5),
-        products: finalItems,
-        total,
-        status: formData.paymentStatus === 'Đã thanh toán' ? 'Hoàn thành' : 'Đang xử lý',
-        paymentMethod: formData.paymentMethod,
-        paymentStatus: formData.paymentStatus,
-        notes: formData.notes
-      };
-
-      // Apply new order stock
-      finalItems.forEach(item => {
-        const pIdx = updatedProducts.findIndex(p => p.id === item.productId);
-        if (pIdx > -1) {
-          updatedProducts[pIdx] = { ...updatedProducts[pIdx], stock: updatedProducts[pIdx].stock - item.quantity };
-        }
-      });
-
-      // Apply new order debt
-      if (formData.paymentStatus === 'Công nợ') {
-        const cIdx = updatedCustomers.findIndex(c => c.id === customer.id);
-        if (cIdx > -1) {
-          updatedCustomers[cIdx] = { ...updatedCustomers[cIdx], debt: updatedCustomers[cIdx].debt + total };
-        }
+        await addItem('orders', newOrder);
       }
 
-      newOrders = [newOrder, ...newOrders];
+      setIsAddModalOpen(false);
+      setEditingId(null);
+      showToast(editingId ? 'Đã cập nhật đơn hàng thành công' : 'Đã tạo đơn hàng thành công');
+      setFormData({ customerId: '', paymentMethod: 'Tiền mặt', paymentStatus: 'Đã thanh toán', notes: '' });
+      setOrderItems([{ 
+        productId: '', 
+        name: '', 
+        quantity: 1, 
+        price: 0, 
+        discount: 0,
+        discountType: 'percent',
+        serviceTag: '',
+        cpu: '',
+        ram: '',
+        ssd: '',
+        screen: '',
+        purchaseDate: new Date().toISOString().split('T')[0],
+        warrantyMonths: 12
+      }]);
+    } catch (error) {
+      console.error('Error submitting order:', error);
+      showToast('Có lỗi xảy ra khi lưu đơn hàng', 'error');
     }
-
-    updateData({
-      orders: newOrders,
-      products: updatedProducts,
-      customers: updatedCustomers
-    });
-
-    setIsAddModalOpen(false);
-    setEditingId(null);
-    showToast(editingId ? 'Đã cập nhật đơn hàng thành công' : 'Đã tạo đơn hàng thành công');
-    setFormData({ customerId: '', paymentMethod: 'Tiền mặt', paymentStatus: 'Đã thanh toán', notes: '' });
-    setOrderItems([{ 
-      productId: '', 
-      name: '', 
-      quantity: 1, 
-      price: 0, 
-      discount: 0,
-      serviceTag: '',
-      cpu: '',
-      ram: '',
-      ssd: '',
-      screen: '',
-      purchaseDate: new Date().toISOString().split('T')[0],
-      warrantyMonths: 12
-    }]);
   };
 
   return (
@@ -1085,7 +1123,7 @@ export function Orders({ data, updateData, addItem, isAdmin }: OrdersProps) {
                                 setCurrentOrderItemIndex(index);
                                 setIsAddProductModalOpen(true);
                               }}
-                              className="p-2 text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors border border-blue-100"
+                              className="p-2 text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors border border-blue-100 flex-shrink-0"
                               title="Thêm sản phẩm mới"
                             >
                               <PlusCircle size={18} />

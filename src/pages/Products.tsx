@@ -7,10 +7,13 @@ import { Toast, ToastType, ConfirmModal } from '../components/Notification';
 interface ProductsProps {
   data: AppData;
   updateData: (newData: Partial<AppData>) => void;
+  addItem: (collectionName: string, item: any) => Promise<void>;
+  updateItem: (collectionName: string, id: string, item: any) => Promise<void>;
+  deleteItem: (collectionName: string, id: string) => Promise<void>;
   isAdmin?: boolean;
 }
 
-export function Products({ data, updateData, isAdmin }: ProductsProps) {
+export function Products({ data, updateData, addItem, updateItem, deleteItem, isAdmin }: ProductsProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -37,12 +40,15 @@ export function Products({ data, updateData, isAdmin }: ProductsProps) {
 
   const lowStockCount = data.products.filter(p => p.stock < p.minStock).length;
 
-  const handleDelete = (id: string) => {
-    updateData({
-      products: data.products.filter(p => p.id !== id)
-    });
-    setConfirmingDelete(null);
-    showToast('Đã xóa sản phẩm thành công');
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteItem('products', id);
+      setConfirmingDelete(null);
+      showToast('Đã xóa sản phẩm thành công');
+    } catch (error) {
+      console.error('Lỗi khi xóa sản phẩm:', error);
+      showToast('Có lỗi xảy ra khi xóa sản phẩm', 'error');
+    }
   };
 
   const handleEdit = (product: Product) => {
@@ -59,49 +65,60 @@ export function Products({ data, updateData, isAdmin }: ProductsProps) {
     setIsAddModalOpen(true);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (editingId) {
-      updateData({
-        products: data.products.map(p => 
-          p.id === editingId 
-            ? {
-                ...p,
-                name: formData.name,
-                category: formData.category,
-                price: Number(formData.price),
-                importPrice: formData.importPrice ? Number(formData.importPrice) : undefined,
-                stock: Number(formData.stock),
-                minStock: Number(formData.minStock),
-                supplier: formData.supplier
-              }
-            : p
-        )
-      });
-    } else {
-      const newProduct: Product = {
-        id: `SP${String(data.products.length + 1).padStart(3, '0')}`,
-        name: formData.name,
-        category: formData.category,
-        price: Number(formData.price),
-        importPrice: formData.importPrice ? Number(formData.importPrice) : undefined,
-        stock: Number(formData.stock),
-        minStock: Number(formData.minStock),
-        supplier: formData.supplier
-      };
+    try {
+      if (editingId) {
+        const productToUpdate = data.products.find(p => p.id === editingId);
+        if (!productToUpdate) return;
+
+        const updatedProduct = {
+          ...productToUpdate,
+          name: formData.name,
+          category: formData.category,
+          price: Number(formData.price),
+          importPrice: formData.importPrice ? Number(formData.importPrice) : undefined,
+          stock: Number(formData.stock),
+          minStock: Number(formData.minStock),
+          supplier: formData.supplier,
+          updatedAt: new Date().toISOString()
+        };
+
+        await updateItem('products', editingId, updatedProduct);
+      } else {
+        // Robust ID generation: find max ID and increment
+        const maxId = data.products.reduce((max, p) => {
+          const idNum = parseInt(p.id.replace('SP', ''));
+          return isNaN(idNum) ? max : Math.max(max, idNum);
+        }, 0);
+
+        const newProduct: Product = {
+          id: `SP${String(maxId + 1).padStart(3, '0')}`,
+          name: formData.name,
+          category: formData.category,
+          price: Number(formData.price),
+          importPrice: formData.importPrice ? Number(formData.importPrice) : undefined,
+          stock: Number(formData.stock),
+          minStock: Number(formData.minStock),
+          supplier: formData.supplier,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+        
+        await addItem('products', newProduct);
+      }
       
-      updateData({
-        products: [newProduct, ...data.products]
+      setIsAddModalOpen(false);
+      setEditingId(null);
+      showToast(editingId ? 'Đã cập nhật sản phẩm thành công' : 'Đã thêm sản phẩm thành công');
+      setFormData({
+        name: '', category: '', price: '', importPrice: '', stock: '', minStock: '10', supplier: ''
       });
+    } catch (error) {
+      console.error('Lỗi khi lưu sản phẩm:', error);
+      showToast('Có lỗi xảy ra khi lưu sản phẩm', 'error');
     }
-    
-    setIsAddModalOpen(false);
-    setEditingId(null);
-    showToast(editingId ? 'Đã cập nhật sản phẩm thành công' : 'Đã thêm sản phẩm thành công');
-    setFormData({
-      name: '', category: '', price: '', importPrice: '', stock: '', minStock: '10', supplier: ''
-    });
   };
 
   return (

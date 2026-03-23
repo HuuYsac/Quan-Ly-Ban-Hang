@@ -6,9 +6,12 @@ import { Users, Search, Plus, Edit, Trash2, Laptop, ShieldCheck, ShieldAlert, Wr
 interface CustomersProps {
   data: AppData;
   updateData: (newData: Partial<AppData>) => void;
+  addItem: (collection: keyof AppData, item: any) => Promise<void>;
+  updateItem: (collection: keyof AppData, id: string, item: any) => Promise<void>;
+  deleteItem: (collection: keyof AppData, id: string) => Promise<void>;
 }
 
-export function Customers({ data, updateData }: CustomersProps) {
+export function Customers({ data, updateData, addItem, updateItem, deleteItem }: CustomersProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -31,11 +34,13 @@ export function Customers({ data, updateData }: CustomersProps) {
     (c.tags && c.tags.some(t => t.toLowerCase().includes(searchTerm.toLowerCase())))
   );
 
-  const handleDelete = (id: string) => {
-    updateData({
-      customers: data.customers.filter(c => c.id !== id)
-    });
-    setConfirmingDelete(null);
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteItem('customers', id);
+      setConfirmingDelete(null);
+    } catch (error) {
+      console.error('Lỗi khi xóa khách hàng:', error);
+    }
   };
 
   const handleEdit = (customer: Customer) => {
@@ -54,62 +59,71 @@ export function Customers({ data, updateData }: CustomersProps) {
     setIsAddModalOpen(true);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (editingId) {
-      const updatedCustomer: any = {
-        ...data.customers.find(c => c.id === editingId),
-        name: formData.name,
-        phone: formData.phone,
-        email: formData.email || '',
-        address: formData.address || '',
-        facebook: formData.facebook || '',
-        type: formData.type,
-        tags: formData.tags.split(',').map(t => t.trim()).filter(t => t)
-      };
+    try {
+      if (editingId) {
+        const existingCustomer = data.customers.find(c => c.id === editingId);
+        if (!existingCustomer) return;
 
-      if (formData.type === 'doanh-nghiep') {
-        updatedCustomer.companyName = formData.companyName || '';
-        updatedCustomer.taxCode = formData.taxCode || '';
+        const updatedCustomer: any = {
+          ...existingCustomer,
+          name: formData.name,
+          phone: formData.phone,
+          email: formData.email || '',
+          address: formData.address || '',
+          facebook: formData.facebook || '',
+          type: formData.type,
+          tags: formData.tags.split(',').map(t => t.trim()).filter(t => t)
+        };
+
+        if (formData.type === 'doanh-nghiep') {
+          updatedCustomer.companyName = formData.companyName || '';
+          updatedCustomer.taxCode = formData.taxCode || '';
+        } else {
+          // Remove these fields if switching back to individual
+          delete updatedCustomer.companyName;
+          delete updatedCustomer.taxCode;
+        }
+
+        await updateItem('customers', editingId, updatedCustomer);
       } else {
-        // Remove these fields if switching back to individual
-        delete updatedCustomer.companyName;
-        delete updatedCustomer.taxCode;
-      }
+        // Robust ID generation
+        const maxId = data.customers.reduce((max, c) => {
+          const idNum = parseInt(c.id.replace('KH', ''));
+          return isNaN(idNum) ? max : Math.max(max, idNum);
+        }, 0);
 
-      updateData({
-        customers: data.customers.map(c => c.id === editingId ? updatedCustomer : c)
-      });
-    } else {
-      const newCustomer: any = {
-        id: `KH${String(data.customers.length + 1).padStart(3, '0')}`,
-        name: formData.name,
-        phone: formData.phone,
-        email: formData.email || '',
-        address: formData.address || '',
-        facebook: formData.facebook || '',
-        type: formData.type,
-        debt: 0,
-        tags: formData.tags.split(',').map(t => t.trim()).filter(t => t),
-        devices: []
-      };
+        const newCustomer: any = {
+          id: `KH${String(maxId + 1).padStart(3, '0')}`,
+          name: formData.name,
+          phone: formData.phone,
+          email: formData.email || '',
+          address: formData.address || '',
+          facebook: formData.facebook || '',
+          type: formData.type,
+          debt: 0,
+          tags: formData.tags.split(',').map(t => t.trim()).filter(t => t),
+          devices: []
+        };
 
-      if (formData.type === 'doanh-nghiep') {
-        newCustomer.companyName = formData.companyName || '';
-        newCustomer.taxCode = formData.taxCode || '';
+        if (formData.type === 'doanh-nghiep') {
+          newCustomer.companyName = formData.companyName || '';
+          newCustomer.taxCode = formData.taxCode || '';
+        }
+        
+        await addItem('customers', newCustomer);
       }
       
-      updateData({
-        customers: [newCustomer, ...data.customers]
+      setIsAddModalOpen(false);
+      setEditingId(null);
+      setFormData({
+        name: '', phone: '', email: '', address: '', facebook: '', type: 'ca-nhan', companyName: '', taxCode: '', tags: ''
       });
+    } catch (error) {
+      console.error('Lỗi khi lưu khách hàng:', error);
     }
-    
-    setIsAddModalOpen(false);
-    setEditingId(null);
-    setFormData({
-      name: '', phone: '', email: '', address: '', facebook: '', type: 'ca-nhan', companyName: '', taxCode: '', tags: ''
-    });
   };
 
   const getWarrantyStatus = (customer: Customer) => {

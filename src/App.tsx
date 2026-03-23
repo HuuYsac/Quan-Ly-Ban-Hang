@@ -43,7 +43,7 @@ function AccessDenied() {
 
 export default function App() {
   const [activePage, setActivePage] = useState('dashboard');
-  const { data, updateData, loading: dataLoading, addItem, resetDatabase } = useAppStore();
+  const { data, updateData, loading: dataLoading, addItem, updateItem, deleteItem, resetDatabase } = useAppStore();
   const [user, setUser] = useState<User | null>(null);
   const [isApproved, setIsApproved] = useState<boolean | null>(null);
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
@@ -220,31 +220,31 @@ export default function App() {
         return <Members />;
       case 'customers':
         if (!isStaffOrAdmin) return <AccessDenied />;
-        return <Customers data={data} updateData={updateData} />;
+        return <Customers data={data} updateData={updateData} addItem={addItem} updateItem={updateItem} deleteItem={deleteItem} />;
       case 'suppliers':
         if (!isAdmin) return <AccessDenied />;
-        return <Suppliers data={data} updateData={updateData} isAdmin={isAdmin} />;
+        return <Suppliers data={data} updateData={updateData} addItem={addItem} updateItem={updateItem} deleteItem={deleteItem} isAdmin={isAdmin} />;
       case 'products':
         if (!isStaffOrAdmin) return <AccessDenied />;
-        return <Products data={data} updateData={updateData} isAdmin={isAdmin} />;
+        return <Products data={data} updateData={updateData} addItem={addItem} updateItem={updateItem} deleteItem={deleteItem} isAdmin={isAdmin} />;
       case 'categories':
         if (!isStaffOrAdmin) return <AccessDenied />;
-        return <Categories data={data} updateData={updateData} />;
+        return <Categories data={data} updateData={updateData} addItem={addItem} updateItem={updateItem} deleteItem={deleteItem} />;
       case 'inventory':
         if (!isStaffOrAdmin) return <AccessDenied />;
         return <Inventory data={data} updateData={updateData} isAdmin={isAdmin} />;
       case 'debts':
         if (!isStaffOrAdmin) return <AccessDenied />;
-        return <Debts data={data} updateData={updateData} isAdmin={isAdmin} />;
+        return <Debts data={data} updateData={updateData} addItem={addItem} updateItem={updateItem} deleteItem={deleteItem} isAdmin={isAdmin} />;
       case 'orders':
         if (!isStaffOrAdmin) return <AccessDenied />;
-        return <Orders data={data} updateData={updateData} addItem={addItem} isAdmin={isAdmin} />;
+        return <Orders data={data} updateData={updateData} addItem={addItem} updateItem={updateItem} deleteItem={deleteItem} isAdmin={isAdmin} />;
       case 'reports':
         if (!isAdmin) return <AccessDenied />;
         return <Reports data={data} updateData={updateData} />;
       case 'crm':
         if (!isStaffOrAdmin) return <AccessDenied />;
-        return <CRM data={data} updateData={updateData} />;
+        return <CRM data={data} updateData={updateData} addItem={addItem} updateItem={updateItem} deleteItem={deleteItem} />;
       case 'warranty':
         if (!isStaffOrAdmin) return <AccessDenied />;
         return <Warranty />;

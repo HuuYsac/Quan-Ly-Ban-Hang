@@ -84,24 +84,23 @@ export function useAppStore() {
   }, []);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user) {
+      setData(initialData);
+      setLoading(false);
+      return;
+    }
 
     setLoading(true);
     const userRef = doc(db, 'users', user.uid);
 
-    // Check if user data exists, if not, seed it
-    const checkAndSeed = async () => {
-      const docSnap = await getDoc(userRef);
-      let approved = false;
-      const ownerEmail = 'dieuhuu1995@gmail.com';
-      const isOwner = user.email === ownerEmail;
-
+    // First, listen to the user's own document to handle approval changes in real-time
+    const unsubUser = onSnapshot(userRef, async (docSnap) => {
       if (!docSnap.exists()) {
-        // New user, create profile
+        // Seed if not exists
+        const ownerEmail = 'dieuhuu1995@gmail.com';
+        const isOwner = user.email === ownerEmail;
         try {
-          const batch = writeBatch(db);
-          
-          batch.set(userRef, {
+          await setDoc(userRef, {
             uid: user.uid,
             email: user.email,
             phone: user.phoneNumber || '00000000',
@@ -110,81 +109,40 @@ export function useAppStore() {
             approved: isOwner,
             createdAt: new Date().toISOString()
           });
-
-          await batch.commit();
-          approved = isOwner;
-
-          // If owner, seed shared collections if they are empty
+          
           if (isOwner) {
             const shopInfoSnap = await getDoc(doc(db, 'config', 'shopInfo'));
             if (!shopInfoSnap.exists()) {
               const seedBatch = writeBatch(db);
-              
-              // Seed minimal config only
-              seedBatch.set(doc(db, 'config', 'shopInfo'), {
-                name: 'Hữu Laptop',
-                address: '',
-                phone: '',
-                email: '',
-                taxCode: '',
-                website: '',
-                bankAccount: '',
-                bankName: '',
-                logo: ''
-              });
-              
-              seedBatch.set(doc(db, 'config', 'settings'), {
-                currency: 'VND',
-                dateFormat: 'DD/MM/YYYY',
-                theme: 'light',
-                notifications: true,
-                autoBackup: true,
-                invoiceTemplate: 'standard'
-              });
-
-              seedBatch.set(doc(db, 'config', 'cskhSettings'), {
-                milestone1: 7,
-                milestone2: 3,
-                milestone3: 6
-              });
-
+              seedBatch.set(doc(db, 'config', 'shopInfo'), initialData.shopInfo);
+              seedBatch.set(doc(db, 'config', 'settings'), initialData.settings);
+              seedBatch.set(doc(db, 'config', 'cskhSettings'), { milestone1: 7, milestone2: 3, milestone3: 6 });
               seedBatch.set(doc(db, 'config', 'notificationSettings'), {
-                zaloAccessToken: '',
-                zaloOaId: '',
-                smsApiKey: '',
-                smsProvider: 'esms',
-                autoSendWarranty: false,
-                daysBeforeExpiry: 7,
+                zaloAccessToken: '', zaloOaId: '', smsApiKey: '', smsProvider: 'esms',
+                autoSendWarranty: false, daysBeforeExpiry: 7,
                 messageTemplate: 'Chào {customerName}, sản phẩm {productName} (S/N: {serviceTag}) của bạn sắp hết hạn bảo hành vào ngày {expiryDate}. Vui lòng liên hệ chúng tôi để được hỗ trợ.'
               });
-              
               await seedBatch.commit();
             }
           }
         } catch (error) {
-          console.error('Error seeding data:', error);
+          console.error('Error seeding user:', error);
         }
-      } else {
-        approved = docSnap.data()?.approved === true;
+        return;
       }
-      return approved;
-    };
 
-    const startSync = async () => {
-      const approved = await checkAndSeed();
+      const userData = docSnap.data();
+      const approved = userData?.approved === true;
+      const isAdminUser = user.email === 'dieuhuu1995@gmail.com' || userData?.role === 'admin';
+
       if (!approved && user.email !== 'dieuhuu1995@gmail.com') {
+        setData(initialData);
         setLoading(false);
-        return [];
+        return;
       }
-      
-      // Listen to collections
-      const unsubscribers: (() => void)[] = [];
 
-      // Sync users collection for admins
-      const ownerEmail = 'dieuhuu1995@gmail.com';
-      const userDoc = await getDoc(userRef);
-      const userData = userDoc.data();
-      const isAdminUser = user.email === ownerEmail || userData?.role === 'admin';
+      // Start syncing other collections
+      const unsubscribers: (() => void)[] = [];
 
       if (isAdminUser) {
         const usersRef = collection(db, 'users');
@@ -208,74 +166,48 @@ export function useAppStore() {
         unsubscribers.push(unsub);
       };
 
-      syncCollection('customers', 'customers');
-      syncCollection('suppliers', 'suppliers');
-      syncCollection('products', 'products');
-      syncCollection('categories', 'categories');
-      syncCollection('orders', 'orders');
-      syncCollection('repairs', 'repairs');
-      syncCollection('leads', 'leads');
-      syncCollection('careTasks', 'careTasks');
-      syncCollection('sales', 'sales');
-      syncCollection('warrantyNotifications', 'warrantyNotifications');
-      syncCollection('promotions', 'promotions');
+      const collectionsToSync: [string, keyof AppData][] = [
+        ['customers', 'customers'],
+        ['suppliers', 'suppliers'],
+        ['products', 'products'],
+        ['categories', 'categories'],
+        ['orders', 'orders'],
+        ['repairs', 'repairs'],
+        ['leads', 'leads'],
+        ['careTasks', 'careTasks'],
+        ['sales', 'sales'],
+        ['warrantyNotifications', 'warrantyNotifications'],
+        ['promotions', 'promotions']
+      ];
 
-      // Listen to shared config
-      const unsubShop = onSnapshot(doc(db, 'config', 'shopInfo'), (doc) => {
-        if (doc.exists()) {
-          setData(prev => ({ ...prev, shopInfo: doc.data() as ShopInfo }));
-        }
-      }, (error) => {
-        handleFirestoreError(error, OperationType.GET, 'config/shopInfo', user);
-      });
-      unsubscribers.push(unsubShop);
+      collectionsToSync.forEach(([name, key]) => syncCollection(name, key));
 
-      const unsubSettings = onSnapshot(doc(db, 'config', 'settings'), (doc) => {
-        if (doc.exists()) {
-          setData(prev => ({ ...prev, settings: doc.data() as Settings }));
-        }
+      // Shared config
+      unsubscribers.push(onSnapshot(doc(db, 'config', 'shopInfo'), (doc) => {
+        if (doc.exists()) setData(prev => ({ ...prev, shopInfo: doc.data() as ShopInfo }));
+      }));
+
+      unsubscribers.push(onSnapshot(doc(db, 'config', 'settings'), (doc) => {
+        if (doc.exists()) setData(prev => ({ ...prev, settings: doc.data() as Settings }));
         setLoading(false);
-      }, (error) => {
-        handleFirestoreError(error, OperationType.GET, 'config/settings', user);
-        setLoading(false);
-      });
-      unsubscribers.push(unsubSettings);
+      }));
 
-      const unsubCSKH = onSnapshot(doc(db, 'config', 'cskhSettings'), (doc) => {
-        if (doc.exists()) {
-          setData(prev => ({ ...prev, cskhSettings: doc.data() as CSKHSettings }));
-        }
-      }, (error) => {
-        handleFirestoreError(error, OperationType.GET, 'config/cskhSettings', user);
-      });
-      unsubscribers.push(unsubCSKH);
+      unsubscribers.push(onSnapshot(doc(db, 'config', 'cskhSettings'), (doc) => {
+        if (doc.exists()) setData(prev => ({ ...prev, cskhSettings: doc.data() as CSKHSettings }));
+      }));
 
-      const unsubNotify = onSnapshot(doc(db, 'config', 'notificationSettings'), (doc) => {
-        if (doc.exists()) {
-          setData(prev => ({ ...prev, notificationSettings: doc.data() as NotificationSettings }));
-        }
-      }, (error) => {
-        handleFirestoreError(error, OperationType.GET, 'config/notificationSettings', user);
-      });
-      unsubscribers.push(unsubNotify);
+      unsubscribers.push(onSnapshot(doc(db, 'config', 'notificationSettings'), (doc) => {
+        if (doc.exists()) setData(prev => ({ ...prev, notificationSettings: doc.data() as NotificationSettings }));
+      }));
 
-      return unsubscribers;
-    };
-
-    let isMounted = true;
-    let currentUnsubscribers: (() => void)[] = [];
-
-    startSync().then(unsubs => {
-      if (!isMounted) {
-        unsubs.forEach(unsub => unsub());
-        return;
-      }
-      currentUnsubscribers = unsubs;
+      // Cleanup function for this specific set of listeners
+      return () => {
+        unsubscribers.forEach(unsub => unsub());
+      };
     });
 
     return () => {
-      isMounted = false;
-      currentUnsubscribers.forEach(unsub => unsub());
+      unsubUser();
     };
   }, [user]);
 
@@ -384,28 +316,30 @@ export function useAppStore() {
         await batch.commit();
       }
 
+      // Also clear users except admins
+      const usersSnapshot = await getDocs(collection(db, 'users'));
+      const userBatch = writeBatch(db);
+      usersSnapshot.forEach((doc) => {
+        const userData = doc.data();
+        const isProtected = userData.email === 'dieuhuu1995@gmail.com' || 
+                            userData.email === 'huulaptop.info@gmail.com' || 
+                            userData.role === 'admin';
+        if (!isProtected) {
+          userBatch.delete(doc.ref);
+        }
+      });
+      await userBatch.commit();
+
       // Re-seed with blank data
       const seedBatch = writeBatch(db);
       
-      seedBatch.set(doc(db, 'config', 'shopInfo'), {
-        name: 'Hữu Laptop',
-        address: '',
-        phone: '',
-        email: '',
-        taxCode: '',
-        website: '',
-        bankAccount: '',
-        bankName: '',
-        logo: ''
-      });
-
-      seedBatch.set(doc(db, 'config', 'settings'), {
-        currency: 'VND',
-        dateFormat: 'DD/MM/YYYY',
-        theme: 'light',
-        notifications: true,
-        autoBackup: true,
-        invoiceTemplate: 'standard'
+      seedBatch.set(doc(db, 'config', 'shopInfo'), initialData.shopInfo);
+      seedBatch.set(doc(db, 'config', 'settings'), initialData.settings);
+      seedBatch.set(doc(db, 'config', 'cskhSettings'), { milestone1: 7, milestone2: 3, milestone3: 6 });
+      seedBatch.set(doc(db, 'config', 'notificationSettings'), {
+        zaloAccessToken: '', zaloOaId: '', smsApiKey: '', smsProvider: 'esms',
+        autoSendWarranty: false, daysBeforeExpiry: 7,
+        messageTemplate: 'Chào {customerName}, sản phẩm {productName} (S/N: {serviceTag}) của bạn sắp hết hạn bảo hành vào ngày {expiryDate}. Vui lòng liên hệ chúng tôi để được hỗ trợ.'
       });
       
       await seedBatch.commit();

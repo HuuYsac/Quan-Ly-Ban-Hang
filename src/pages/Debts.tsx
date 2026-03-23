@@ -6,10 +6,13 @@ import { formatCurrency } from '../lib/utils';
 interface DebtsProps {
   data: AppData;
   updateData: (newData: Partial<AppData>) => void;
+  addItem: (collection: keyof AppData, item: any) => Promise<void>;
+  updateItem: (collection: keyof AppData, id: string, item: any) => Promise<void>;
+  deleteItem: (collection: keyof AppData, id: string) => Promise<void>;
   isAdmin?: boolean;
 }
 
-export function Debts({ data, updateData, isAdmin }: DebtsProps) {
+export function Debts({ data, updateData, addItem, updateItem, deleteItem, isAdmin }: DebtsProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState<'customers' | 'suppliers'>('customers');
   const [isCollectModalOpen, setIsCollectModalOpen] = useState(false);
@@ -31,40 +34,38 @@ export function Debts({ data, updateData, isAdmin }: DebtsProps) {
     setIsCollectModalOpen(true);
   };
 
-  const submitCollect = (e: React.FormEvent) => {
+  const submitCollect = async (e: React.FormEvent) => {
     e.preventDefault();
     const amount = Number(collectAmount);
 
-    if (selectedCustomer) {
-      if (amount <= 0 || amount > selectedCustomer.debt) {
-        alert('Số tiền thu không hợp lệ');
-        return;
+    try {
+      if (selectedCustomer) {
+        if (amount <= 0 || amount > selectedCustomer.debt) {
+          alert('Số tiền thu không hợp lệ');
+          return;
+        }
+        await updateItem('customers', selectedCustomer.id, {
+          ...selectedCustomer,
+          debt: selectedCustomer.debt - amount
+        });
+      } else if (selectedSupplier) {
+        if (amount <= 0 || amount > selectedSupplier.debt) {
+          alert('Số tiền trả không hợp lệ');
+          return;
+        }
+        await updateItem('suppliers', selectedSupplier.id, {
+          ...selectedSupplier,
+          debt: selectedSupplier.debt - amount
+        });
       }
-      updateData({
-        customers: data.customers.map(c => 
-          c.id === selectedCustomer.id 
-            ? { ...c, debt: c.debt - amount }
-            : c
-        )
-      });
-    } else if (selectedSupplier) {
-      if (amount <= 0 || amount > selectedSupplier.debt) {
-        alert('Số tiền trả không hợp lệ');
-        return;
-      }
-      updateData({
-        suppliers: data.suppliers.map(s => 
-          s.id === selectedSupplier.id 
-            ? { ...s, debt: s.debt - amount }
-            : s
-        )
-      });
-    }
 
-    setIsCollectModalOpen(false);
-    setSelectedCustomer(null);
-    setSelectedSupplier(null);
-    setCollectAmount('');
+      setIsCollectModalOpen(false);
+      setSelectedCustomer(null);
+      setSelectedSupplier(null);
+      setCollectAmount('');
+    } catch (error) {
+      console.error('Lỗi khi cập nhật công nợ:', error);
+    }
   };
 
   const filteredCustomers = data.customers.filter(c => 

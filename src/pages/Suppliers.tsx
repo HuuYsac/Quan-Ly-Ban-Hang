@@ -5,10 +5,13 @@ import { Building2, Search, Plus, Edit, Trash2, X } from 'lucide-react';
 interface SuppliersProps {
   data: AppData;
   updateData: (newData: Partial<AppData>) => void;
+  addItem: (collection: keyof AppData, item: any) => Promise<void>;
+  updateItem: (collection: keyof AppData, id: string, item: any) => Promise<void>;
+  deleteItem: (collection: keyof AppData, id: string) => Promise<void>;
   isAdmin?: boolean;
 }
 
-export function Suppliers({ data, updateData, isAdmin }: SuppliersProps) {
+export function Suppliers({ data, updateData, addItem, updateItem, deleteItem, isAdmin }: SuppliersProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -27,11 +30,13 @@ export function Suppliers({ data, updateData, isAdmin }: SuppliersProps) {
     s.products.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     if (window.confirm('Bạn có chắc muốn xóa nhà cung cấp này?')) {
-      updateData({
-        suppliers: data.suppliers.filter(s => s.id !== id)
-      });
+      try {
+        await deleteItem('suppliers', id);
+      } catch (error) {
+        console.error('Lỗi khi xóa nhà cung cấp:', error);
+      }
     }
   };
 
@@ -48,47 +53,52 @@ export function Suppliers({ data, updateData, isAdmin }: SuppliersProps) {
     setIsAddModalOpen(true);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (editingId) {
-      updateData({
-        suppliers: data.suppliers.map(s => 
-          s.id === editingId 
-            ? {
-                ...s,
-                name: formData.name,
-                phone: formData.phone,
-                email: formData.email,
-                address: formData.address,
-                products: formData.products,
-                notes: formData.notes
-              }
-            : s
-        )
-      });
-    } else {
-      const newSupplier: Supplier = {
-        id: `NCC${String(data.suppliers.length + 1).padStart(3, '0')}`,
-        name: formData.name,
-        phone: formData.phone,
-        email: formData.email,
-        address: formData.address,
-        products: formData.products,
-        notes: formData.notes,
-        debt: 0
-      };
+    try {
+      if (editingId) {
+        const existingSupplier = data.suppliers.find(s => s.id === editingId);
+        if (!existingSupplier) return;
+
+        await updateItem('suppliers', editingId, {
+          ...existingSupplier,
+          name: formData.name,
+          phone: formData.phone,
+          email: formData.email,
+          address: formData.address,
+          products: formData.products,
+          notes: formData.notes
+        });
+      } else {
+        // Robust ID generation
+        const maxId = data.suppliers.reduce((max, s) => {
+          const idNum = parseInt(s.id.replace('NCC', ''));
+          return isNaN(idNum) ? max : Math.max(max, idNum);
+        }, 0);
+
+        const newSupplier: Supplier = {
+          id: `NCC${String(maxId + 1).padStart(3, '0')}`,
+          name: formData.name,
+          phone: formData.phone,
+          email: formData.email,
+          address: formData.address,
+          products: formData.products,
+          notes: formData.notes,
+          debt: 0
+        };
+        
+        await addItem('suppliers', newSupplier);
+      }
       
-      updateData({
-        suppliers: [newSupplier, ...data.suppliers]
+      setIsAddModalOpen(false);
+      setEditingId(null);
+      setFormData({
+        name: '', phone: '', email: '', address: '', products: '', notes: ''
       });
+    } catch (error) {
+      console.error('Lỗi khi lưu nhà cung cấp:', error);
     }
-    
-    setIsAddModalOpen(false);
-    setEditingId(null);
-    setFormData({
-      name: '', phone: '', email: '', address: '', products: '', notes: ''
-    });
   };
 
   return (

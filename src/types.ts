@@ -52,6 +52,8 @@ export interface Product {
   stock: number;
   minStock: number;
   supplier?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface Category {
@@ -107,6 +109,8 @@ export interface Order {
   paymentMethod: string;
   paymentStatus: 'Công nợ' | 'Đã thanh toán';
   notes?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface Sale {

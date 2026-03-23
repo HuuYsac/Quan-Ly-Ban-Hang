@@ -34,9 +34,12 @@ import {
 interface CRMProps {
   data: AppData;
   updateData: (newData: Partial<AppData>) => void;
+  addItem: (collection: keyof AppData, item: any) => Promise<void>;
+  updateItem: (collection: keyof AppData, id: string, item: any) => Promise<void>;
+  deleteItem: (collection: keyof AppData, id: string) => Promise<void>;
 }
 
-export function CRM({ data, updateData }: CRMProps) {
+export function CRM({ data, updateData, addItem, updateItem, deleteItem }: CRMProps) {
   const [activeTab, setActiveTab] = useState<'leads' | 'tasks' | 'promotions'>('tasks');
   const [searchTerm, setSearchTerm] = useState('');
   const [showSettings, setShowSettings] = useState(false);
@@ -143,14 +146,15 @@ export function CRM({ data, updateData }: CRMProps) {
     const currentCareTasks = data.careTasks || [];
     const existingIndex = currentCareTasks.findIndex(t => t.id === task.id);
     
-    let updatedCareTasks;
-    if (existingIndex !== -1) {
-      updatedCareTasks = currentCareTasks.map(t => t.id === task.id ? updatedTask : t);
-    } else {
-      updatedCareTasks = [...currentCareTasks, updatedTask];
+    try {
+      if (existingIndex !== -1) {
+        await updateItem('careTasks', task.id, updatedTask);
+      } else {
+        await addItem('careTasks', updatedTask);
+      }
+    } catch (error) {
+      console.error('Lỗi khi cập nhật trạng thái chăm sóc:', error);
     }
-    
-    await updateData({ careTasks: updatedCareTasks });
   };
 
   const handleSyncAndReport = async () => {
@@ -240,8 +244,7 @@ export function CRM({ data, updateData }: CRMProps) {
   const handleAddLead = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
-    const newLead: Lead = {
-      id: editingLead?.id || `LEAD${Date.now()}`,
+    const leadData: any = {
       name: formData.get('name') as string,
       phone: formData.get('phone') as string,
       email: formData.get('email') as string,
@@ -249,53 +252,68 @@ export function CRM({ data, updateData }: CRMProps) {
       source: formData.get('source') as string,
       status: formData.get('status') as any,
       notes: formData.get('notes') as string,
-      createdAt: editingLead?.createdAt || new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
 
-    let updatedLeads = [...(data.leads || [])];
-    if (editingLead) {
-      updatedLeads = updatedLeads.map(l => l.id === editingLead.id ? newLead : l);
-    } else {
-      updatedLeads.push(newLead);
+    try {
+      if (editingLead) {
+        await updateItem('leads', editingLead.id, {
+          ...editingLead,
+          ...leadData
+        });
+      } else {
+        const newLead: Lead = {
+          id: `LEAD${Date.now()}`,
+          ...leadData,
+          createdAt: new Date().toISOString(),
+        };
+        await addItem('leads', newLead);
+      }
+      setShowLeadModal(false);
+      setEditingLead(null);
+    } catch (error) {
+      console.error('Lỗi khi lưu lead:', error);
     }
-
-    await updateData({ leads: updatedLeads });
-    setShowLeadModal(false);
-    setEditingLead(null);
   };
 
   const handleDeleteLead = async (id: string) => {
-    const currentLeads = data.leads || [];
-    const updatedLeads = currentLeads.filter(l => l.id !== id);
-    await updateData({ leads: updatedLeads });
-    setConfirmingDelete(null);
+    try {
+      await deleteItem('leads', id);
+      setConfirmingDelete(null);
+    } catch (error) {
+      console.error('Lỗi khi xóa lead:', error);
+    }
   };
 
   const handleConvertToCustomer = async (lead: Lead) => {
-    const newCustomer: Customer = {
-      id: `CUST${Date.now()}`,
-      name: lead.name,
-      type: 'ca-nhan',
-      phone: lead.phone,
-      email: lead.email || '',
-      facebook: lead.facebook || '',
-      address: '',
-      debt: 0,
-      createdAt: new Date().toISOString(),
-    };
+    try {
+      // Robust ID generation for customer
+      const maxId = data.customers.reduce((max, c) => {
+        const idNum = parseInt(c.id.replace('KH', ''));
+        return isNaN(idNum) ? max : Math.max(max, idNum);
+      }, 0);
 
-    const updatedCustomers = [...(data.customers || []), newCustomer];
-    const updatedLeads = (data.leads || []).filter(l => l.id !== lead.id);
+      const newCustomer: Customer = {
+        id: `KH${String(maxId + 1).padStart(3, '0')}`,
+        name: lead.name,
+        type: 'ca-nhan',
+        phone: lead.phone,
+        email: lead.email || '',
+        facebook: lead.facebook || '',
+        address: '',
+        debt: 0,
+        createdAt: new Date().toISOString(),
+      };
 
-    await updateData({ 
-      customers: updatedCustomers,
-      leads: updatedLeads 
-    });
-    
-    setConfirmingConvert(null);
-    // Switch to care tasks tab to show the "after-sale" context
-    setActiveTab('tasks');
+      await addItem('customers', newCustomer);
+      await deleteItem('leads', lead.id);
+      
+      setConfirmingConvert(null);
+      // Switch to care tasks tab to show the "after-sale" context
+      setActiveTab('tasks');
+    } catch (error) {
+      console.error('Lỗi khi chuyển đổi lead:', error);
+    }
   };
 
   const handleSendAdminReport = () => {

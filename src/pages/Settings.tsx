@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { AppData, Settings as SettingsType } from '../types';
-import { Settings as SettingsIcon, DollarSign, Calendar, Moon, Sun, Monitor, Bell, HardDrive, FileText, Save, CheckCircle2, Users as UsersIcon, ShieldCheck, ShieldX, Trash2 } from 'lucide-react';
+import { Settings as SettingsIcon, DollarSign, Calendar, Moon, Sun, Monitor, Bell, HardDrive, FileText, Save, CheckCircle2, Users as UsersIcon, ShieldCheck, ShieldX, Trash2, Palette, HeartHandshake } from 'lucide-react';
 import { auth, db } from '../firebase';
 import { collection, getDocs, doc, updateDoc, deleteDoc } from 'firebase/firestore';
-import { ConfirmModal } from '../components/Notification';
+import { ConfirmModal, Toast } from '../components/Notification';
 
 interface SettingsProps {
   data: AppData;
@@ -13,6 +13,7 @@ interface SettingsProps {
 }
 
 export function Settings({ data, updateData, resetDatabase, isAdmin }: SettingsProps) {
+  const [activeTab, setActiveTab] = useState<'general' | 'appearance' | 'system'>('general');
   const [formData, setFormData] = useState<SettingsType>(
     data.settings || {
       currency: 'VND',
@@ -24,11 +25,15 @@ export function Settings({ data, updateData, resetDatabase, isAdmin }: SettingsP
     }
   );
   const [isSaving, setIsSaving] = useState(false);
-  const [showSuccess, setShowSuccess] = useState(false);
   const [users, setUsers] = useState<any[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [userToDelete, setUserToDelete] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+
+  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+    setToast({ message, type });
+  };
 
   useEffect(() => {
     if (isAdmin) {
@@ -99,13 +104,22 @@ export function Settings({ data, updateData, resetDatabase, isAdmin }: SettingsP
     setTimeout(() => {
       updateData({ settings: formData });
       setIsSaving(false);
-      setShowSuccess(true);
-      
-      setTimeout(() => {
-        setShowSuccess(false);
-      }, 3000);
+      showToast('Đã lưu cài đặt thành công!');
     }, 600);
   };
+
+  const tabs = [
+    { id: 'general', label: 'Cài đặt chung', icon: SettingsIcon, adminOnly: true },
+    { id: 'appearance', label: 'Giao diện', icon: Palette, adminOnly: false },
+    { id: 'system', label: 'Cài đặt hệ thống', icon: UsersIcon, adminOnly: true },
+  ].filter(tab => !tab.adminOnly || isAdmin);
+
+  // If active tab is hidden for current user, switch to first available tab
+  useEffect(() => {
+    if (!tabs.find(t => t.id === activeTab)) {
+      setActiveTab(tabs[0]?.id as any || 'appearance');
+    }
+  }, [isAdmin]);
 
   return (
     <div className="animate-in fade-in duration-500 max-w-4xl mx-auto">
@@ -120,8 +134,30 @@ export function Settings({ data, updateData, resetDatabase, isAdmin }: SettingsP
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6">
-          <div className="space-y-8">
+        <div className="flex border-b border-gray-100 overflow-x-auto">
+          {tabs.map(tab => {
+            const Icon = tab.icon;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id as any)}
+                className={`flex items-center gap-2 px-6 py-4 text-sm font-medium transition-colors relative whitespace-nowrap ${
+                  activeTab === tab.id ? 'text-blue-600' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                <Icon size={18} />
+                {tab.label}
+                {activeTab === tab.id && (
+                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 animate-in fade-in slide-in-from-bottom-1" />
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="p-6">
+          {activeTab === 'general' && (
+            <form onSubmit={handleSubmit} className="space-y-8">
             {/* General Settings */}
             <div>
               <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wider mb-4 pb-2 border-b border-gray-100">
@@ -163,10 +199,27 @@ export function Settings({ data, updateData, resetDatabase, isAdmin }: SettingsP
               </div>
             </div>
 
-            {/* Appearance */}
-            <div>
+              <div className="pt-6 border-t border-gray-100 flex justify-end">
+                <button 
+                  type="submit"
+                  disabled={isSaving}
+                  className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors shadow-sm shadow-blue-600/20 disabled:opacity-70 disabled:cursor-not-allowed"
+                >
+                  {isSaving ? (
+                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  ) : (
+                    <Save size={18} />
+                  )}
+                  {isSaving ? 'Đang lưu...' : 'Lưu cài đặt'}
+                </button>
+              </div>
+            </form>
+          )}
+
+          {activeTab === 'appearance' && (
+            <div className="space-y-6">
               <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wider mb-4 pb-2 border-b border-gray-100">
-                Giao diện
+                Giao diện ứng dụng
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <label className={`relative flex flex-col items-center justify-center p-4 border-2 rounded-xl cursor-pointer transition-all ${formData.theme === 'light' ? 'border-blue-500 bg-blue-50/50' : 'border-gray-200 hover:border-gray-300'}`}>
@@ -187,89 +240,26 @@ export function Settings({ data, updateData, resetDatabase, isAdmin }: SettingsP
                   <span className={`mt-2 text-sm font-medium ${formData.theme === 'system' ? 'text-blue-700' : 'text-gray-600'}`}>Hệ thống</span>
                 </label>
               </div>
-            </div>
-
-            {/* Features */}
-            <div>
-              <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wider mb-4 pb-2 border-b border-gray-100">
-                Tính năng
-              </h3>
-              <div className="space-y-4">
-                <label className="flex items-start gap-3 cursor-pointer group">
-                  <div className="relative flex items-center justify-center mt-0.5">
-                    <input 
-                      type="checkbox" 
-                      name="notifications"
-                      checked={formData.notifications}
-                      onChange={handleChange}
-                      className="sr-only" 
-                    />
-                    <div className={`w-10 h-6 rounded-full transition-colors ${formData.notifications ? 'bg-blue-600' : 'bg-gray-200'}`}></div>
-                    <div className={`absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform ${formData.notifications ? 'translate-x-4' : 'translate-x-0'}`}></div>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-900 flex items-center gap-2">
-                      <Bell size={16} className="text-gray-500" />
-                      Thông báo hệ thống
-                    </p>
-                    <p className="text-xs text-gray-500 mt-1">Nhận thông báo khi có đơn hàng mới, cảnh báo tồn kho thấp.</p>
-                  </div>
-                </label>
-
-                <label className="flex items-start gap-3 cursor-pointer group">
-                  <div className="relative flex items-center justify-center mt-0.5">
-                    <input 
-                      type="checkbox" 
-                      name="autoBackup"
-                      checked={formData.autoBackup}
-                      onChange={handleChange}
-                      className="sr-only" 
-                    />
-                    <div className={`w-10 h-6 rounded-full transition-colors ${formData.autoBackup ? 'bg-blue-600' : 'bg-gray-200'}`}></div>
-                    <div className={`absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform ${formData.autoBackup ? 'translate-x-4' : 'translate-x-0'}`}></div>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-900 flex items-center gap-2">
-                      <HardDrive size={16} className="text-gray-500" />
-                      Tự động sao lưu
-                    </p>
-                    <p className="text-xs text-gray-500 mt-1">Tự động sao lưu dữ liệu lên máy chủ mỗi ngày.</p>
-                  </div>
-                </label>
-              </div>
-            </div>
-
-            {/* Printing */}
-            <div>
-              <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wider mb-4 pb-2 border-b border-gray-100">
-                In ấn & Hóa đơn
-              </h3>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
-                  <FileText size={16} className="text-gray-400" />
-                  Mẫu hóa đơn mặc định
-                </label>
-                <select 
-                  name="invoiceTemplate"
-                  value={formData.invoiceTemplate}
-                  onChange={handleChange}
-                  className="w-full md:w-1/2 px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
+              <div className="pt-6 flex justify-end">
+                <button 
+                  onClick={handleSubmit}
+                  disabled={isSaving}
+                  className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors shadow-sm shadow-blue-600/20 disabled:opacity-70 disabled:cursor-not-allowed"
                 >
-                  <option value="standard">Mẫu Tiêu chuẩn (A4/A5)</option>
-                  <option value="thermal">Mẫu Máy in nhiệt (K80)</option>
-                  <option value="minimal">Mẫu Tối giản</option>
-                </select>
+                  <Save size={18} />
+                  Lưu thay đổi
+                </button>
               </div>
             </div>
+          )}
 
-            {/* User Management (Admin Only) */}
-            {isAdmin && (
-              <div className="mt-12 space-y-12">
-                <div>
-                  <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wider mb-4 pb-2 border-b border-gray-100 flex items-center gap-2">
-                    <UsersIcon size={18} className="text-blue-600" />
-                    Quản lý người dùng (Admin)
-                  </h3>
+          {activeTab === 'system' && isAdmin && (
+            <div className="space-y-8">
+              <div>
+                <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wider mb-4 pb-2 border-b border-gray-100 flex items-center gap-2">
+                  <UsersIcon size={18} className="text-blue-600" />
+                  Quản lý thành viên
+                </h3>
                   
                   {loadingUsers ? (
                     <div className="flex justify-center py-8">
@@ -367,52 +357,36 @@ export function Settings({ data, updateData, resetDatabase, isAdmin }: SettingsP
                   )}
                 </div>
 
-                {/* Database Reset Section */}
-                <div className="p-4 bg-red-50 rounded-xl border border-red-100">
-                  <h3 className="text-sm font-bold text-red-800 flex items-center gap-2 mb-2">
-                    <Trash2 size={18} />
-                    Khu vực nguy hiểm
-                  </h3>
-                  <p className="text-xs text-red-600 mb-4">
-                    Xóa sạch toàn bộ dữ liệu hiện tại và khôi phục về trạng thái ban đầu của Admin. 
-                    Hành động này không thể hoàn tác.
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => setShowResetConfirm(true)}
-                    className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium transition-colors shadow-sm shadow-red-600/20"
-                  >
-                    Xóa sạch & Khôi phục dữ liệu gốc
-                  </button>
-                </div>
+              {/* Database Reset Section */}
+              <div className="p-6 bg-red-50 rounded-2xl border border-red-100">
+                <h3 className="text-lg font-bold text-red-800 flex items-center gap-2 mb-2">
+                  <Trash2 size={20} />
+                  Khu vực nguy hiểm
+                </h3>
+                <p className="text-sm text-red-600 mb-6">
+                  Xóa sạch toàn bộ dữ liệu hiện tại và khôi phục về trạng thái ban đầu của Admin. 
+                  Hành động này không thể hoàn tác.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setShowResetConfirm(true)}
+                  className="px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl text-sm font-bold transition-all shadow-lg shadow-red-600/20 active:scale-95"
+                >
+                  Xóa sạch & Khôi phục dữ liệu gốc
+                </button>
               </div>
-            )}
-          </div>
-
-          <div className="mt-8 pt-6 border-t border-gray-100 flex items-center justify-between">
-            <div>
-              {showSuccess && (
-                <div className="flex items-center gap-2 text-emerald-600 animate-in slide-in-from-left-2">
-                  <CheckCircle2 size={18} />
-                  <span className="text-sm font-medium">Đã lưu cài đặt thành công!</span>
-                </div>
-              )}
             </div>
-            <button 
-              type="submit"
-              disabled={isSaving}
-              className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors shadow-sm shadow-blue-600/20 disabled:opacity-70 disabled:cursor-not-allowed"
-            >
-              {isSaving ? (
-                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              ) : (
-                <Save size={18} />
-              )}
-              {isSaving ? 'Đang lưu...' : 'Lưu cài đặt'}
-            </button>
-          </div>
-        </form>
+          )}
+        </div>
       </div>
+
+      {toast && (
+        <Toast 
+          message={toast.message} 
+          type={toast.type} 
+          onClose={() => setToast(null)} 
+        />
+      )}
 
       <ConfirmModal
         isOpen={showResetConfirm}
@@ -420,7 +394,12 @@ export function Settings({ data, updateData, resetDatabase, isAdmin }: SettingsP
         message="CẢNH BÁO: Bạn có chắc chắn muốn XÓA SẠCH toàn bộ dữ liệu và khôi phục về mặc định? Hành động này không thể hoàn tác."
         onConfirm={async () => {
           setShowResetConfirm(false);
-          await resetDatabase?.();
+          try {
+            await resetDatabase?.();
+            showToast('Đã xóa sạch dữ liệu và khôi phục mặc định thành công');
+          } catch (error) {
+            showToast('Có lỗi xảy ra khi xóa dữ liệu', 'error');
+          }
         }}
         onCancel={() => setShowResetConfirm(false)}
         confirmText="Xóa sạch dữ liệu"

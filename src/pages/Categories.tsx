@@ -6,9 +6,12 @@ import { Toast, ToastType, ConfirmModal } from '../components/Notification';
 interface CategoriesProps {
   data: AppData;
   updateData: (newData: Partial<AppData>) => void;
+  addItem: (collection: keyof AppData, item: any) => Promise<void>;
+  updateItem: (collection: keyof AppData, id: string, item: any) => Promise<void>;
+  deleteItem: (collection: keyof AppData, id: string) => Promise<void>;
 }
 
-export function Categories({ data, updateData }: CategoriesProps) {
+export function Categories({ data, updateData, addItem, updateItem, deleteItem }: CategoriesProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -27,12 +30,14 @@ export function Categories({ data, updateData }: CategoriesProps) {
     c.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleDelete = (id: string) => {
-    updateData({
-      categories: data.categories.filter(c => c.id !== id)
-    });
-    setConfirmingDelete(null);
-    showToast('Đã xóa danh mục thành công');
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteItem('categories', id);
+      setConfirmingDelete(null);
+      showToast('Đã xóa danh mục thành công');
+    } catch (error) {
+      showToast('Lỗi khi xóa danh mục', 'error');
+    }
   };
 
   const handleEdit = (category: Category) => {
@@ -44,39 +49,44 @@ export function Categories({ data, updateData }: CategoriesProps) {
     setIsAddModalOpen(true);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (editingId) {
-      updateData({
-        categories: data.categories.map(c => 
-          c.id === editingId 
-            ? {
-                ...c,
-                name: formData.name,
-                parent: formData.parent || null
-              }
-            : c
-        )
-      });
-    } else {
-      const newCategory: Category = {
-        id: `DM${String(data.categories.length + 1).padStart(3, '0')}`,
-        name: formData.name,
-        parent: formData.parent || null
-      };
+    try {
+      if (editingId) {
+        const category = data.categories.find(c => c.id === editingId);
+        if (category) {
+          await updateItem('categories', editingId, {
+            ...category,
+            name: formData.name,
+            parent: formData.parent || null
+          });
+        }
+      } else {
+        // Robust ID generation
+        const maxId = data.categories.reduce((max, c) => {
+          const idNum = parseInt(c.id.replace('DM', ''));
+          return isNaN(idNum) ? max : Math.max(max, idNum);
+        }, 0);
+        
+        const newCategory: Category = {
+          id: `DM${String(maxId + 1).padStart(3, '0')}`,
+          name: formData.name,
+          parent: formData.parent || null
+        };
+        
+        await addItem('categories', newCategory);
+      }
       
-      updateData({
-        categories: [newCategory, ...data.categories]
+      setIsAddModalOpen(false);
+      setEditingId(null);
+      showToast(editingId ? 'Đã cập nhật danh mục thành công' : 'Đã thêm danh mục thành công');
+      setFormData({
+        name: '', parent: ''
       });
+    } catch (error) {
+      showToast('Lỗi khi lưu danh mục', 'error');
     }
-    
-    setIsAddModalOpen(false);
-    setEditingId(null);
-    showToast(editingId ? 'Đã cập nhật danh mục thành công' : 'Đã thêm danh mục thành công');
-    setFormData({
-      name: '', parent: ''
-    });
   };
 
   return (
