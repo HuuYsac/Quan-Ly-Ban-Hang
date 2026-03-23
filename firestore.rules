@@ -122,9 +122,10 @@ service cloud.firestore {
       allow read, write: if isStaff();
     }
 
-    // Suppliers - Admin only
+    // Suppliers - Admin only for write, staff can read
     match /suppliers/{docId} {
-      allow read, write: if isAdmin();
+      allow read: if isStaff();
+      allow write: if isAdmin();
     }
 
     // Config - Admin only for write, staff can read

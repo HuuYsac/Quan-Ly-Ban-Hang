@@ -188,9 +188,6 @@ export function useAppStore() {
       }
 
       const syncCollection = (name: string, key: keyof AppData) => {
-        // Only sync suppliers for admins
-        if (name === 'suppliers' && !isAdminUser) return;
-
         const colRef = collection(db, name);
         const unsub = onSnapshot(colRef, (snapshot) => {
           const items = snapshot.docs.map(doc => doc.data());

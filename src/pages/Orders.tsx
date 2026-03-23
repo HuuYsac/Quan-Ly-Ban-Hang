@@ -1464,14 +1464,16 @@ export function Orders({ data, updateData, addItem, isAdmin }: OrdersProps) {
                         </option>
                       )}
                     </select>
-                    <button 
-                      type="button"
-                      onClick={() => setIsAddSupplierModalOpen(true)}
-                      className="p-2 text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors border border-blue-100"
-                      title="Thêm nhà cung cấp mới"
-                    >
-                      <PlusCircle size={20} />
-                    </button>
+                    {isAdmin && (
+                      <button 
+                        type="button"
+                        onClick={() => setIsAddSupplierModalOpen(true)}
+                        className="p-2 text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors border border-blue-100"
+                        title="Thêm nhà cung cấp mới"
+                      >
+                        <PlusCircle size={20} />
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>

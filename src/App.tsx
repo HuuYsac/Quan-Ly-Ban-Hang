@@ -222,8 +222,8 @@ export default function App() {
         if (!isStaffOrAdmin) return <AccessDenied />;
         return <Customers data={data} updateData={updateData} />;
       case 'suppliers':
-        if (!isAdmin) return <AccessDenied />;
-        return <Suppliers data={data} updateData={updateData} />;
+        if (!isStaffOrAdmin) return <AccessDenied />;
+        return <Suppliers data={data} updateData={updateData} isAdmin={isAdmin} />;
       case 'products':
         if (!isStaffOrAdmin) return <AccessDenied />;
         return <Products data={data} updateData={updateData} isAdmin={isAdmin} />;
