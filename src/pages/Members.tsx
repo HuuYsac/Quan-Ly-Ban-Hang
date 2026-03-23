@@ -240,9 +240,13 @@ export function Members() {
                           <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-purple-100 text-purple-700">
                             <Shield size={12} className="mr-1" /> Quản trị viên
                           </span>
-                        ) : (
+                        ) : user.role === 'staff' ? (
                           <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-blue-100 text-blue-700">
-                            Nhân viên
+                            <Briefcase size={12} className="mr-1" /> Nhân viên
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-gray-100 text-gray-700">
+                            Thành viên mới
                           </span>
                         )}
                       </div>
@@ -355,7 +359,8 @@ export function Members() {
                   disabled={selectedUser.uid === auth.currentUser?.uid}
                   className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all disabled:opacity-50"
                 >
-                  <option value="user">Nhân viên (Quyền hạn giới hạn)</option>
+                  <option value="user">Thành viên mới (Chưa phân quyền)</option>
+                  <option value="staff">Nhân viên (Quyền hạn nghiệp vụ)</option>
                   <option value="admin">Quản trị viên (Toàn quyền hệ thống)</option>
                 </select>
                 {selectedUser.uid === auth.currentUser?.uid && (

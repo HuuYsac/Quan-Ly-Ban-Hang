@@ -27,29 +27,31 @@ interface SidebarProps {
   setActivePage: (page: string) => void;
   data: AppData;
   isAdmin: boolean;
+  userRole: 'admin' | 'staff' | 'user';
 }
 
-export function Sidebar({ activePage, setActivePage, data, isAdmin }: SidebarProps) {
+export function Sidebar({ activePage, setActivePage, data, isAdmin, userRole }: SidebarProps) {
   const [showLogoutConfirm, setShowLogoutConfirm] = React.useState(false);
   const navItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, section: 'Tổng quan' },
-    { id: 'members', label: 'Thành viên', icon: UserCog, section: 'Hệ thống', adminOnly: true },
-    { id: 'customers', label: 'Khách hàng', icon: Users, section: 'Quản lý cơ bản' },
-    { id: 'suppliers', label: 'Nhà cung cấp', icon: Building2, section: 'Quản lý cơ bản' },
-    { id: 'products', label: 'Sản phẩm', icon: Package, section: 'Quản lý cơ bản' },
-    { id: 'categories', label: 'Danh mục', icon: FolderTree, section: 'Quản lý cơ bản' },
-    { id: 'inventory', label: 'Kho hàng', icon: ClipboardList, section: 'Quản lý cơ bản' },
-    { id: 'debts', label: 'Công nợ', icon: CreditCard, section: 'Nghiệp vụ' },
-    { id: 'orders', label: 'Quản lý đơn hàng', icon: ShoppingCart, section: 'Nghiệp vụ' },
-    { id: 'warranty', label: 'Quản lý bảo hành', icon: ShieldCheck, section: 'Nghiệp vụ' },
-    { id: 'repairs', label: 'Quản lý sửa chữa', icon: Wrench, section: 'Nghiệp vụ' },
-    { id: 'crm', label: 'Quản lý CRM', icon: HeartHandshake, section: 'Nghiệp vụ' },
-    { id: 'reports', label: 'Báo cáo', icon: BarChart3, section: 'Báo cáo' },
-    { id: 'settings', label: 'Cài đặt', icon: Settings, section: 'Hệ thống' },
-    { id: 'company-info', label: 'Thông Tin Shop', icon: Building, section: 'Hệ thống' },
+    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, section: 'Tổng quan', allowedRoles: ['admin', 'staff', 'user'] },
+    { id: 'members', label: 'Thành viên', icon: UserCog, section: 'Hệ thống', allowedRoles: ['admin'] },
+    { id: 'customers', label: 'Khách hàng', icon: Users, section: 'Quản lý cơ bản', allowedRoles: ['admin', 'staff'] },
+    { id: 'suppliers', label: 'Nhà cung cấp', icon: Building2, section: 'Quản lý cơ bản', allowedRoles: ['admin', 'staff'] },
+    { id: 'products', label: 'Sản phẩm', icon: Package, section: 'Quản lý cơ bản', allowedRoles: ['admin', 'staff'] },
+    { id: 'categories', label: 'Danh mục', icon: FolderTree, section: 'Quản lý cơ bản', allowedRoles: ['admin', 'staff'] },
+    { id: 'inventory', label: 'Kho hàng', icon: ClipboardList, section: 'Quản lý cơ bản', allowedRoles: ['admin', 'staff'] },
+    { id: 'debts', label: 'Công nợ', icon: CreditCard, section: 'Nghiệp vụ', allowedRoles: ['admin', 'staff'] },
+    { id: 'orders', label: 'Quản lý đơn hàng', icon: ShoppingCart, section: 'Nghiệp vụ', allowedRoles: ['admin', 'staff'] },
+    { id: 'warranty', label: 'Quản lý bảo hành', icon: ShieldCheck, section: 'Nghiệp vụ', allowedRoles: ['admin', 'staff'] },
+    { id: 'repairs', label: 'Quản lý sửa chữa', icon: Wrench, section: 'Nghiệp vụ', allowedRoles: ['admin', 'staff'] },
+    { id: 'crm', label: 'Quản lý CRM', icon: HeartHandshake, section: 'Nghiệp vụ', allowedRoles: ['admin', 'staff'] },
+    { id: 'reports', label: 'Báo cáo', icon: BarChart3, section: 'Báo cáo', allowedRoles: ['admin'] },
+    { id: 'settings', label: 'Cài đặt', icon: Settings, section: 'Hệ thống', allowedRoles: ['admin'] },
+    { id: 'company-info', label: 'Thông Tin Shop', icon: Building, section: 'Hệ thống', allowedRoles: ['admin'] },
   ];
 
-  const sections = Array.from(new Set(navItems.filter(item => !item.adminOnly || isAdmin).map(item => item.section)));
+  const filteredNavItems = navItems.filter(item => item.allowedRoles.includes(userRole) || isAdmin);
+  const sections = Array.from(new Set(filteredNavItems.map(item => item.section)));
 
   const handleLogout = async () => {
     setShowLogoutConfirm(true);
@@ -88,7 +90,7 @@ export function Sidebar({ activePage, setActivePage, data, isAdmin }: SidebarPro
             <h3 className="text-xs font-semibold text-gray-500 mb-3 uppercase tracking-wider px-2">
               {section}
             </h3>
-            {navItems.filter(item => item.section === section && (!item.adminOnly || isAdmin)).map(item => {
+            {filteredNavItems.filter(item => item.section === section).map(item => {
               const Icon = item.icon;
               const isActive = activePage === item.id;
               return (

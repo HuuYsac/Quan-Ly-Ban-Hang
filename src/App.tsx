@@ -27,12 +27,27 @@ import { auth } from './firebase';
 import { onAuthStateChanged, User, sendEmailVerification } from 'firebase/auth';
 import { Mail, LogOut, RefreshCw, ShieldAlert } from 'lucide-react';
 
+function AccessDenied() {
+  return (
+    <div className="flex flex-col items-center justify-center h-[60vh] text-center px-4">
+      <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center text-red-600 mb-6">
+        <ShieldAlert size={40} />
+      </div>
+      <h2 className="text-2xl font-bold text-gray-900 mb-2">Truy cập bị từ chối</h2>
+      <p className="text-gray-600 max-w-md">
+        Bạn không có quyền truy cập vào khu vực này. Vui lòng liên hệ quản trị viên nếu bạn cho rằng đây là một lỗi.
+      </p>
+    </div>
+  );
+}
+
 export default function App() {
   const [activePage, setActivePage] = useState('dashboard');
   const { data, updateData, loading: dataLoading, addItem } = useAppStore();
   const [user, setUser] = useState<User | null>(null);
   const [isApproved, setIsApproved] = useState<boolean | null>(null);
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
+  const [userRole, setUserRole] = useState<'admin' | 'staff' | 'user'>('user');
   const [authLoading, setAuthLoading] = useState(true);
   const [resending, setResending] = useState(false);
   const [resendMessage, setResendMessage] = useState('');
@@ -49,13 +64,16 @@ export default function App() {
         if (userDoc.exists()) {
           const userData = userDoc.data();
           setIsApproved(userData.approved !== false);
-          setIsAdmin(currentUser.email === ownerEmail || userData.role === 'admin');
+          const isOwner = currentUser.email === ownerEmail;
+          setIsAdmin(isOwner || userData.role === 'admin');
+          setUserRole(userData.role || 'user');
         } else {
           // If doc doesn't exist yet (just registered), it will be created with approved: false
           // unless it's the owner
           const isOwner = currentUser.email === ownerEmail;
           setIsApproved(isOwner);
           setIsAdmin(isOwner);
+          setUserRole(isOwner ? 'admin' : 'user');
         }
       } else {
         setIsApproved(null);
@@ -192,36 +210,52 @@ export default function App() {
   };
 
   const renderPage = () => {
+    const isStaffOrAdmin = isAdmin || userRole === 'staff';
+
     switch (activePage) {
       case 'dashboard':
-        return <Dashboard data={data} onNavigate={setActivePage} />;
+        return <Dashboard data={data} onNavigate={setActivePage} isAdmin={isAdmin} />;
       case 'members':
+        if (!isAdmin) return <AccessDenied />;
         return <Members />;
       case 'customers':
+        if (!isStaffOrAdmin) return <AccessDenied />;
         return <Customers data={data} updateData={updateData} />;
       case 'suppliers':
+        if (!isStaffOrAdmin) return <AccessDenied />;
         return <Suppliers data={data} updateData={updateData} />;
       case 'products':
+        if (!isStaffOrAdmin) return <AccessDenied />;
         return <Products data={data} updateData={updateData} />;
       case 'categories':
+        if (!isStaffOrAdmin) return <AccessDenied />;
         return <Categories data={data} updateData={updateData} />;
       case 'inventory':
+        if (!isStaffOrAdmin) return <AccessDenied />;
         return <Inventory data={data} updateData={updateData} />;
       case 'debts':
+        if (!isStaffOrAdmin) return <AccessDenied />;
         return <Debts data={data} updateData={updateData} />;
       case 'orders':
+        if (!isStaffOrAdmin) return <AccessDenied />;
         return <Orders data={data} updateData={updateData} addItem={addItem} />;
       case 'reports':
+        if (!isAdmin) return <AccessDenied />;
         return <Reports data={data} updateData={updateData} />;
       case 'crm':
+        if (!isStaffOrAdmin) return <AccessDenied />;
         return <CRM data={data} updateData={updateData} />;
       case 'warranty':
+        if (!isStaffOrAdmin) return <AccessDenied />;
         return <Warranty />;
       case 'repairs':
+        if (!isStaffOrAdmin) return <AccessDenied />;
         return <Repairs />;
       case 'settings':
+        if (!isAdmin) return <AccessDenied />;
         return <Settings data={data} updateData={updateData} />;
       case 'company-info':
+        if (!isAdmin) return <AccessDenied />;
         return <CompanyInfo data={data} updateData={updateData} />;
       default:
         return (
@@ -238,7 +272,7 @@ export default function App() {
 
   return (
     <div className="flex min-h-screen bg-slate-50 font-sans text-gray-900">
-      <Sidebar activePage={activePage} setActivePage={setActivePage} data={data} isAdmin={isAdmin} />
+      <Sidebar activePage={activePage} setActivePage={setActivePage} data={data} isAdmin={isAdmin} userRole={userRole} />
       
       <div className="flex-1 ml-64 flex flex-col min-h-screen print:ml-0">
         <Header title={title} subtitle={subtitle} onNavigate={setActivePage} />

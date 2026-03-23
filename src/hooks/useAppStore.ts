@@ -175,6 +175,21 @@ export function useAppStore() {
       // Listen to collections
       const unsubscribers: (() => void)[] = [];
 
+      // Sync users collection for admins
+      const ownerEmail = 'dieuhuu1995@gmail.com';
+      const isAdminUser = user.email === ownerEmail;
+
+      if (isAdminUser) {
+        const usersRef = collection(db, 'users');
+        const usersUnsubscribe = onSnapshot(usersRef, (snapshot) => {
+          const users = snapshot.docs.map(doc => ({ ...doc.data(), uid: doc.id } as any));
+          setData(prev => ({ ...prev, users }));
+        }, (error) => {
+          handleFirestoreError(error, OperationType.GET, 'users');
+        });
+        unsubscribers.push(usersUnsubscribe);
+      }
+
       const syncCollection = (name: string, key: keyof AppData) => {
         const colRef = collection(db, 'users', user.uid, name);
         const unsub = onSnapshot(colRef, (snapshot) => {

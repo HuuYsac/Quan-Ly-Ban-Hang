@@ -204,7 +204,18 @@ export interface Promotion {
   createdAt: string;
 }
 
+export interface User {
+  uid: string;
+  email: string;
+  phone: string;
+  role: 'admin' | 'staff' | 'user';
+  position: string;
+  approved: boolean;
+  createdAt: string;
+}
+
 export interface AppData {
+  users: User[];
   customers: Customer[];
   suppliers: Supplier[];
   products: Product[];

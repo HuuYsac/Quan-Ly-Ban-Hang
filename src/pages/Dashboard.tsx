@@ -44,9 +44,10 @@ import { subDays, format, isSameDay, parseISO } from 'date-fns';
 interface DashboardProps {
   data: AppData;
   onNavigate: (page: string) => void;
+  isAdmin?: boolean;
 }
 
-export function Dashboard({ data, onNavigate }: DashboardProps) {
+export function Dashboard({ data, onNavigate, isAdmin }: DashboardProps) {
   const [viewOrder, setViewOrder] = useState<Order | null>(null);
   const [viewCustomer, setViewCustomer] = useState<Customer | null>(null);
   const [viewProduct, setViewProduct] = useState<Product | null>(null);
@@ -77,7 +78,7 @@ export function Dashboard({ data, onNavigate }: DashboardProps) {
     const pendingRepairs = data.repairs.filter(r => r.status === 'Đang sửa');
 
     // Expiring Warranties (within 30 days)
-    const expiringWarranties = [];
+    const expiringWarranties: any[] = [];
     data.orders.forEach(order => {
       order.products.forEach(product => {
         if (product.serviceTag && product.purchaseDate && product.warrantyMonths) {
@@ -100,6 +101,9 @@ export function Dashboard({ data, onNavigate }: DashboardProps) {
         }
       });
     });
+
+    // Pending Users
+    const pendingUsers = data.users?.filter(u => u.approved === false) || [];
 
     // Last 7 days chart data
     const chartData = Array.from({ length: 7 }).map((_, i) => {
@@ -127,6 +131,8 @@ export function Dashboard({ data, onNavigate }: DashboardProps) {
       pendingRepairs: pendingRepairs.slice(0, 3),
       expiringWarrantiesCount: expiringWarranties.length,
       expiringWarranties: expiringWarranties.slice(0, 3),
+      pendingUsersCount: pendingUsers.length,
+      pendingUsers: pendingUsers.slice(0, 3),
       chartData
     };
   }, [data]);
@@ -147,14 +153,26 @@ export function Dashboard({ data, onNavigate }: DashboardProps) {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-        <StatCard 
-          title="Doanh thu" 
-          value={formatCurrency(stats.todayRevenue)} 
-          icon={DollarSign} 
-          trend="+12.5%" 
-          trendUp={true} 
-          color="blue"
-        />
+        {isAdmin && stats.pendingUsersCount > 0 ? (
+          <StatCard 
+            title="Thành viên mới" 
+            value={stats.pendingUsersCount.toString()} 
+            icon={UserPlus} 
+            trend="Chờ phê duyệt" 
+            trendUp={false} 
+            color="rose"
+            onClick={() => onNavigate('members')}
+          />
+        ) : (
+          <StatCard 
+            title="Doanh thu" 
+            value={formatCurrency(stats.todayRevenue)} 
+            icon={DollarSign} 
+            trend="+12.5%" 
+            trendUp={true} 
+            color="blue"
+          />
+        )}
         <StatCard 
           title="Đơn hàng" 
           value={stats.todayOrdersCount.toString()} 

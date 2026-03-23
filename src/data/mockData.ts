@@ -11,6 +11,8 @@ threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
 const formatDateStr = (d: Date) => d.toISOString().split('T')[0];
 
 export const initialData: AppData = {
+  users: [],
+  warrantyNotifications: [],
   customers: [
     { 
       id: 'KH001', name: 'Nguyễn Văn A', type: 'ca-nhan', phone: '0901234567', email: 'nva@gmail.com', address: 'Hà Nội', debt: 0,
