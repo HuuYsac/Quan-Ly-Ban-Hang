@@ -48,7 +48,7 @@ export interface Product {
   name: string;
   category: string;
   price: number;
-  importPrice?: number;
+  importPrice?: number | null;
   stock: number;
   minStock: number;
   supplier?: string;
@@ -68,7 +68,7 @@ export interface OrderItem {
   name: string;
   quantity: number;
   price: number;
-  importPrice?: number;
+  importPrice?: number | null;
   discount?: number;
   discountType?: 'percent' | 'amount';
   subtotal?: number;
@@ -172,7 +172,7 @@ export interface CareTask {
   type: 'milestone1' | 'milestone2' | 'milestone3';
   status: 'pending' | 'completed';
   description: string;
-  completedAt?: string;
+  completedAt?: string | null;
 }
 
 export interface NotificationSettings {

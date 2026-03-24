@@ -140,7 +140,7 @@ export function CRM({ data, updateData, addItem, updateItem, deleteItem }: CRMPr
     const updatedTask = { 
       ...task, 
       status: newStatus,
-      completedAt: newStatus === 'completed' ? new Date().toISOString() : undefined
+      completedAt: newStatus === 'completed' ? new Date().toISOString() : null
     };
     
     const currentCareTasks = data.careTasks || [];

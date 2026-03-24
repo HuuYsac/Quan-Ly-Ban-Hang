@@ -270,7 +270,7 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
         name: productFormData.name,
         category: productFormData.category || 'Khác',
         price: Number(productFormData.price) || 0,
-        importPrice: productFormData.importPrice ? Number(productFormData.importPrice) : undefined,
+        importPrice: productFormData.importPrice ? Number(productFormData.importPrice) : null,
         stock: Number(productFormData.stock) || 0,
         minStock: Number(productFormData.minStock) || 10,
         supplier: productFormData.supplier || '',
