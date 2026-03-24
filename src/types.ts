@@ -105,7 +105,7 @@ export interface Order {
   time: string;
   products: OrderItem[];
   total: number;
-  status: 'Mới' | 'Đang xử lý' | 'Hoàn thành' | 'Đã giao' | 'Hủy';
+  status: 'Mới' | 'Đang xử lý' | 'Chờ đóng gói' | 'Đang đóng gói' | 'Chờ giao hàng' | 'Đang giao hàng' | 'Hoàn thành' | 'Đã giao' | 'Hủy';
   paymentMethod: string;
   paymentStatus: 'Công nợ' | 'Đã thanh toán';
   notes?: string;

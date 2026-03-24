@@ -15,6 +15,7 @@ interface OrdersProps {
 
 export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAdmin }: OrdersProps) {
   const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('Tất cả');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isAddCustomerModalOpen, setIsAddCustomerModalOpen] = useState(false);
   const [isAddProductModalOpen, setIsAddProductModalOpen] = useState(false);
@@ -69,10 +70,15 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
     setToast({ message, type });
   };
 
-  const filteredOrders = data.orders.filter(o => 
-    o.id.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    o.customerName.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredOrders = data.orders.filter(o => {
+    const matchesSearch = o.id.toLowerCase().includes(searchTerm.toLowerCase()) || 
+      o.customerName.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    if (statusFilter === 'Tất cả') return matchesSearch;
+    if (statusFilter === 'Đang xử lý') return matchesSearch && (o.status === 'Mới' || o.status === 'Đang xử lý');
+    if (statusFilter === 'Hoàn thành') return matchesSearch && (o.status === 'Hoàn thành' || o.status === 'Đã giao');
+    return matchesSearch && o.status === statusFilter;
+  });
 
   const handleDelete = async (id: string) => {
     const orderToDelete = data.orders.find(o => o.id === id);
@@ -115,7 +121,7 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
     if (!order) return;
 
     const newPaymentStatus = order.paymentStatus === 'Đã thanh toán' ? 'Công nợ' : 'Đã thanh toán';
-    const newStatus = newPaymentStatus === 'Đã thanh toán' ? 'Hoàn thành' : 'Đang xử lý';
+    const newStatus = newPaymentStatus === 'Đã thanh toán' ? 'Chờ đóng gói' : 'Đang xử lý';
 
     try {
       // Update debt
@@ -136,6 +142,72 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
     } catch (error) {
       console.error('Lỗi khi cập nhật trạng thái thanh toán:', error);
       showToast('Có lỗi xảy ra khi cập nhật trạng thái', 'error');
+    }
+  };
+
+  const updateOrderStatus = async (id: string, nextStatus: Order['status']) => {
+    const order = data.orders.find(o => o.id === id);
+    if (!order) return;
+
+    try {
+      await updateItem('orders', id, {
+        ...order,
+        status: nextStatus,
+        updatedAt: new Date().toISOString()
+      });
+      showToast(`Đã chuyển trạng thái đơn hàng sang ${nextStatus}`);
+    } catch (error) {
+      console.error('Lỗi khi cập nhật trạng thái đơn hàng:', error);
+      showToast('Có lỗi xảy ra khi cập nhật trạng thái', 'error');
+    }
+  };
+
+  const getNextStatus = (currentStatus: Order['status']): Order['status'] | null => {
+    switch (currentStatus) {
+      case 'Mới':
+      case 'Đang xử lý':
+        return 'Chờ đóng gói';
+      case 'Chờ đóng gói':
+        return 'Đang đóng gói';
+      case 'Đang đóng gói':
+        return 'Chờ giao hàng';
+      case 'Chờ giao hàng':
+        return 'Đang giao hàng';
+      case 'Đang giao hàng':
+        return 'Đã giao';
+      default:
+        return null;
+    }
+  };
+
+  const getStatusLabel = (status: Order['status']) => {
+    switch (status) {
+      case 'Chờ đóng gói': return 'Chờ đóng gói';
+      case 'Đang đóng gói': return 'Đang đóng gói';
+      case 'Chờ giao hàng': return 'Chờ giao hàng';
+      case 'Đang giao hàng': return 'Đang giao hàng';
+      case 'Hoàn thành': return 'Hoàn thành';
+      case 'Đã giao': return 'Đã giao';
+      case 'Hủy': return 'Đã hủy';
+      default: return status;
+    }
+  };
+
+  const getStatusColor = (status: Order['status']) => {
+    switch (status) {
+      case 'Hoàn thành':
+      case 'Đã giao':
+        return 'bg-emerald-100 text-emerald-800';
+      case 'Hủy':
+        return 'bg-red-100 text-red-800';
+      case 'Chờ đóng gói':
+      case 'Đang đóng gói':
+        return 'bg-blue-100 text-blue-800';
+      case 'Chờ giao hàng':
+      case 'Đang giao hàng':
+        return 'bg-purple-100 text-purple-800';
+      default:
+        return 'bg-amber-100 text-amber-800';
     }
   };
 
@@ -463,7 +535,7 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
           customerName: customer.name,
           products: finalItems,
           total,
-          status: formData.paymentStatus === 'Đã thanh toán' ? 'Hoàn thành' : 'Đang xử lý',
+          status: formData.paymentStatus === 'Đã thanh toán' ? 'Chờ đóng gói' : 'Đang xử lý',
           paymentMethod: formData.paymentMethod,
           paymentStatus: formData.paymentStatus,
           notes: formData.notes,
@@ -487,7 +559,7 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
           time: now.toTimeString().split(' ')[0].substring(0, 5),
           products: finalItems,
           total,
-          status: formData.paymentStatus === 'Đã thanh toán' ? 'Hoàn thành' : 'Đang xử lý',
+          status: formData.paymentStatus === 'Đã thanh toán' ? 'Chờ đóng gói' : 'Đang xử lý',
           paymentMethod: formData.paymentMethod,
           paymentStatus: formData.paymentStatus,
           notes: formData.notes,
@@ -588,6 +660,28 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
           </button>
         </div>
 
+        {/* Status Tabs */}
+        <div className="flex overflow-x-auto pb-2 mb-6 gap-2 no-scrollbar">
+          {['Tất cả', 'Đang xử lý', 'Chờ đóng gói', 'Đang đóng gói', 'Chờ giao hàng', 'Đang giao hàng', 'Hoàn thành', 'Hủy'].map(status => (
+            <button
+              key={status}
+              onClick={() => setStatusFilter(status)}
+              className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all
+                ${statusFilter === status 
+                  ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' 
+                  : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-100'}`}
+            >
+              {status}
+              <span className="ml-2 px-1.5 py-0.5 bg-black/10 rounded text-[10px]">
+                {status === 'Tất cả' ? data.orders.length : 
+                 status === 'Đang xử lý' ? data.orders.filter(o => o.status === 'Mới' || o.status === 'Đang xử lý').length :
+                 status === 'Hoàn thành' ? data.orders.filter(o => o.status === 'Hoàn thành' || o.status === 'Đã giao').length :
+                 data.orders.filter(o => o.status === status).length}
+              </span>
+            </button>
+          ))}
+        </div>
+
         {/* Table/Cards */}
         <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left border-collapse">
@@ -614,13 +708,21 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
                     {formatCurrency(order.total)}
                   </td>
                   <td className="p-4 text-center">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
-                      ${order.status === 'Hoàn thành' ? 'bg-emerald-100 text-emerald-800' : 
-                        order.status === 'Hủy' ? 'bg-red-100 text-red-800' : 
-                        'bg-amber-100 text-amber-800'}`}
-                    >
-                      {order.status}
-                    </span>
+                    <div className="flex flex-col items-center gap-1">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase
+                        ${getStatusColor(order.status)}`}
+                      >
+                        {getStatusLabel(order.status)}
+                      </span>
+                      {getNextStatus(order.status) && (
+                        <button
+                          onClick={() => updateOrderStatus(order.id, getNextStatus(order.status)!)}
+                          className="text-[10px] text-blue-600 hover:underline font-medium"
+                        >
+                          Chuyển: {getStatusLabel(getNextStatus(order.status)!)}
+                        </button>
+                      )}
+                    </div>
                   </td>
                   <td className="p-4 text-center">
                     <button 
@@ -692,14 +794,20 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
                 </div>
                 <div className="text-right">
                   <div className="font-bold text-blue-600">{formatCurrency(order.total)}</div>
-                  <div className="mt-1">
-                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium
-                      ${order.status === 'Hoàn thành' ? 'bg-emerald-100 text-emerald-800' : 
-                        order.status === 'Hủy' ? 'bg-red-100 text-red-800' : 
-                        'bg-amber-100 text-amber-800'}`}
+                  <div className="mt-1 flex flex-col items-end gap-1">
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase
+                      ${getStatusColor(order.status)}`}
                     >
-                      {order.status}
+                      {getStatusLabel(order.status)}
                     </span>
+                    {getNextStatus(order.status) && (
+                      <button
+                        onClick={() => updateOrderStatus(order.id, getNextStatus(order.status)!)}
+                        className="text-[10px] text-blue-600 font-bold underline"
+                      >
+                        Chuyển: {getStatusLabel(getNextStatus(order.status)!)}
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
