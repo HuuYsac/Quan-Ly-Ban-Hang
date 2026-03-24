@@ -16,7 +16,8 @@ import {
   Building,
   LogOut,
   Store,
-  UserCog
+  UserCog,
+  User
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { auth } from '../firebase';
@@ -49,6 +50,7 @@ export function Sidebar({ activePage, setActivePage, data, isAdmin, isApproved, 
     { id: 'reports', label: 'Báo cáo', icon: BarChart3, section: 'Báo cáo', allowedRoles: ['admin'] },
     { id: 'settings', label: 'Cài đặt', icon: Settings, section: 'Hệ thống', allowedRoles: ['admin', 'staff'] },
     { id: 'company-info', label: 'Thông Tin Shop', icon: Building, section: 'Hệ thống', allowedRoles: ['admin'] },
+    { id: 'profile', label: 'Tài khoản của tôi', icon: User, section: 'Hệ thống', allowedRoles: ['admin', 'staff', 'user'] },
   ];
 
   const filteredNavItems = navItems.filter(item => {

@@ -19,6 +19,7 @@ import { Settings } from './pages/Settings';
 import { CompanyInfo } from './pages/CompanyInfo';
 import { CRM } from './pages/CRM';
 import { Members } from './pages/Members';
+import { Profile } from './pages/Profile';
 import Warranty from './pages/Warranty';
 import Repairs from './pages/Repairs';
 import { useAppStore } from './hooks/useAppStore';
@@ -205,6 +206,7 @@ export default function App() {
       case 'repairs': return { title: 'Quản lý Sửa chữa', subtitle: 'Theo dõi tiến độ sửa chữa và bảo hành thiết bị' };
       case 'settings': return { title: 'Cài đặt hệ thống', subtitle: 'Tùy chỉnh hệ thống và giao diện' };
       case 'company-info': return { title: 'Thông tin Shop', subtitle: 'Cập nhật thông tin cửa hàng/doanh nghiệp' };
+      case 'profile': return { title: 'Tài khoản của tôi', subtitle: 'Quản lý thông tin cá nhân và tài khoản' };
       default: return { title: 'Đang phát triển', subtitle: 'Tính năng này sẽ sớm ra mắt' };
     }
   };
@@ -257,6 +259,8 @@ export default function App() {
       case 'company-info':
         if (!isAdmin) return <AccessDenied />;
         return <CompanyInfo data={data} updateData={updateData} />;
+      case 'profile':
+        return <Profile />;
       default:
         return (
           <div className="flex flex-col items-center justify-center h-64 text-gray-500">

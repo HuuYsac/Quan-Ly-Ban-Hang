@@ -216,6 +216,9 @@ export interface User {
   position: string;
   approved: boolean;
   createdAt: string;
+  bankName?: string;
+  bankAccount?: string;
+  bankAccountName?: string;
 }
 
 export interface AppData {

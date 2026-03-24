@@ -1,5 +1,5 @@
 import React from 'react';
-import { ShoppingCart, HeartHandshake, ShieldCheck, Menu } from 'lucide-react';
+import { ShoppingCart, HeartHandshake, ShieldCheck, Menu, User } from 'lucide-react';
 
 interface HeaderProps {
   title: string;
@@ -25,6 +25,14 @@ export function Header({ title, subtitle, onNavigate, onToggleSidebar }: HeaderP
       </div>
       
       <div className="flex items-center gap-2 md:gap-3">
+        <button 
+          onClick={() => onNavigate('profile')}
+          className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-all"
+          title="Tài khoản của tôi"
+        >
+          <User size={20} />
+        </button>
+
         <button 
           onClick={() => onNavigate('crm')}
           className="hidden sm:flex items-center gap-2 px-3 md:px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg text-xs md:text-sm font-semibold transition-all shadow-sm hover:shadow-md hover:-translate-y-0.5"
