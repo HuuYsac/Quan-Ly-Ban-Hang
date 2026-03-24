@@ -23,7 +23,8 @@ import {
   Phone,
   Calendar,
   CheckCircle2,
-  XCircle
+  XCircle,
+  CreditCard
 } from 'lucide-react';
 
 interface UserProfile {
@@ -34,6 +35,9 @@ interface UserProfile {
   position?: string;
   approved: boolean;
   createdAt: string;
+  bankName?: string;
+  bankAccount?: string;
+  bankAccountName?: string;
 }
 
 export function Members() {
@@ -221,7 +225,7 @@ export function Members() {
                 <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Thành viên</th>
                 <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Vai trò & Chức vụ</th>
                 <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Liên hệ</th>
-                <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Ngày tham gia</th>
+                <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Ngân hàng</th>
                 <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Trạng thái</th>
                 <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-right">Thao tác</th>
               </tr>
@@ -275,9 +279,19 @@ export function Members() {
                     </div>
                   </td>
                   <td className="px-6 py-4">
-                    <div className="flex items-center gap-1.5 text-sm text-gray-600">
-                      <Calendar size={14} className="text-gray-400" />
-                      {new Date(user.createdAt).toLocaleDateString('vi-VN')}
+                    <div className="space-y-1">
+                      {user.bankAccount ? (
+                        <>
+                          <div className="flex items-center gap-1.5 text-sm font-bold text-gray-900">
+                            <CreditCard size={14} className="text-blue-500" /> {user.bankAccount}
+                          </div>
+                          <div className="text-[10px] text-gray-500 uppercase font-medium">
+                            {user.bankName} - {user.bankAccountName}
+                          </div>
+                        </>
+                      ) : (
+                        <span className="text-xs text-gray-400 italic">Chưa cập nhật</span>
+                      )}
                     </div>
                   </td>
                   <td className="px-6 py-4">
@@ -384,6 +398,27 @@ export function Members() {
                   placeholder="VD: Quản lý kho, Kế toán, Kỹ thuật..."
                   className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all"
                 />
+              </div>
+
+              {/* Bank Info (Read-only for Admin to view) */}
+              <div className="p-4 bg-slate-50 rounded-xl space-y-3">
+                <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-2">
+                  <CreditCard size={14} /> Thông tin ngân hàng
+                </h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-[10px] text-gray-400 uppercase">Ngân hàng</p>
+                    <p className="text-sm font-bold text-gray-900">{selectedUser.bankName || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-gray-400 uppercase">Số tài khoản</p>
+                    <p className="text-sm font-bold text-gray-900">{selectedUser.bankAccount || 'N/A'}</p>
+                  </div>
+                  <div className="col-span-2">
+                    <p className="text-[10px] text-gray-400 uppercase">Chủ tài khoản</p>
+                    <p className="text-sm font-bold text-gray-900">{selectedUser.bankAccountName || 'N/A'}</p>
+                  </div>
+                </div>
               </div>
 
               <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl">
