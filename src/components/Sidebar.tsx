@@ -27,30 +27,41 @@ interface SidebarProps {
   setActivePage: (page: string) => void;
   data: AppData;
   isAdmin: boolean;
+  isApproved: boolean;
   userRole: 'admin' | 'staff' | 'user';
 }
 
-export function Sidebar({ activePage, setActivePage, data, isAdmin, userRole }: SidebarProps) {
+export function Sidebar({ activePage, setActivePage, data, isAdmin, isApproved, userRole }: SidebarProps) {
   const [showLogoutConfirm, setShowLogoutConfirm] = React.useState(false);
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, section: 'Tổng quan', allowedRoles: ['admin', 'staff', 'user'] },
     { id: 'members', label: 'Thành viên', icon: UserCog, section: 'Hệ thống', allowedRoles: ['admin'] },
-    { id: 'customers', label: 'Khách hàng', icon: Users, section: 'Quản lý cơ bản', allowedRoles: ['admin', 'staff'] },
+    { id: 'customers', label: 'Khách hàng', icon: Users, section: 'Quản lý cơ bản', allowedRoles: ['admin', 'staff', 'user'] },
     { id: 'suppliers', label: 'Nhà cung cấp', icon: Building2, section: 'Quản lý cơ bản', allowedRoles: ['admin'] },
-    { id: 'products', label: 'Sản phẩm', icon: Package, section: 'Quản lý cơ bản', allowedRoles: ['admin', 'staff'] },
-    { id: 'categories', label: 'Danh mục', icon: FolderTree, section: 'Quản lý cơ bản', allowedRoles: ['admin', 'staff'] },
-    { id: 'inventory', label: 'Kho hàng', icon: ClipboardList, section: 'Quản lý cơ bản', allowedRoles: ['admin', 'staff'] },
-    { id: 'debts', label: 'Công nợ', icon: CreditCard, section: 'Nghiệp vụ', allowedRoles: ['admin', 'staff'] },
-    { id: 'orders', label: 'Quản lý đơn hàng', icon: ShoppingCart, section: 'Nghiệp vụ', allowedRoles: ['admin', 'staff'] },
-    { id: 'warranty', label: 'Quản lý bảo hành', icon: ShieldCheck, section: 'Nghiệp vụ', allowedRoles: ['admin', 'staff'] },
-    { id: 'repairs', label: 'Quản lý sửa chữa', icon: Wrench, section: 'Nghiệp vụ', allowedRoles: ['admin', 'staff'] },
-    { id: 'crm', label: 'Quản lý CRM', icon: HeartHandshake, section: 'Nghiệp vụ', allowedRoles: ['admin', 'staff'] },
+    { id: 'products', label: 'Sản phẩm', icon: Package, section: 'Quản lý cơ bản', allowedRoles: ['admin', 'staff', 'user'] },
+    { id: 'categories', label: 'Danh mục', icon: FolderTree, section: 'Quản lý cơ bản', allowedRoles: ['admin', 'staff', 'user'] },
+    { id: 'inventory', label: 'Kho hàng', icon: ClipboardList, section: 'Quản lý cơ bản', allowedRoles: ['admin', 'staff', 'user'] },
+    { id: 'debts', label: 'Công nợ', icon: CreditCard, section: 'Nghiệp vụ', allowedRoles: ['admin', 'staff', 'user'] },
+    { id: 'orders', label: 'Quản lý đơn hàng', icon: ShoppingCart, section: 'Nghiệp vụ', allowedRoles: ['admin', 'staff', 'user'] },
+    { id: 'warranty', label: 'Quản lý bảo hành', icon: ShieldCheck, section: 'Nghiệp vụ', allowedRoles: ['admin', 'staff', 'user'] },
+    { id: 'repairs', label: 'Quản lý sửa chữa', icon: Wrench, section: 'Nghiệp vụ', allowedRoles: ['admin', 'staff', 'user'] },
+    { id: 'crm', label: 'Quản lý CRM', icon: HeartHandshake, section: 'Nghiệp vụ', allowedRoles: ['admin', 'staff', 'user'] },
     { id: 'reports', label: 'Báo cáo', icon: BarChart3, section: 'Báo cáo', allowedRoles: ['admin'] },
     { id: 'settings', label: 'Cài đặt', icon: Settings, section: 'Hệ thống', allowedRoles: ['admin', 'staff'] },
     { id: 'company-info', label: 'Thông Tin Shop', icon: Building, section: 'Hệ thống', allowedRoles: ['admin'] },
   ];
 
-  const filteredNavItems = navItems.filter(item => item.allowedRoles.includes(userRole) || isAdmin);
+  const filteredNavItems = navItems.filter(item => {
+    if (isAdmin) return true;
+    if (item.allowedRoles.includes(userRole)) {
+      // If it's a staff/user role, they must be approved to see business pages
+      if (item.allowedRoles.includes('staff') || item.allowedRoles.includes('user')) {
+        return isApproved;
+      }
+      return true;
+    }
+    return false;
+  });
   const sections = Array.from(new Set(filteredNavItems.map(item => item.section)));
 
   const handleLogout = async () => {

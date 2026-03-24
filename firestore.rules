@@ -64,12 +64,7 @@ service cloud.firestore {
 
     // Check if user is staff or admin
     function isStaff() {
-      return isAuthenticated() && (
-        isAdmin() ||
-        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
-         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'staff' &&
-         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.approved == true)
-      );
+      return isApproved();
     }
 
     match /users/{userId} {

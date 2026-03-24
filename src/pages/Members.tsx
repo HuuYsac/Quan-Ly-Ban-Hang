@@ -30,7 +30,7 @@ interface UserProfile {
   uid: string;
   email: string;
   phone: string;
-  role?: 'admin' | 'user';
+  role?: 'admin' | 'staff' | 'user';
   position?: string;
   approved: boolean;
   createdAt: string;
@@ -44,7 +44,7 @@ export function Members() {
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState({
-    role: 'user' as 'admin' | 'user',
+    role: 'user' as 'admin' | 'staff' | 'user',
     position: '',
     approved: false
   });
@@ -68,9 +68,16 @@ export function Members() {
 
   const handleToggleApproval = async (user: UserProfile) => {
     try {
-      await updateDoc(doc(db, 'users', user.uid), {
+      const updates: any = {
         approved: !user.approved
-      });
+      };
+      
+      // If approving a user who currently has the 'user' role, upgrade them to 'staff' automatically
+      if (!user.approved && (!user.role || user.role === 'user')) {
+        updates.role = 'staff';
+      }
+      
+      await updateDoc(doc(db, 'users', user.uid), updates);
     } catch (error) {
       console.error("Error updating approval status:", error);
       alert("Không thể cập nhật trạng thái phê duyệt.");

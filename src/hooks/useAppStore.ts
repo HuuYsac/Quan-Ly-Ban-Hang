@@ -284,19 +284,34 @@ export function useAppStore() {
   // Add more granular update methods
   const addItem = async (collectionName: string, item: any) => {
     if (!user) return;
-    await setDoc(doc(db, collectionName, item.id), item);
+    try {
+      await setDoc(doc(db, collectionName, item.id), item);
+    } catch (error) {
+      console.error(`Error adding item to ${collectionName}:`, error);
+      throw error;
+    }
   };
 
   const updateItem = async (collectionName: string, id: string, item: any) => {
     if (!user) return;
-    await updateDoc(doc(db, collectionName, id), item);
+    try {
+      await updateDoc(doc(db, collectionName, id), item);
+    } catch (error) {
+      console.error(`Error updating item in ${collectionName}:`, error);
+      throw error;
+    }
   };
 
   const deleteItem = async (collectionName: string, id: string) => {
     if (!user) return;
-    const itemRef = doc(db, collectionName, id);
-    const { deleteDoc } = await import('firebase/firestore');
-    await deleteDoc(itemRef);
+    try {
+      const itemRef = doc(db, collectionName, id);
+      const { deleteDoc } = await import('firebase/firestore');
+      await deleteDoc(itemRef);
+    } catch (error) {
+      console.error(`Error deleting item from ${collectionName}:`, error);
+      throw error;
+    }
   };
 
   const resetDatabase = async () => {

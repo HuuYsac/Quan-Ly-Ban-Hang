@@ -210,7 +210,7 @@ export default function App() {
   };
 
   const renderPage = () => {
-    const isStaffOrAdmin = isAdmin || userRole === 'staff';
+    const isStaffOrAdmin = isAdmin || userRole === 'staff' || (isApproved && userRole === 'user');
 
     switch (activePage) {
       case 'dashboard':
@@ -272,7 +272,7 @@ export default function App() {
 
   return (
     <div className="flex min-h-screen bg-slate-50 font-sans text-gray-900">
-      <Sidebar activePage={activePage} setActivePage={setActivePage} data={data} isAdmin={isAdmin} userRole={userRole} />
+      <Sidebar activePage={activePage} setActivePage={setActivePage} data={data} isAdmin={isAdmin} isApproved={isApproved || false} userRole={userRole} />
       
       <div className="flex-1 ml-64 flex flex-col min-h-screen print:ml-0">
         <Header title={title} subtitle={subtitle} onNavigate={setActivePage} />
