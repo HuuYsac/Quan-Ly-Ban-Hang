@@ -91,7 +91,8 @@ service cloud.firestore {
     }
     
     match /categories/{docId} {
-      allow read, write: if isStaff();
+      allow read: if isApproved();
+      allow write: if isStaff();
     }
     
     match /orders/{docId} {
@@ -124,13 +125,13 @@ service cloud.firestore {
 
     // Suppliers - Admin only for write, staff can read
     match /suppliers/{docId} {
-      allow read: if isStaff();
+      allow read: if isApproved();
       allow write: if isAdmin();
     }
 
     // Config - Admin only for write, staff can read
     match /config/{docId} {
-      allow read: if isStaff();
+      allow read: if isApproved();
       allow write: if isAdmin();
     }
   }

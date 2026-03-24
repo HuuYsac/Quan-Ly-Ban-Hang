@@ -93,6 +93,72 @@ export function useAppStore() {
     setLoading(true);
     const userRef = doc(db, 'users', user.uid);
 
+    const unsubscribers: (() => void)[] = [];
+    const clearUnsubscribers = () => {
+      unsubscribers.forEach(unsub => unsub());
+      unsubscribers.length = 0;
+    };
+
+    const syncCollection = (name: string, key: keyof AppData) => {
+      const colRef = collection(db, name);
+      const unsub = onSnapshot(colRef, (snapshot) => {
+        const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setData(prev => ({ ...prev, [key]: items }));
+      }, (error) => {
+        handleFirestoreError(error, OperationType.GET, name, user);
+      });
+      unsubscribers.push(unsub);
+    };
+
+    const startSyncing = (isAdminUser: boolean) => {
+      clearUnsubscribers();
+      
+      if (isAdminUser) {
+        const usersRef = collection(db, 'users');
+        const usersUnsubscribe = onSnapshot(usersRef, (snapshot) => {
+          const users = snapshot.docs.map(doc => ({ ...doc.data(), uid: doc.id } as any));
+          setData(prev => ({ ...prev, users }));
+        }, (error) => {
+          handleFirestoreError(error, OperationType.GET, 'users', user);
+        });
+        unsubscribers.push(usersUnsubscribe);
+      }
+
+      const collectionsToSync: [string, keyof AppData][] = [
+        ['customers', 'customers'],
+        ['suppliers', 'suppliers'],
+        ['products', 'products'],
+        ['categories', 'categories'],
+        ['orders', 'orders'],
+        ['repairs', 'repairs'],
+        ['leads', 'leads'],
+        ['careTasks', 'careTasks'],
+        ['sales', 'sales'],
+        ['warrantyNotifications', 'warrantyNotifications'],
+        ['promotions', 'promotions']
+      ];
+
+      collectionsToSync.forEach(([name, key]) => syncCollection(name, key));
+
+      // Shared config
+      unsubscribers.push(onSnapshot(doc(db, 'config', 'shopInfo'), (doc) => {
+        if (doc.exists()) setData(prev => ({ ...prev, shopInfo: doc.data() as ShopInfo }));
+      }));
+
+      unsubscribers.push(onSnapshot(doc(db, 'config', 'settings'), (doc) => {
+        if (doc.exists()) setData(prev => ({ ...prev, settings: doc.data() as Settings }));
+        setLoading(false);
+      }));
+
+      unsubscribers.push(onSnapshot(doc(db, 'config', 'cskhSettings'), (doc) => {
+        if (doc.exists()) setData(prev => ({ ...prev, cskhSettings: doc.data() as CSKHSettings }));
+      }));
+
+      unsubscribers.push(onSnapshot(doc(db, 'config', 'notificationSettings'), (doc) => {
+        if (doc.exists()) setData(prev => ({ ...prev, notificationSettings: doc.data() as NotificationSettings }));
+      }));
+    };
+
     // First, listen to the user's own document to handle approval changes in real-time
     const unsubUser = onSnapshot(userRef, async (docSnap) => {
       if (!docSnap.exists()) {
@@ -136,78 +202,19 @@ export function useAppStore() {
       const isAdminUser = user.email === 'dieuhuu1995@gmail.com' || userData?.role === 'admin';
 
       if (!approved && user.email !== 'dieuhuu1995@gmail.com') {
+        clearUnsubscribers();
         setData(initialData);
         setLoading(false);
         return;
       }
 
-      // Start syncing other collections
-      const unsubscribers: (() => void)[] = [];
-
-      if (isAdminUser) {
-        const usersRef = collection(db, 'users');
-        const usersUnsubscribe = onSnapshot(usersRef, (snapshot) => {
-          const users = snapshot.docs.map(doc => ({ ...doc.data(), uid: doc.id } as any));
-          setData(prev => ({ ...prev, users }));
-        }, (error) => {
-          handleFirestoreError(error, OperationType.GET, 'users', user);
-        });
-        unsubscribers.push(usersUnsubscribe);
-      }
-
-      const syncCollection = (name: string, key: keyof AppData) => {
-        const colRef = collection(db, name);
-        const unsub = onSnapshot(colRef, (snapshot) => {
-          const items = snapshot.docs.map(doc => doc.data());
-          setData(prev => ({ ...prev, [key]: items }));
-        }, (error) => {
-          handleFirestoreError(error, OperationType.GET, name, user);
-        });
-        unsubscribers.push(unsub);
-      };
-
-      const collectionsToSync: [string, keyof AppData][] = [
-        ['customers', 'customers'],
-        ['suppliers', 'suppliers'],
-        ['products', 'products'],
-        ['categories', 'categories'],
-        ['orders', 'orders'],
-        ['repairs', 'repairs'],
-        ['leads', 'leads'],
-        ['careTasks', 'careTasks'],
-        ['sales', 'sales'],
-        ['warrantyNotifications', 'warrantyNotifications'],
-        ['promotions', 'promotions']
-      ];
-
-      collectionsToSync.forEach(([name, key]) => syncCollection(name, key));
-
-      // Shared config
-      unsubscribers.push(onSnapshot(doc(db, 'config', 'shopInfo'), (doc) => {
-        if (doc.exists()) setData(prev => ({ ...prev, shopInfo: doc.data() as ShopInfo }));
-      }));
-
-      unsubscribers.push(onSnapshot(doc(db, 'config', 'settings'), (doc) => {
-        if (doc.exists()) setData(prev => ({ ...prev, settings: doc.data() as Settings }));
-        setLoading(false);
-      }));
-
-      unsubscribers.push(onSnapshot(doc(db, 'config', 'cskhSettings'), (doc) => {
-        if (doc.exists()) setData(prev => ({ ...prev, cskhSettings: doc.data() as CSKHSettings }));
-      }));
-
-      unsubscribers.push(onSnapshot(doc(db, 'config', 'notificationSettings'), (doc) => {
-        if (doc.exists()) setData(prev => ({ ...prev, notificationSettings: doc.data() as NotificationSettings }));
-      }));
-
-      // Cleanup function for this specific set of listeners
-      return () => {
-        unsubscribers.forEach(unsub => unsub());
-      };
+      // Start syncing other collections if approved
+      startSyncing(isAdminUser);
     });
 
     return () => {
       unsubUser();
+      clearUnsubscribers();
     };
   }, [user]);
 
