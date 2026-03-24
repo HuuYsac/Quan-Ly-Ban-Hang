@@ -171,6 +171,7 @@ export function Dashboard({ data, onNavigate, isAdmin }: DashboardProps) {
             trend="+12.5%" 
             trendUp={true} 
             color="blue"
+            onClick={() => onNavigate('orders')}
           />
         )}
         <StatCard 
@@ -180,6 +181,7 @@ export function Dashboard({ data, onNavigate, isAdmin }: DashboardProps) {
           trend="+2 đơn" 
           trendUp={true} 
           color="indigo"
+          onClick={() => onNavigate('orders')}
         />
         <StatCard 
           title="Khách hàng" 
@@ -188,6 +190,7 @@ export function Dashboard({ data, onNavigate, isAdmin }: DashboardProps) {
           trend="+5 mới" 
           trendUp={true} 
           color="emerald"
+          onClick={() => onNavigate('customers')}
         />
         <StatCard 
           title="Sản phẩm" 
@@ -196,6 +199,7 @@ export function Dashboard({ data, onNavigate, isAdmin }: DashboardProps) {
           trend={`${stats.lowStockCount} sắp hết`} 
           trendUp={false} 
           color="amber"
+          onClick={() => onNavigate('products')}
         />
       </div>
 
@@ -283,12 +287,15 @@ export function Dashboard({ data, onNavigate, isAdmin }: DashboardProps) {
               onClick={() => onNavigate('warranty')} 
             />
           </div>
-          <div className="mt-6 p-4 bg-slate-50 rounded-xl border border-slate-100">
+          <div 
+            onClick={() => onNavigate('orders')}
+            className="mt-6 p-4 bg-slate-50 rounded-xl border border-slate-100 hover:shadow-md transition-all cursor-pointer group"
+          >
             <div className="flex items-center gap-3 mb-2">
-              <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
+              <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 group-hover:scale-110 transition-transform">
                 <BarChart2 size={16} />
               </div>
-              <span className="text-sm font-bold text-slate-900">Tổng doanh thu</span>
+              <span className="text-sm font-bold text-slate-900 group-hover:text-blue-600 transition-colors">Tổng doanh thu</span>
             </div>
             <p className="text-xl font-black text-slate-900">{formatCurrency(stats.totalRevenue)}</p>
             <p className="text-xs text-slate-500 mt-1">Dữ liệu từ các đơn đã thanh toán</p>
@@ -301,10 +308,13 @@ export function Dashboard({ data, onNavigate, isAdmin }: DashboardProps) {
         <div className="lg:col-span-1 space-y-6">
           {/* Low Stock */}
           <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-            <div className="flex items-center justify-between mb-4">
+            <div 
+              className="flex items-center justify-between mb-4 cursor-pointer group"
+              onClick={() => onNavigate('products')}
+            >
               <div className="flex items-center gap-2">
-                <AlertTriangle className="text-amber-500" size={20} />
-                <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider">Sắp hết hàng</h3>
+                <AlertTriangle className="text-amber-500 group-hover:scale-110 transition-transform" size={20} />
+                <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider group-hover:text-blue-600 transition-colors">Sắp hết hàng</h3>
               </div>
               <span className="bg-amber-100 text-amber-700 text-xs font-bold px-2 py-0.5 rounded-full">
                 {stats.lowStockCount}
@@ -328,10 +338,13 @@ export function Dashboard({ data, onNavigate, isAdmin }: DashboardProps) {
 
           {/* Pending Repairs */}
           <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-            <div className="flex items-center justify-between mb-4">
+            <div 
+              className="flex items-center justify-between mb-4 cursor-pointer group"
+              onClick={() => onNavigate('repairs')}
+            >
               <div className="flex items-center gap-2">
-                <Wrench className="text-blue-500" size={20} />
-                <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider">Đang sửa chữa</h3>
+                <Wrench className="text-blue-500 group-hover:scale-110 transition-transform" size={20} />
+                <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider group-hover:text-blue-600 transition-colors">Đang sửa chữa</h3>
               </div>
               <span className="bg-blue-100 text-blue-700 text-xs font-bold px-2 py-0.5 rounded-full">
                 {stats.pendingRepairsCount}
@@ -358,10 +371,13 @@ export function Dashboard({ data, onNavigate, isAdmin }: DashboardProps) {
 
           {/* Expiring Warranties */}
           <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-            <div className="flex items-center justify-between mb-4">
+            <div 
+              className="flex items-center justify-between mb-4 cursor-pointer group"
+              onClick={() => onNavigate('customers')}
+            >
               <div className="flex items-center gap-2">
-                <ShieldAlert className="text-rose-500" size={20} />
-                <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider">Bảo hành sắp hết</h3>
+                <ShieldAlert className="text-rose-500 group-hover:scale-110 transition-transform" size={20} />
+                <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider group-hover:text-blue-600 transition-colors">Bảo hành sắp hết</h3>
               </div>
               <span className="bg-rose-100 text-rose-700 text-xs font-bold px-2 py-0.5 rounded-full">
                 {stats.expiringWarrantiesCount}
@@ -858,7 +874,7 @@ export function Dashboard({ data, onNavigate, isAdmin }: DashboardProps) {
   );
 }
 
-function StatCard({ title, value, icon: Icon, trend, trendUp, color }: any) {
+function StatCard({ title, value, icon: Icon, trend, trendUp, color, onClick }: any) {
   const colorMap: Record<string, string> = {
     blue: 'bg-blue-500 shadow-blue-200',
     indigo: 'bg-indigo-500 shadow-indigo-200',
@@ -867,7 +883,10 @@ function StatCard({ title, value, icon: Icon, trend, trendUp, color }: any) {
   };
 
   return (
-    <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 transition-all hover:-translate-y-1 hover:shadow-lg group">
+    <div 
+      onClick={onClick}
+      className={`bg-white rounded-2xl p-6 shadow-sm border border-gray-100 transition-all hover:-translate-y-1 hover:shadow-lg group ${onClick ? 'cursor-pointer' : ''}`}
+    >
       <div className="flex items-center justify-between mb-4">
         <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-white shadow-lg transition-transform group-hover:rotate-6 ${colorMap[color]}`}>
           <Icon size={24} />
