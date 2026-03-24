@@ -15,6 +15,8 @@ import {
   Search,
   Filter,
   ChevronRight,
+  ChevronDown,
+  ChevronUp,
   MessageSquare,
   Settings,
   X,
@@ -58,10 +60,14 @@ export function CRM({ data, updateData, addItem, updateItem, deleteItem }: CRMPr
 
   const [tempSettings, setTempSettings] = useState(settings);
 
-  // Helper to parse DD/MM/YYYY to Date object
-  const parseVNToDate = (vnDate: string) => {
-    const [day, month, year] = vnDate.split('/').map(Number);
-    return new Date(year, month - 1, day);
+  // Helper to parse date string (handles both DD/MM/YYYY and YYYY-MM-DD)
+  const parseDate = (dateStr: string) => {
+    if (!dateStr) return new Date();
+    if (dateStr.includes('/')) {
+      const [day, month, year] = dateStr.split('/').map(Number);
+      return new Date(year, month - 1, day);
+    }
+    return new Date(dateStr);
   };
 
   // Generate care tasks from orders (for syncing)
@@ -71,7 +77,12 @@ export function CRM({ data, updateData, addItem, updateItem, deleteItem }: CRMPr
     today.setHours(0, 0, 0, 0);
 
     data.orders.forEach(order => {
-      const orderDate = parseVNToDate(order.date);
+      // Only generate care tasks for completed/delivered and paid orders
+      if (!(['Hoàn thành', 'Đã giao'].includes(order.status) && order.paymentStatus === 'Đã thanh toán')) {
+        return;
+      }
+
+      const orderDate = parseDate(order.date);
       
       // Milestone 1 (Days)
       const date1 = new Date(orderDate);
@@ -196,10 +207,96 @@ export function CRM({ data, updateData, addItem, updateItem, deleteItem }: CRMPr
     window.location.href = `mailto:${adminEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
   };
 
-  const filteredTasks = careTasks.filter(task => 
-    task.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    task.orderId.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const [taskFilter, setTaskFilter] = useState<'all' | 'due' | 'upcoming'>('all');
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set(['Đã hoàn thành']));
+
+  const GROUP_ORDER = ['Quá hạn', 'Hôm nay', 'Tuần này', 'Tháng này', 'Tương lai', 'Đã hoàn thành'];
+
+  const filteredTasks = careTasks.filter(task => {
+    const matchesSearch = task.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         task.orderId.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    if (!matchesSearch) return false;
+
+    if (taskFilter === 'all') return true;
+    
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    const tDate = new Date(task.taskDate);
+    tDate.setHours(0,0,0,0);
+
+    if (taskFilter === 'due') {
+      return tDate.getTime() <= today.getTime() && task.status === 'pending';
+    }
+    if (taskFilter === 'upcoming') {
+      return tDate.getTime() > today.getTime() && task.status === 'pending';
+    }
+    return true;
+  });
+
+  const groupedTasks = useMemo(() => {
+    const groups: { [key: string]: CareTask[] } = {
+      'Quá hạn': [],
+      'Hôm nay': [],
+      'Tuần này': [],
+      'Tháng này': [],
+      'Tương lai': [],
+      'Đã hoàn thành': []
+    };
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // End of current week (Sunday)
+    const endOfWeek = new Date(today);
+    const day = today.getDay();
+    const diff = today.getDate() + (day === 0 ? 0 : 7 - day);
+    endOfWeek.setDate(diff);
+    endOfWeek.setHours(23, 59, 59, 999);
+
+    // End of current month
+    const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+    endOfMonth.setHours(23, 59, 59, 999);
+
+    filteredTasks.forEach(task => {
+      if (task.status === 'completed') {
+        groups['Đã hoàn thành'].push(task);
+        return;
+      }
+
+      const tDate = new Date(task.taskDate);
+      tDate.setHours(0, 0, 0, 0);
+
+      if (tDate.getTime() < today.getTime()) {
+        groups['Quá hạn'].push(task);
+      } else if (tDate.getTime() === today.getTime()) {
+        groups['Hôm nay'].push(task);
+      } else if (tDate.getTime() <= endOfWeek.getTime()) {
+        groups['Tuần này'].push(task);
+      } else if (tDate.getTime() <= endOfMonth.getTime()) {
+        groups['Tháng này'].push(task);
+      } else {
+        groups['Tương lai'].push(task);
+      }
+    });
+
+    // Sort within groups
+    Object.keys(groups).forEach(key => {
+      groups[key].sort((a, b) => new Date(a.taskDate).getTime() - new Date(b.taskDate).getTime());
+    });
+
+    return groups;
+  }, [filteredTasks]);
+
+  const toggleGroup = (groupName: string) => {
+    const newCollapsed = new Set(collapsedGroups);
+    if (newCollapsed.has(groupName)) {
+      newCollapsed.delete(groupName);
+    } else {
+      newCollapsed.add(groupName);
+    }
+    setCollapsedGroups(newCollapsed);
+  };
 
   const filteredLeads = (data.leads || []).filter(lead => 
     lead.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -367,7 +464,8 @@ export function CRM({ data, updateData, addItem, updateItem, deleteItem }: CRMPr
                 today.setHours(0,0,0,0);
                 const tDate = new Date(t.taskDate);
                 tDate.setHours(0,0,0,0);
-                return tDate.getTime() === today.getTime();
+                // Count tasks due today or in the past that are still pending
+                return tDate.getTime() <= today.getTime() && t.status === 'pending';
               }).length}
             </h3>
           </div>
@@ -629,7 +727,57 @@ export function CRM({ data, updateData, addItem, updateItem, deleteItem }: CRMPr
           {activeTab === 'tasks' && (
             <div className="space-y-6">
               <div className="flex flex-col md:flex-row gap-4 justify-between items-center">
-                <div className="relative w-full md:w-96">
+                <div className="flex flex-wrap items-center gap-4 w-full md:w-auto">
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setTaskFilter('all')}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                        taskFilter === 'all' 
+                        ? 'bg-blue-600 text-white shadow-md' 
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      }`}
+                    >
+                      Tất cả
+                    </button>
+                    <button
+                      onClick={() => setTaskFilter('due')}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                        taskFilter === 'due' 
+                        ? 'bg-red-600 text-white shadow-md' 
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      }`}
+                    >
+                      Cần làm ngay
+                    </button>
+                    <button
+                      onClick={() => setTaskFilter('upcoming')}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                        taskFilter === 'upcoming' 
+                        ? 'bg-amber-600 text-white shadow-md' 
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      }`}
+                    >
+                      Sắp tới
+                    </button>
+                  </div>
+                  
+                  <div className="flex items-center gap-2 border-l border-gray-200 pl-4">
+                    <button 
+                      onClick={() => setCollapsedGroups(new Set())}
+                      className="text-[10px] uppercase tracking-wider text-blue-600 hover:text-blue-700 font-bold"
+                    >
+                      Mở tất cả
+                    </button>
+                    <span className="text-gray-300">|</span>
+                    <button 
+                      onClick={() => setCollapsedGroups(new Set(GROUP_ORDER))}
+                      className="text-[10px] uppercase tracking-wider text-gray-500 hover:text-gray-600 font-bold"
+                    >
+                      Thu gọn
+                    </button>
+                  </div>
+                </div>
+                <div className="relative w-full md:w-72">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
                   <input
                     type="text"
@@ -666,81 +814,128 @@ export function CRM({ data, updateData, addItem, updateItem, deleteItem }: CRMPr
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-50">
-                    {filteredTasks.map((task) => {
-                      const taskDate = new Date(task.taskDate);
-                      const isToday = taskDate.setHours(0,0,0,0) === new Date().setHours(0,0,0,0);
-                      const isPast = taskDate < new Date() && !isToday;
-                      const customer = data.customers.find(c => c.id === task.customerId);
+                    {GROUP_ORDER.map((groupName) => {
+                      const tasks = groupedTasks[groupName] || [];
+                      if (tasks.length === 0) return null;
+                      const isCollapsed = collapsedGroups.has(groupName);
                       
                       return (
-                        <tr key={task.id} className="hover:bg-gray-50/50 transition-colors group">
-                          <td className="px-4 py-4">
-                            <div className="flex items-center gap-3">
-                              <button
-                                onClick={() => handleToggleTaskStatus(task)}
-                                className={`w-5 h-5 rounded border flex items-center justify-center transition-all ${
-                                  task.status === 'completed' 
-                                  ? 'bg-emerald-500 border-emerald-500 text-white' 
-                                  : 'border-gray-300 hover:border-blue-500'
-                                }`}
-                              >
-                                {task.status === 'completed' && <CheckCircle2 size={12} />}
-                              </button>
-                              <div className="flex flex-col">
-                                <span className={`text-sm font-semibold ${task.status === 'completed' ? 'text-gray-400 line-through' : isToday ? 'text-blue-600' : isPast ? 'text-red-500' : 'text-gray-900'}`}>
-                                  {new Date(task.taskDate).toLocaleDateString('vi-VN')}
-                                </span>
-                                {isToday && task.status !== 'completed' && <span className="text-[10px] font-bold text-blue-600 uppercase">Hôm nay</span>}
-                                {isPast && task.status !== 'completed' && <span className="text-[10px] font-bold text-red-500 uppercase">Quá hạn</span>}
+                        <React.Fragment key={groupName}>
+                          <tr 
+                            className={`cursor-pointer transition-colors ${
+                              groupName === 'Quá hạn' ? 'bg-red-50/50 hover:bg-red-50' :
+                              groupName === 'Hôm nay' ? 'bg-blue-50/50 hover:bg-blue-50' :
+                              'bg-gray-50/80 hover:bg-gray-100'
+                            }`}
+                            onClick={() => toggleGroup(groupName)}
+                          >
+                            <td colSpan={5} className="px-4 py-2.5 border-y border-gray-100">
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                  {isCollapsed ? <ChevronRight size={16} className="text-gray-400" /> : <ChevronDown size={16} className="text-gray-400" />}
+                                  <span className={`text-xs font-bold uppercase tracking-wider ${
+                                    groupName === 'Quá hạn' ? 'text-red-600' : 
+                                    groupName === 'Hôm nay' ? 'text-blue-600' : 
+                                    groupName === 'Đã hoàn thành' ? 'text-gray-400' : 'text-gray-600'
+                                  }`}>
+                                    {groupName}
+                                  </span>
+                                  <span className="px-1.5 py-0.5 bg-white border border-gray-200 rounded text-[10px] font-bold text-gray-500">
+                                    {tasks.length}
+                                  </span>
+                                </div>
+                                {isCollapsed && (
+                                  <span className="text-[10px] text-gray-400 font-medium italic">Nhấp để mở rộng</span>
+                                )}
                               </div>
-                            </div>
-                          </td>
-                          <td className="px-4 py-4">
-                            <div className="flex items-center gap-3">
-                              <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center text-gray-500">
-                                <User size={14} />
-                              </div>
-                              <div className="flex flex-col">
-                                <span className="text-sm font-medium text-gray-900">{task.customerName}</span>
-                                <span className="text-[10px] text-gray-400">{customer?.phone}</span>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="px-4 py-4">
-                            <div className="flex items-center gap-2">
-                              <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
-                                task.type === 'milestone1' ? 'bg-blue-100 text-blue-600' :
-                                task.type === 'milestone2' ? 'bg-amber-100 text-amber-600' :
-                                'bg-purple-100 text-purple-600'
-                              }`}>
-                                {task.type === 'milestone1' ? `${settings.milestone1} Ngày` : task.type === 'milestone2' ? `${settings.milestone2} Tháng` : `${settings.milestone3} Tháng`}
-                              </span>
-                              <span className="text-sm text-gray-600">{task.description}</span>
-                            </div>
-                          </td>
-                          <td className="px-4 py-4">
-                            <span className="text-xs font-mono text-gray-500">#{task.orderId}</span>
-                          </td>
-                          <td className="px-4 py-4 text-right">
-                            <div className="flex justify-end gap-2">
-                              <a href={getZaloLink(customer?.phone || '')} target="_blank" rel="noreferrer" className="p-2 text-blue-500 hover:bg-blue-50 rounded-lg transition-all" title="Zalo">
-                                <MessageSquare size={18} />
-                              </a>
-                              <a href={getSmsLink(customer?.phone || '', `Chào ${task.customerName}, mình từ Hữu Laptop...`)} className="p-2 text-emerald-500 hover:bg-emerald-50 rounded-lg transition-all" title="Gửi SMS">
-                                <Send size={18} />
-                              </a>
-                              <a
-                                href={getGoogleCalendarLink(task)}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
-                                title="Thêm vào Google Lịch"
-                              >
-                                <Calendar size={18} />
-                              </a>
-                            </div>
-                          </td>
-                        </tr>
+                            </td>
+                          </tr>
+                          {!isCollapsed && tasks.map((task) => {
+                            const taskDate = new Date(task.taskDate);
+                            const today = new Date();
+                            today.setHours(0,0,0,0);
+                            const tDate = new Date(taskDate);
+                            tDate.setHours(0,0,0,0);
+                            
+                            const isToday = tDate.getTime() === today.getTime();
+                            const isPast = tDate.getTime() < today.getTime();
+                            const customer = data.customers.find(c => c.id === task.customerId);
+                            
+                            return (
+                              <tr key={task.id} className={`hover:bg-gray-50/50 transition-colors group ${task.status === 'completed' ? 'opacity-60' : ''}`}>
+                                <td className="px-4 py-4">
+                                  <div className="flex items-center gap-3">
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleToggleTaskStatus(task);
+                                      }}
+                                      className={`w-5 h-5 rounded border flex items-center justify-center transition-all ${
+                                        task.status === 'completed' 
+                                        ? 'bg-emerald-500 border-emerald-500 text-white' 
+                                        : 'border-gray-300 hover:border-blue-500'
+                                      }`}
+                                    >
+                                      {task.status === 'completed' && <CheckCircle2 size={12} />}
+                                    </button>
+                                    <div className="flex flex-col">
+                                      <span className={`text-sm font-semibold ${task.status === 'completed' ? 'text-gray-400 line-through' : isToday ? 'text-blue-600' : isPast ? 'text-red-500' : 'text-gray-900'}`}>
+                                        {new Date(task.taskDate).toLocaleDateString('vi-VN')}
+                                      </span>
+                                      {isToday && task.status !== 'completed' && <span className="text-[10px] font-bold text-blue-600 uppercase">Hôm nay</span>}
+                                      {isPast && task.status !== 'completed' && <span className="text-[10px] font-bold text-red-500 uppercase">Quá hạn</span>}
+                                    </div>
+                                  </div>
+                                </td>
+                                <td className="px-4 py-4">
+                                  <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center text-gray-500">
+                                      <User size={14} />
+                                    </div>
+                                    <div className="flex flex-col">
+                                      <span className="text-sm font-medium text-gray-900">{task.customerName}</span>
+                                      <span className="text-[10px] text-gray-400">{customer?.phone}</span>
+                                    </div>
+                                  </div>
+                                </td>
+                                <td className="px-4 py-4">
+                                  <div className="flex items-center gap-2">
+                                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
+                                      task.type === 'milestone1' ? 'bg-blue-100 text-blue-600' :
+                                      task.type === 'milestone2' ? 'bg-amber-100 text-amber-600' :
+                                      'bg-purple-100 text-purple-600'
+                                    }`}>
+                                      {task.type === 'milestone1' ? `${settings.milestone1} Ngày` : task.type === 'milestone2' ? `${settings.milestone2} Tháng` : `${settings.milestone3} Tháng`}
+                                    </span>
+                                    <span className="text-sm text-gray-600">{task.description}</span>
+                                  </div>
+                                </td>
+                                <td className="px-4 py-4">
+                                  <span className="text-xs font-mono text-gray-500">#{task.orderId}</span>
+                                </td>
+                                <td className="px-4 py-4 text-right">
+                                  <div className="flex justify-end gap-2">
+                                    <a href={getZaloLink(customer?.phone || '')} target="_blank" rel="noreferrer" className="p-2 text-blue-500 hover:bg-blue-50 rounded-lg transition-all" title="Zalo">
+                                      <MessageSquare size={18} />
+                                    </a>
+                                    <a href={getSmsLink(customer?.phone || '', `Chào ${task.customerName}, mình từ Hữu Laptop...`)} className="p-2 text-emerald-500 hover:bg-emerald-50 rounded-lg transition-all" title="Gửi SMS">
+                                      <Send size={18} />
+                                    </a>
+                                    <a
+                                      href={getGoogleCalendarLink(task)}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+                                      title="Thêm vào Google Lịch"
+                                    >
+                                      <Calendar size={18} />
+                                    </a>
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </React.Fragment>
                       );
                     })}
                   </tbody>
@@ -749,82 +944,123 @@ export function CRM({ data, updateData, addItem, updateItem, deleteItem }: CRMPr
 
               {/* Mobile Card View */}
               <div className="md:hidden space-y-4">
-                {filteredTasks.map((task) => {
-                  const taskDate = new Date(task.taskDate);
-                  const isToday = taskDate.setHours(0,0,0,0) === new Date().setHours(0,0,0,0);
-                  const isPast = taskDate < new Date() && !isToday;
-                  const customer = data.customers.find(c => c.id === task.customerId);
+                {GROUP_ORDER.map((groupName) => {
+                  const tasks = groupedTasks[groupName] || [];
+                  if (tasks.length === 0) return null;
+                  const isCollapsed = collapsedGroups.has(groupName);
 
                   return (
-                    <div key={task.id} className={`p-4 rounded-2xl border transition-all ${task.status === 'completed' ? 'bg-gray-50 border-gray-100 opacity-75' : 'bg-white border-gray-200'}`}>
-                      <div className="flex justify-between items-start mb-3">
-                        <div className="flex items-center gap-3">
-                          <button
-                            onClick={() => handleToggleTaskStatus(task)}
-                            className={`w-6 h-6 rounded border flex items-center justify-center transition-all ${
-                              task.status === 'completed' 
-                              ? 'bg-emerald-500 border-emerald-500 text-white' 
-                              : 'border-gray-300'
-                            }`}
-                          >
-                            {task.status === 'completed' && <CheckCircle2 size={14} />}
-                          </button>
-                          <div>
-                            <p className={`font-bold ${task.status === 'completed' ? 'text-gray-400 line-through' : isToday ? 'text-blue-600' : isPast ? 'text-red-500' : 'text-gray-900'}`}>
-                              {new Date(task.taskDate).toLocaleDateString('vi-VN')}
-                            </p>
-                            <div className="flex gap-2">
-                              {isToday && task.status !== 'completed' && <span className="text-[10px] font-bold text-blue-600 uppercase">Hôm nay</span>}
-                              {isPast && task.status !== 'completed' && <span className="text-[10px] font-bold text-red-500 uppercase">Quá hạn</span>}
+                    <div key={groupName} className="space-y-2">
+                      <button 
+                        onClick={() => toggleGroup(groupName)}
+                        className={`w-full flex items-center justify-between p-3 rounded-xl border transition-all ${
+                          groupName === 'Quá hạn' ? 'bg-red-50 border-red-100' :
+                          groupName === 'Hôm nay' ? 'bg-blue-50 border-blue-100' :
+                          'bg-gray-50 border-gray-100'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className={`text-[10px] font-bold uppercase tracking-wider ${
+                            groupName === 'Quá hạn' ? 'text-red-600' : 
+                            groupName === 'Hôm nay' ? 'text-blue-600' : 
+                            groupName === 'Đã hoàn thành' ? 'text-gray-400' : 'text-gray-600'
+                          }`}>
+                            {groupName}
+                          </span>
+                          <span className="px-1.5 py-0.5 bg-white border border-gray-200 rounded text-[10px] font-bold text-gray-500">
+                            {tasks.length}
+                          </span>
+                        </div>
+                        {isCollapsed ? <ChevronRight size={14} className="text-gray-400" /> : <ChevronDown size={14} className="text-gray-400" />}
+                      </button>
+                      
+                      {!isCollapsed && tasks.map((task) => {
+                        const taskDate = new Date(task.taskDate);
+                        const today = new Date();
+                        today.setHours(0,0,0,0);
+                        const tDate = new Date(taskDate);
+                        tDate.setHours(0,0,0,0);
+
+                        const isToday = tDate.getTime() === today.getTime();
+                        const isPast = tDate.getTime() < today.getTime();
+                        const customer = data.customers.find(c => c.id === task.customerId);
+
+                        return (
+                          <div key={task.id} className={`p-4 rounded-2xl border transition-all ${task.status === 'completed' ? 'bg-gray-50 border-gray-100 opacity-75' : 'bg-white border-gray-200 shadow-sm'}`}>
+                            <div className="flex justify-between items-start mb-3">
+                              <div className="flex items-center gap-3">
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleToggleTaskStatus(task);
+                                  }}
+                                  className={`w-6 h-6 rounded border flex items-center justify-center transition-all ${
+                                    task.status === 'completed' 
+                                    ? 'bg-emerald-500 border-emerald-500 text-white' 
+                                    : 'border-gray-300'
+                                  }`}
+                                >
+                                  {task.status === 'completed' && <CheckCircle2 size={14} />}
+                                </button>
+                                <div>
+                                  <p className={`font-bold ${task.status === 'completed' ? 'text-gray-400 line-through' : isToday ? 'text-blue-600' : isPast ? 'text-red-500' : 'text-gray-900'}`}>
+                                    {new Date(task.taskDate).toLocaleDateString('vi-VN')}
+                                  </p>
+                                  <div className="flex gap-2">
+                                    {isToday && task.status !== 'completed' && <span className="text-[10px] font-bold text-blue-600 uppercase">Hôm nay</span>}
+                                    {isPast && task.status !== 'completed' && <span className="text-[10px] font-bold text-red-500 uppercase">Quá hạn</span>}
+                                  </div>
+                                </div>
+                              </div>
+                              <span className="text-xs font-mono text-gray-400">#{task.orderId}</span>
+                            </div>
+
+                            <div className="space-y-3">
+                              <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center text-gray-500">
+                                  <User size={14} />
+                                </div>
+                                <div>
+                                  <p className="text-sm font-bold text-gray-900">{task.customerName}</p>
+                                  <p className="text-xs text-gray-500">{customer?.phone}</p>
+                                </div>
+                              </div>
+
+                              <div className="bg-gray-50 p-3 rounded-xl border border-gray-100">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
+                                    task.type === 'milestone1' ? 'bg-blue-100 text-blue-600' :
+                                    task.type === 'milestone2' ? 'bg-amber-100 text-amber-600' :
+                                    'bg-purple-100 text-purple-600'
+                                  }`}>
+                                    {task.type === 'milestone1' ? `${settings.milestone1} Ngày` : task.type === 'milestone2' ? `${settings.milestone2} Tháng` : `${settings.milestone3} Tháng`}
+                                  </span>
+                                </div>
+                                <p className="text-sm text-gray-600">{task.description}</p>
+                              </div>
+
+                              <div className="flex items-center justify-between pt-2">
+                                <div className="flex gap-2">
+                                  <a href={getZaloLink(customer?.phone || '')} target="_blank" rel="noreferrer" className="p-2 text-blue-500 hover:bg-blue-50 rounded-lg transition-all">
+                                    <MessageSquare size={18} />
+                                  </a>
+                                  <a href={getSmsLink(customer?.phone || '', `Chào ${task.customerName}, mình từ Hữu Laptop...`)} className="p-2 text-emerald-500 hover:bg-emerald-50 rounded-lg transition-all">
+                                    <Send size={18} />
+                                  </a>
+                                </div>
+                                <a
+                                  href={getGoogleCalendarLink(task)}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+                                >
+                                  <Calendar size={18} />
+                                </a>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                        <span className="text-xs font-mono text-gray-400">#{task.orderId}</span>
-                      </div>
-
-                      <div className="space-y-3">
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center text-gray-500">
-                            <User size={14} />
-                          </div>
-                          <div>
-                            <p className="text-sm font-bold text-gray-900">{task.customerName}</p>
-                            <p className="text-xs text-gray-500">{customer?.phone}</p>
-                          </div>
-                        </div>
-
-                        <div className="bg-gray-50 p-3 rounded-xl border border-gray-100">
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
-                              task.type === 'milestone1' ? 'bg-blue-100 text-blue-600' :
-                              task.type === 'milestone2' ? 'bg-amber-100 text-amber-600' :
-                              'bg-purple-100 text-purple-600'
-                            }`}>
-                              {task.type === 'milestone1' ? `${settings.milestone1} Ngày` : task.type === 'milestone2' ? `${settings.milestone2} Tháng` : `${settings.milestone3} Tháng`}
-                            </span>
-                          </div>
-                          <p className="text-sm text-gray-700">{task.description}</p>
-                        </div>
-
-                        <div className="flex items-center justify-between pt-2">
-                          <div className="flex gap-2">
-                            <a href={getZaloLink(customer?.phone || '')} target="_blank" rel="noreferrer" className="p-2 text-blue-500 bg-blue-50 rounded-lg">
-                              <MessageSquare size={18} />
-                            </a>
-                            <a href={`tel:${customer?.phone}`} className="p-2 text-emerald-500 bg-emerald-50 rounded-lg">
-                              <Phone size={18} />
-                            </a>
-                          </div>
-                          <a
-                            href={getGoogleCalendarLink(task)}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="p-2 text-gray-400 bg-gray-50 rounded-lg"
-                          >
-                            <Calendar size={18} />
-                          </a>
-                        </div>
-                      </div>
+                        );
+                      })}
                     </div>
                   );
                 })}
