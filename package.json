@@ -1,7 +1,9 @@
 {
-  "name": "react-example",
+  "name": "qlbh-app",
   "private": true,
   "version": "1.0.0",
+  "description": "Phần mềm quản lý bán hàng chuyên nghiệp",
+  "author": "Huu Laptop",
   "type": "module",
   "main": "main.cjs",
   "scripts": {
@@ -31,7 +33,7 @@
       "target": "nsis"
     },
     "mac": {
-      "target": "dmg",
+      "target": ["zip"],
       "category": "public.app-category.business"
     }
   },
