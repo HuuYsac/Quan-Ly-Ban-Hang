@@ -60,7 +60,7 @@
     "autoprefixer": "^10.4.21",
     "concurrently": "^9.2.1",
     "cross-env": "^10.1.0",
-    "electron": "^32.0.0",
+    "electron": "^30.0.0",
     "electron-builder": "^24.13.3",
     "tailwindcss": "^4.1.14",
     "tsx": "^4.21.0",

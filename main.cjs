@@ -2,19 +2,21 @@ const { app, BrowserWindow } = require('electron');
 const path = require('path');
 const isDev = process.env.NODE_ENV === 'development';
 
-// Disable hardware acceleration for better compatibility with older Macs
+// Disable hardware acceleration and GPU for maximum stability on older Macs
 app.disableHardwareAcceleration();
+app.commandLine.appendSwitch('disable-gpu');
+app.commandLine.appendSwitch('disable-software-rasterizer');
 
 function createWindow() {
   const win = new BrowserWindow({
     width: 1200,
     height: 800,
-    show: false, // Don't show until ready to prevent flickering/crash
+    show: false,
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
       preload: path.join(__dirname, 'preload.cjs'),
-      sandbox: false // Disable sandbox for older macOS compatibility
+      sandbox: true // Re-enable sandbox for security/stability
     },
     title: "QLBH - Phần mềm quản lý bán hàng",
   });
