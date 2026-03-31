@@ -15,6 +15,9 @@ interface ProductsProps {
 
 export function Products({ data, updateData, addItem, updateItem, deleteItem, isAdmin }: ProductsProps) {
   const [searchTerm, setSearchTerm] = useState('');
+  const [filterCategory, setFilterCategory] = useState('all');
+  const [filterSupplier, setFilterSupplier] = useState('all');
+  const [sortBy, setSortBy] = useState<'name' | 'price-asc' | 'price-desc' | 'newest'>('newest');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [toast, setToast] = useState<{ message: string; type: ToastType } | null>(null);
@@ -33,10 +36,34 @@ export function Products({ data, updateData, addItem, updateItem, deleteItem, is
     supplier: ''
   });
 
-  const filteredProducts = data.products.filter(p => 
-    p.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    p.id.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredProducts = data.products
+    .filter(p => {
+      const matchesSearch = 
+        p.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+        p.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        p.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (p.supplier && p.supplier.toLowerCase().includes(searchTerm.toLowerCase()));
+      
+      const matchesCategory = filterCategory === 'all' || p.category === filterCategory;
+      const matchesSupplier = filterSupplier === 'all' || p.supplier === filterSupplier;
+      
+      return matchesSearch && matchesCategory && matchesSupplier;
+    })
+    .sort((a, b) => {
+      if (sortBy === 'name') {
+        return a.name.localeCompare(b.name);
+      }
+      if (sortBy === 'price-asc') {
+        return a.price - b.price;
+      }
+      if (sortBy === 'price-desc') {
+        return b.price - a.price;
+      }
+      if (sortBy === 'newest') {
+        return new Date(b.createdAt || '').getTime() - new Date(a.createdAt || '').getTime();
+      }
+      return 0;
+    });
 
   const lowStockCount = data.products.filter(p => p.stock < p.minStock).length;
 
@@ -149,16 +176,54 @@ export function Products({ data, updateData, addItem, updateItem, deleteItem, is
 
       {/* Actions & Search */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-        <div className="p-5 border-b border-gray-100 flex flex-col sm:flex-row justify-between items-center gap-4">
-          <div className="relative w-full sm:w-96">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-            <input 
-              type="text" 
-              placeholder="Tìm kiếm sản phẩm..." 
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
-            />
+        <div className="p-5 border-b border-gray-100 flex flex-col lg:flex-row justify-between items-center gap-4">
+          <div className="flex flex-col sm:flex-row gap-4 w-full lg:w-auto flex-1">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+              <input 
+                type="text" 
+                placeholder="Tìm kiếm theo tên, mã, danh mục, nhà cung cấp..." 
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              />
+            </div>
+            <div className="w-full sm:w-48">
+              <select
+                value={filterCategory}
+                onChange={(e) => setFilterCategory(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm"
+              >
+                <option value="all">Tất cả danh mục</option>
+                {data.categories.map(c => (
+                  <option key={c.id} value={c.name}>{c.name}</option>
+                ))}
+              </select>
+            </div>
+            <div className="w-full sm:w-48">
+              <select
+                value={filterSupplier}
+                onChange={(e) => setFilterSupplier(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm"
+              >
+                <option value="all">Tất cả nhà cung cấp</option>
+                {data.suppliers.map(s => (
+                  <option key={s.id} value={s.name}>{s.name}</option>
+                ))}
+              </select>
+            </div>
+            <div className="w-full sm:w-48">
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as any)}
+                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm"
+              >
+                <option value="newest">Mới nhất</option>
+                <option value="name">Tên A-Z</option>
+                <option value="price-asc">Giá: Thấp đến Cao</option>
+                <option value="price-desc">Giá: Cao đến Thấp</option>
+              </select>
+            </div>
           </div>
           <button 
             onClick={() => {
@@ -182,6 +247,7 @@ export function Products({ data, updateData, addItem, updateItem, deleteItem, is
               <tr className="bg-gray-50 text-gray-500 text-sm uppercase tracking-wider">
                 <th className="p-4 font-medium">Sản phẩm</th>
                 <th className="p-4 font-medium">Danh mục</th>
+                <th className="p-4 font-medium">Nhà cung cấp</th>
                 {isAdmin && <th className="p-4 font-medium text-right">Giá nhập</th>}
                 <th className="p-4 font-medium text-right">Giá bán</th>
                 <th className="p-4 font-medium text-center">Tồn kho</th>
@@ -203,6 +269,7 @@ export function Products({ data, updateData, addItem, updateItem, deleteItem, is
                     </div>
                   </td>
                   <td className="p-4 text-sm text-gray-600">{product.category}</td>
+                  <td className="p-4 text-sm text-gray-600">{product.supplier || 'N/A'}</td>
                   {isAdmin && (
                     <td className="p-4 text-sm font-medium text-gray-500 text-right">
                       {product.importPrice ? formatCurrency(product.importPrice) : 'N/A'}

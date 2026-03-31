@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import { auth } from '../firebase';
-import { AppData, Order, Customer, Lead, CareTask } from '../types';
+import { AppData, Order, Customer, Lead, CareTask, NotificationSettings } from '../types';
 import { formatCurrency } from '../lib/utils';
 import { 
   HeartHandshake, 
@@ -42,6 +43,7 @@ interface CRMProps {
 }
 
 export function CRM({ data, updateData, addItem, updateItem, deleteItem }: CRMProps) {
+  const [leadStatusFilter, setLeadStatusFilter] = useState<'all' | 'Mới' | 'Đã liên hệ' | 'Đang thương lượng' | 'Thành công' | 'Thất bại'>('all');
   const [activeTab, setActiveTab] = useState<'leads' | 'tasks' | 'promotions'>('tasks');
   const [searchTerm, setSearchTerm] = useState('');
   const [showSettings, setShowSettings] = useState(false);
@@ -58,7 +60,20 @@ export function CRM({ data, updateData, addItem, updateItem, deleteItem }: CRMPr
     milestone3: 6
   };
 
+  const notifySettings = data.notificationSettings || {
+    zaloAccessToken: '',
+    zaloOaId: '',
+    smsApiKey: '',
+    smsProvider: 'esms',
+    autoSendWarranty: false,
+    daysBeforeExpiry: 7,
+    messageTemplate: 'Chào {customerName}, sản phẩm {productName} (S/N: {serviceTag}) của bạn sắp hết hạn bảo hành vào ngày {expiryDate}. Vui lòng liên hệ chúng tôi để được hỗ trợ.'
+  };
+
   const [tempSettings, setTempSettings] = useState(settings);
+  const [tempNotifySettings, setTempNotifySettings] = useState(notifySettings);
+
+  const [isSyncing, setIsSyncing] = useState(false);
 
   // Helper to parse date string (handles both DD/MM/YYYY and YYYY-MM-DD)
   const parseDate = (dateStr: string) => {
@@ -119,6 +134,34 @@ export function CRM({ data, updateData, addItem, updateItem, deleteItem }: CRMPr
           });
         }
       });
+
+      // Add Warranty Expiration Tasks
+      order.products.forEach(product => {
+        if (product.serviceTag && product.purchaseDate && product.warrantyMonths) {
+          const purchaseDate = parseDate(product.purchaseDate);
+          const expiryDate = new Date(purchaseDate);
+          expiryDate.setMonth(expiryDate.getMonth() + product.warrantyMonths);
+          
+          const notifyDate = new Date(expiryDate);
+          notifyDate.setDate(notifyDate.getDate() - notifySettings.daysBeforeExpiry);
+          
+          const diffDays = Math.floor((notifyDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+          
+          if (diffDays >= -30 && diffDays <= 30) {
+            tasks.push({
+              id: `${order.id}-${product.serviceTag}-warranty`,
+              customerId: order.customerId,
+              customerName: order.customerName,
+              orderId: order.id,
+              orderDate: order.date,
+              taskDate: notifyDate.toISOString(),
+              type: 'milestone1', // Reusing type for simplicity or could add new type
+              status: 'pending',
+              description: `Thông báo hết hạn bảo hành: ${product.name} (S/N: ${product.serviceTag})`
+            });
+          }
+        }
+      });
     });
 
     return tasks;
@@ -142,7 +185,10 @@ export function CRM({ data, updateData, addItem, updateItem, deleteItem }: CRMPr
   }, [generatedTasks, data.careTasks]);
 
   const handleSaveSettings = async () => {
-    await updateData({ cskhSettings: tempSettings });
+    await updateData({ 
+      cskhSettings: tempSettings,
+      notificationSettings: tempNotifySettings
+    });
     setShowSettings(false);
   };
 
@@ -169,42 +215,50 @@ export function CRM({ data, updateData, addItem, updateItem, deleteItem }: CRMPr
   };
 
   const handleSyncAndReport = async () => {
-    // Sync all generated tasks to Firestore if they don't exist
-    const currentCareTasks = data.careTasks || [];
-    const newTasksToSync = generatedTasks.filter(gt => !currentCareTasks.find(ct => ct.id === gt.id));
-    
-    if (newTasksToSync.length > 0) {
-      await updateData({ careTasks: [...currentCareTasks, ...newTasksToSync] });
-    }
+    setIsSyncing(true);
+    try {
+      // Sync all generated tasks to Firestore if they don't exist
+      const currentCareTasks = data.careTasks || [];
+      const newTasksToSync = generatedTasks.filter(gt => !currentCareTasks.find(ct => ct.id === gt.id));
+      
+      if (newTasksToSync.length > 0) {
+        await updateData({ careTasks: [...currentCareTasks, ...newTasksToSync] });
+      }
 
-    // Send report
-    const today = new Date();
-    today.setHours(0,0,0,0);
-    const todayTasks = careTasks.filter(t => {
-      const d = new Date(t.taskDate);
-      d.setHours(0,0,0,0);
-      return d.getTime() === today.getTime() && t.status === 'pending';
-    });
-    
-    if (todayTasks.length === 0) {
-      setToast({ message: 'Đã đồng bộ dữ liệu. Không có lịch chăm sóc mới nào trong hôm nay để báo cáo.', type: 'info' });
-      setTimeout(() => setToast(null), 3000);
-      return;
-    }
+      // Send report
+      const today = new Date();
+      today.setHours(0,0,0,0);
+      const todayTasks = careTasks.filter(t => {
+        const d = new Date(t.taskDate);
+        d.setHours(0,0,0,0);
+        return d.getTime() === today.getTime() && t.status === 'pending';
+      });
+      
+      if (todayTasks.length === 0) {
+        setToast({ message: 'Đã đồng bộ dữ liệu. Không có lịch chăm sóc mới nào trong hôm nay để báo cáo.', type: 'info' });
+        setTimeout(() => setToast(null), 3000);
+        return;
+      }
 
-    const adminEmails = ['dieuhuu1995@gmail.com', 'huulaptop.info@gmail.com'];
-    const adminEmail = adminEmails.includes(auth.currentUser?.email || '') ? auth.currentUser?.email : adminEmails[0];
-    const subject = `Báo cáo chăm sóc khách hàng ngày ${today.toLocaleDateString('vi-VN')}`;
-    let body = `Danh sách khách hàng cần chăm sóc hôm nay (${today.toLocaleDateString('vi-VN')}):\n\n`;
-    
-    todayTasks.forEach((t, i) => {
-      body += `${i+1}. ${t.customerName} - ${t.description} (Đơn hàng: #${t.orderId})\n`;
-    });
-    
-    body += `\nTổng cộng: ${todayTasks.length} nhiệm vụ chưa hoàn thành.\n`;
-    body += `\nVui lòng kiểm tra hệ thống CRM để thực hiện chăm sóc.`;
-    
-    window.location.href = `mailto:${adminEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+      const adminEmails = ['dieuhuu1995@gmail.com', 'huulaptop.info@gmail.com'];
+      const adminEmail = adminEmails.includes(auth.currentUser?.email || '') ? auth.currentUser?.email : adminEmails[0];
+      const subject = `Báo cáo chăm sóc khách hàng ngày ${today.toLocaleDateString('vi-VN')}`;
+      let body = `Danh sách khách hàng cần chăm sóc hôm nay (${today.toLocaleDateString('vi-VN')}):\n\n`;
+      
+      todayTasks.forEach((t, i) => {
+        body += `${i+1}. ${t.customerName} - ${t.description} (Đơn hàng: #${t.orderId})\n`;
+      });
+      
+      body += `\nTổng cộng: ${todayTasks.length} nhiệm vụ chưa hoàn thành.\n`;
+      body += `\nVui lòng kiểm tra hệ thống CRM để thực hiện chăm sóc.`;
+      
+      window.location.href = `mailto:${adminEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    } catch (error) {
+      console.error('Lỗi khi đồng bộ:', error);
+      setToast({ message: 'Lỗi khi đồng bộ dữ liệu.', type: 'info' });
+    } finally {
+      setIsSyncing(false);
+    }
   };
 
   const [taskFilter, setTaskFilter] = useState<'all' | 'due' | 'upcoming'>('all');
@@ -298,10 +352,12 @@ export function CRM({ data, updateData, addItem, updateItem, deleteItem }: CRMPr
     setCollapsedGroups(newCollapsed);
   };
 
-  const filteredLeads = (data.leads || []).filter(lead => 
-    lead.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    lead.phone.includes(searchTerm)
-  );
+  const filteredLeads = (data.leads || []).filter(lead => {
+    const matchesSearch = lead.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         lead.phone.includes(searchTerm);
+    const matchesStatus = leadStatusFilter === 'all' || lead.status === leadStatusFilter;
+    return matchesSearch && matchesStatus;
+  });
 
   const getGoogleCalendarLink = (task: CareTask) => {
     const customer = data.customers.find(c => c.id === task.customerId);
@@ -336,6 +392,29 @@ export function CRM({ data, updateData, addItem, updateItem, deleteItem }: CRMPr
     // If it's a full URL, use it, otherwise assume it's a username for m.me
     if (facebook.startsWith('http')) return facebook;
     return `https://m.me/${facebook}`;
+  };
+
+  const getWarrantyMessage = (task: CareTask) => {
+    if (!task.id.endsWith('-warranty')) return `Chào ${task.customerName}, mình từ Hữu Laptop...`;
+    
+    const order = data.orders.find(o => o.id === task.orderId);
+    if (!order) return '';
+    
+    const match = task.description.match(/\(S\/N: (.*?)\)/);
+    const serviceTag = match ? match[1] : '';
+    const product = order.products.find(p => p.serviceTag === serviceTag);
+    
+    if (!product) return '';
+
+    const purchaseDate = parseDate(product.purchaseDate || '');
+    const expiryDate = new Date(purchaseDate);
+    expiryDate.setMonth(expiryDate.getMonth() + (product.warrantyMonths || 0));
+
+    return notifySettings.messageTemplate
+      .replace('{customerName}', task.customerName)
+      .replace('{productName}', product.name)
+      .replace('{serviceTag}', serviceTag)
+      .replace('{expiryDate}', expiryDate.toLocaleDateString('vi-VN'));
   };
 
   const handleAddLead = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -413,37 +492,18 @@ export function CRM({ data, updateData, addItem, updateItem, deleteItem }: CRMPr
     }
   };
 
-  const handleSendAdminReport = () => {
-    const today = new Date();
-    today.setHours(0,0,0,0);
-    const todayTasks = careTasks.filter(t => t.taskDate.getTime() === today.getTime());
-    
-    if (todayTasks.length === 0) {
-      setToast({ message: 'Không có lịch chăm sóc nào trong hôm nay để báo cáo.', type: 'info' });
-      setTimeout(() => setToast(null), 3000);
-      return;
-    }
-
-    const adminEmails = ['dieuhuu1995@gmail.com', 'huulaptop.info@gmail.com'];
-    const adminEmail = adminEmails.includes(auth.currentUser?.email || '') ? auth.currentUser?.email : adminEmails[0];
-    const subject = `Báo cáo chăm sóc khách hàng ngày ${today.toLocaleDateString('vi-VN')}`;
-    let body = `Danh sách khách hàng cần chăm sóc hôm nay (${today.toLocaleDateString('vi-VN')}):\n\n`;
-    
-    todayTasks.forEach((t, i) => {
-      body += `${i+1}. ${t.customerName} - ${t.description} (Đơn hàng: #${t.orderId})\n`;
-    });
-    
-    body += `\nTổng cộng: ${todayTasks.length} nhiệm vụ.\n`;
-    body += `\nVui lòng kiểm tra hệ thống CRM để thực hiện chăm sóc.`;
-    
-    window.location.href = `mailto:${adminEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-  };
+  // Removed handleSendAdminReport as it's consolidated into handleSyncAndReport
 
   return (
     <div className="space-y-6">
       {/* Header Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4">
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4"
+        >
           <div className="w-12 h-12 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center">
             <Target size={24} />
           </div>
@@ -451,8 +511,13 @@ export function CRM({ data, updateData, addItem, updateItem, deleteItem }: CRMPr
             <p className="text-sm text-gray-500 font-medium">Tiềm năng mới</p>
             <h3 className="text-2xl font-bold text-gray-900">{(data.leads || []).filter(l => l.status === 'Mới').length}</h3>
           </div>
-        </div>
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4">
+        </motion.div>
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4"
+        >
           <div className="w-12 h-12 bg-amber-100 text-amber-600 rounded-xl flex items-center justify-center">
             <Bell size={24} />
           </div>
@@ -469,8 +534,13 @@ export function CRM({ data, updateData, addItem, updateItem, deleteItem }: CRMPr
               }).length}
             </h3>
           </div>
-        </div>
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4">
+        </motion.div>
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4"
+        >
           <div className="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-xl flex items-center justify-center">
             <CheckCircle2 size={24} />
           </div>
@@ -480,8 +550,13 @@ export function CRM({ data, updateData, addItem, updateItem, deleteItem }: CRMPr
               {data.leads?.length ? Math.round((data.leads.filter(l => l.status === 'Thành công').length / data.leads.length) * 100) : 0}%
             </h3>
           </div>
-        </div>
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4">
+        </motion.div>
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+          className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4"
+        >
           <div className="w-12 h-12 bg-purple-100 text-purple-600 rounded-xl flex items-center justify-center">
             <Gift size={24} />
           </div>
@@ -491,7 +566,7 @@ export function CRM({ data, updateData, addItem, updateItem, deleteItem }: CRMPr
               {data.promotions?.filter(p => p.status === 'Đang chạy').length || 0}
             </h3>
           </div>
-        </div>
+        </motion.div>
       </div>
 
       {/* Tabs */}
@@ -535,18 +610,43 @@ export function CRM({ data, updateData, addItem, updateItem, deleteItem }: CRMPr
         </div>
 
         <div className="p-4 sm:p-6">
-          {activeTab === 'leads' && (
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeTab}
+              initial={{ opacity: 0, x: 10 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -10 }}
+              transition={{ duration: 0.2 }}
+            >
+              {activeTab === 'leads' && (
             <div className="space-y-6">
               <div className="flex flex-col md:flex-row gap-4 justify-between items-center">
-                <div className="relative w-full md:w-96">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-                  <input
-                    type="text"
-                    placeholder="Tìm tên, số điện thoại tiềm năng..."
-                    className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                  />
+                <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
+                  <div className="relative w-full md:w-64">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                    <input
+                      type="text"
+                      placeholder="Tìm tên, số điện thoại..."
+                      className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm"
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                  </div>
+                  <div className="flex gap-2 overflow-x-auto pb-2 sm:pb-0 scrollbar-hide">
+                    {(['all', 'Mới', 'Đã liên hệ', 'Đang thương lượng', 'Thành công', 'Thất bại'] as const).map((status) => (
+                      <button
+                        key={status}
+                        onClick={() => setLeadStatusFilter(status)}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all ${
+                          leadStatusFilter === status 
+                          ? 'bg-blue-600 text-white shadow-md' 
+                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                        }`}
+                      >
+                        {status === 'all' ? 'Tất cả' : status}
+                      </button>
+                    ))}
+                  </div>
                 </div>
                 <button 
                   onClick={() => {
@@ -574,8 +674,16 @@ export function CRM({ data, updateData, addItem, updateItem, deleteItem }: CRMPr
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-50">
-                    {filteredLeads.map((lead) => (
-                      <tr key={lead.id} className="hover:bg-gray-50/50 transition-colors group">
+                    <AnimatePresence mode="popLayout">
+                      {filteredLeads.map((lead, index) => (
+                        <motion.tr 
+                          key={lead.id}
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          exit={{ opacity: 0, x: 20 }}
+                          transition={{ delay: index * 0.05 }}
+                          className="hover:bg-gray-50/50 transition-colors group"
+                        >
                         <td className="px-4 py-4">
                           <div className="flex flex-col">
                             <span className="text-sm font-bold text-gray-900">{lead.name}</span>
@@ -640,16 +748,25 @@ export function CRM({ data, updateData, addItem, updateItem, deleteItem }: CRMPr
                             </button>
                           </div>
                         </td>
-                      </tr>
-                    ))}
+                      </motion.tr>
+                      ))}
+                    </AnimatePresence>
                   </tbody>
                 </table>
               </div>
 
               {/* Mobile Card View */}
               <div className="md:hidden space-y-4">
-                {filteredLeads.map((lead) => (
-                  <div key={lead.id} className="bg-gray-50 p-4 rounded-2xl border border-gray-100 space-y-4">
+                <AnimatePresence mode="popLayout">
+                  {filteredLeads.map((lead, index) => (
+                    <motion.div 
+                      key={lead.id}
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.95 }}
+                      transition={{ delay: index * 0.05 }}
+                      className="bg-gray-50 p-4 rounded-2xl border border-gray-100 space-y-4"
+                    >
                     <div className="flex justify-between items-start">
                       <div>
                         <h4 className="font-bold text-gray-900">{lead.name}</h4>
@@ -709,17 +826,22 @@ export function CRM({ data, updateData, addItem, updateItem, deleteItem }: CRMPr
                         </button>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  </motion.div>
+                  ))}
+                </AnimatePresence>
               </div>
 
               {filteredLeads.length === 0 && (
-                <div className="py-12 text-center text-gray-500">
+                <motion.div 
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="py-12 text-center text-gray-500"
+                >
                   <div className="flex flex-col items-center gap-2">
                     <Target size={48} className="text-gray-200" />
                     <p>Chưa có khách hàng tiềm năng nào.</p>
                   </div>
-                </div>
+                </motion.div>
               )}
             </div>
           )}
@@ -790,10 +912,15 @@ export function CRM({ data, updateData, addItem, updateItem, deleteItem }: CRMPr
                 <div className="flex w-full sm:w-auto gap-2">
                   <button 
                     onClick={handleSyncAndReport}
-                    className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-600 border border-indigo-100 rounded-xl text-sm font-bold hover:bg-indigo-100 transition-all"
+                    disabled={isSyncing}
+                    className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all ${
+                      isSyncing 
+                      ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+                      : 'bg-indigo-50 text-indigo-600 border border-indigo-100 hover:bg-indigo-100'
+                    }`}
                   >
-                    <RefreshCw size={18} />
-                    Đồng bộ & Báo cáo
+                    <RefreshCw size={18} className={isSyncing ? 'animate-spin' : ''} />
+                    {isSyncing ? 'Đang xử lý...' : 'Đồng bộ & Báo cáo'}
                   </button>
                   <button className="flex items-center justify-center gap-2 px-4 py-2 border border-gray-200 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 transition-all">
                     <Filter size={18} />
@@ -850,19 +977,28 @@ export function CRM({ data, updateData, addItem, updateItem, deleteItem }: CRMPr
                               </div>
                             </td>
                           </tr>
-                          {!isCollapsed && tasks.map((task) => {
-                            const taskDate = new Date(task.taskDate);
-                            const today = new Date();
-                            today.setHours(0,0,0,0);
-                            const tDate = new Date(taskDate);
-                            tDate.setHours(0,0,0,0);
-                            
-                            const isToday = tDate.getTime() === today.getTime();
-                            const isPast = tDate.getTime() < today.getTime();
-                            const customer = data.customers.find(c => c.id === task.customerId);
-                            
-                            return (
-                              <tr key={task.id} className={`hover:bg-gray-50/50 transition-colors group ${task.status === 'completed' ? 'opacity-60' : ''}`}>
+                          {!isCollapsed && (
+                            <AnimatePresence mode="popLayout">
+                              {tasks.map((task, index) => {
+                                const taskDate = new Date(task.taskDate);
+                                const today = new Date();
+                                today.setHours(0,0,0,0);
+                                const tDate = new Date(taskDate);
+                                tDate.setHours(0,0,0,0);
+                                
+                                const isToday = tDate.getTime() === today.getTime();
+                                const isPast = tDate.getTime() < today.getTime();
+                                const customer = data.customers.find(c => c.id === task.customerId);
+                                
+                                return (
+                                  <motion.tr 
+                                    key={task.id}
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -10 }}
+                                    transition={{ delay: index * 0.03 }}
+                                    className={`hover:bg-gray-50/50 transition-colors group ${task.status === 'completed' ? 'opacity-60' : ''}`}
+                                  >
                                 <td className="px-4 py-4">
                                   <div className="flex items-center gap-3">
                                     <button
@@ -901,11 +1037,12 @@ export function CRM({ data, updateData, addItem, updateItem, deleteItem }: CRMPr
                                 <td className="px-4 py-4">
                                   <div className="flex items-center gap-2">
                                     <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
+                                      task.id.endsWith('-warranty') ? 'bg-rose-100 text-rose-600' :
                                       task.type === 'milestone1' ? 'bg-blue-100 text-blue-600' :
                                       task.type === 'milestone2' ? 'bg-amber-100 text-amber-600' :
                                       'bg-purple-100 text-purple-600'
                                     }`}>
-                                      {task.type === 'milestone1' ? `${settings.milestone1} Ngày` : task.type === 'milestone2' ? `${settings.milestone2} Tháng` : `${settings.milestone3} Tháng`}
+                                      {task.id.endsWith('-warranty') ? 'Bảo hành' : task.type === 'milestone1' ? `${settings.milestone1} Ngày` : task.type === 'milestone2' ? `${settings.milestone2} Tháng` : `${settings.milestone3} Tháng`}
                                     </span>
                                     <span className="text-sm text-gray-600">{task.description}</span>
                                   </div>
@@ -918,7 +1055,7 @@ export function CRM({ data, updateData, addItem, updateItem, deleteItem }: CRMPr
                                     <a href={getZaloLink(customer?.phone || '')} target="_blank" rel="noreferrer" className="p-2 text-blue-500 hover:bg-blue-50 rounded-lg transition-all" title="Zalo">
                                       <MessageSquare size={18} />
                                     </a>
-                                    <a href={getSmsLink(customer?.phone || '', `Chào ${task.customerName}, mình từ Hữu Laptop...`)} className="p-2 text-emerald-500 hover:bg-emerald-50 rounded-lg transition-all" title="Gửi SMS">
+                                    <a href={getSmsLink(customer?.phone || '', getWarrantyMessage(task))} className="p-2 text-emerald-500 hover:bg-emerald-50 rounded-lg transition-all" title="Gửi SMS">
                                       <Send size={18} />
                                     </a>
                                     <a
@@ -932,9 +1069,11 @@ export function CRM({ data, updateData, addItem, updateItem, deleteItem }: CRMPr
                                     </a>
                                   </div>
                                 </td>
-                              </tr>
-                            );
-                          })}
+                              </motion.tr>
+                                );
+                              })}
+                            </AnimatePresence>
+                          )}
                         </React.Fragment>
                       );
                     })}
@@ -974,19 +1113,28 @@ export function CRM({ data, updateData, addItem, updateItem, deleteItem }: CRMPr
                         {isCollapsed ? <ChevronRight size={14} className="text-gray-400" /> : <ChevronDown size={14} className="text-gray-400" />}
                       </button>
                       
-                      {!isCollapsed && tasks.map((task) => {
-                        const taskDate = new Date(task.taskDate);
-                        const today = new Date();
-                        today.setHours(0,0,0,0);
-                        const tDate = new Date(taskDate);
-                        tDate.setHours(0,0,0,0);
+                      {!isCollapsed && (
+                        <AnimatePresence mode="popLayout">
+                          {tasks.map((task, index) => {
+                            const taskDate = new Date(task.taskDate);
+                            const today = new Date();
+                            today.setHours(0,0,0,0);
+                            const tDate = new Date(taskDate);
+                            tDate.setHours(0,0,0,0);
 
-                        const isToday = tDate.getTime() === today.getTime();
-                        const isPast = tDate.getTime() < today.getTime();
-                        const customer = data.customers.find(c => c.id === task.customerId);
+                            const isToday = tDate.getTime() === today.getTime();
+                            const isPast = tDate.getTime() < today.getTime();
+                            const customer = data.customers.find(c => c.id === task.customerId);
 
-                        return (
-                          <div key={task.id} className={`p-4 rounded-2xl border transition-all ${task.status === 'completed' ? 'bg-gray-50 border-gray-100 opacity-75' : 'bg-white border-gray-200 shadow-sm'}`}>
+                            return (
+                              <motion.div 
+                                key={task.id}
+                                initial={{ opacity: 0, scale: 0.98 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                exit={{ opacity: 0, scale: 0.98 }}
+                                transition={{ delay: index * 0.03 }}
+                                className={`p-4 rounded-2xl border transition-all ${task.status === 'completed' ? 'bg-gray-50 border-gray-100 opacity-75' : 'bg-white border-gray-200 shadow-sm'}`}
+                              >
                             <div className="flex justify-between items-start mb-3">
                               <div className="flex items-center gap-3">
                                 <button
@@ -1029,11 +1177,12 @@ export function CRM({ data, updateData, addItem, updateItem, deleteItem }: CRMPr
                               <div className="bg-gray-50 p-3 rounded-xl border border-gray-100">
                                 <div className="flex items-center gap-2 mb-1">
                                   <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
+                                    task.id.endsWith('-warranty') ? 'bg-rose-100 text-rose-600' :
                                     task.type === 'milestone1' ? 'bg-blue-100 text-blue-600' :
                                     task.type === 'milestone2' ? 'bg-amber-100 text-amber-600' :
                                     'bg-purple-100 text-purple-600'
                                   }`}>
-                                    {task.type === 'milestone1' ? `${settings.milestone1} Ngày` : task.type === 'milestone2' ? `${settings.milestone2} Tháng` : `${settings.milestone3} Tháng`}
+                                    {task.id.endsWith('-warranty') ? 'Bảo hành' : task.type === 'milestone1' ? `${settings.milestone1} Ngày` : task.type === 'milestone2' ? `${settings.milestone2} Tháng` : `${settings.milestone3} Tháng`}
                                   </span>
                                 </div>
                                 <p className="text-sm text-gray-600">{task.description}</p>
@@ -1044,7 +1193,7 @@ export function CRM({ data, updateData, addItem, updateItem, deleteItem }: CRMPr
                                   <a href={getZaloLink(customer?.phone || '')} target="_blank" rel="noreferrer" className="p-2 text-blue-500 hover:bg-blue-50 rounded-lg transition-all">
                                     <MessageSquare size={18} />
                                   </a>
-                                  <a href={getSmsLink(customer?.phone || '', `Chào ${task.customerName}, mình từ Hữu Laptop...`)} className="p-2 text-emerald-500 hover:bg-emerald-50 rounded-lg transition-all">
+                                  <a href={getSmsLink(customer?.phone || '', getWarrantyMessage(task))} className="p-2 text-emerald-500 hover:bg-emerald-50 rounded-lg transition-all">
                                     <Send size={18} />
                                   </a>
                                 </div>
@@ -1058,21 +1207,27 @@ export function CRM({ data, updateData, addItem, updateItem, deleteItem }: CRMPr
                                 </a>
                               </div>
                             </div>
-                          </div>
-                        );
-                      })}
+                          </motion.div>
+                            );
+                          })}
+                        </AnimatePresence>
+                      )}
                     </div>
                   );
                 })}
               </div>
 
               {filteredTasks.length === 0 && (
-                <div className="py-12 text-center text-gray-500">
+                <motion.div 
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="py-12 text-center text-gray-500"
+                >
                   <div className="flex flex-col items-center gap-2">
                     <HeartHandshake size={48} className="text-gray-200" />
                     <p>Không có lịch chăm sóc nào cần xử lý.</p>
                   </div>
-                </div>
+                </motion.div>
               )}
             </div>
           )}
@@ -1126,8 +1281,16 @@ export function CRM({ data, updateData, addItem, updateItem, deleteItem }: CRMPr
                     Lịch sử quà tặng & Khuyến mãi
                   </h4>
                   <div className="space-y-4">
-                    {data.promotions?.map((promo) => (
-                      <div key={promo.id} className="bg-white p-4 rounded-2xl border border-gray-100 hover:border-blue-200 transition-all group">
+                    <AnimatePresence mode="popLayout">
+                      {data.promotions?.map((promo, index) => (
+                        <motion.div 
+                          key={promo.id}
+                          initial={{ opacity: 0, x: 20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          exit={{ opacity: 0, x: -20 }}
+                          transition={{ delay: index * 0.05 }}
+                          className="bg-white p-4 rounded-2xl border border-gray-100 hover:border-blue-200 transition-all group"
+                        >
                         <div className="flex justify-between items-start">
                           <div className="flex items-center gap-3">
                             <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${promo.type === 'Gift' ? 'bg-purple-50 text-purple-600' : 'bg-blue-50 text-blue-600'}`}>
@@ -1154,18 +1317,25 @@ export function CRM({ data, updateData, addItem, updateItem, deleteItem }: CRMPr
                             <p className="text-lg font-bold text-blue-600">{promo.clickCount}</p>
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      </motion.div>
+                      ))}
+                    </AnimatePresence>
                     {(!data.promotions || data.promotions.length === 0) && (
-                      <div className="p-8 text-center text-gray-500 bg-gray-50 rounded-2xl border border-dashed border-gray-200">
+                      <motion.div 
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        className="p-8 text-center text-gray-500 bg-gray-50 rounded-2xl border border-dashed border-gray-200"
+                      >
                         Chưa có chương trình khuyến mãi nào.
-                      </div>
+                      </motion.div>
                     )}
                   </div>
                 </div>
               </div>
             </div>
           )}
+            </motion.div>
+          </AnimatePresence>
         </div>
       </div>
 
@@ -1304,39 +1474,80 @@ export function CRM({ data, updateData, addItem, updateItem, deleteItem }: CRMPr
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[100] p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200">
             <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
-              <h3 className="text-lg font-bold text-gray-900">Cấu hình mốc thời gian</h3>
+              <h3 className="text-lg font-bold text-gray-900">Cấu hình CRM & Thông báo</h3>
               <button onClick={() => setShowSettings(false)} className="text-gray-400 hover:text-gray-600">
                 <X size={20} />
               </button>
             </div>
-            <div className="p-6 space-y-6">
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Mốc 1 (Sau khi mua - Ngày)</label>
-                  <input 
-                    type="number" 
-                    className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm"
-                    value={tempSettings.milestone1}
-                    onChange={(e) => setTempSettings({...tempSettings, milestone1: parseInt(e.target.value) || 0})}
-                  />
+            <div className="p-6 space-y-6 max-h-[70vh] overflow-y-auto">
+              <div className="space-y-6">
+                <div className="space-y-4">
+                  <h4 className="text-sm font-bold text-blue-600 border-b border-blue-100 pb-2">Mốc thời gian chăm sóc</h4>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Mốc 1 (Sau khi mua - Ngày)</label>
+                    <input 
+                      type="number" 
+                      className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm"
+                      value={tempSettings.milestone1}
+                      onChange={(e) => setTempSettings({...tempSettings, milestone1: parseInt(e.target.value) || 0})}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Mốc 2 (Định kỳ - Tháng)</label>
+                    <input 
+                      type="number" 
+                      className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm"
+                      value={tempSettings.milestone2}
+                      onChange={(e) => setTempSettings({...tempSettings, milestone2: parseInt(e.target.value) || 0})}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Mốc 3 (Định kỳ - Tháng)</label>
+                    <input 
+                      type="number" 
+                      className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm"
+                      value={tempSettings.milestone3}
+                      onChange={(e) => setTempSettings({...tempSettings, milestone3: parseInt(e.target.value) || 0})}
+                    />
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Mốc 2 (Định kỳ - Tháng)</label>
-                  <input 
-                    type="number" 
-                    className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm"
-                    value={tempSettings.milestone2}
-                    onChange={(e) => setTempSettings({...tempSettings, milestone2: parseInt(e.target.value) || 0})}
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Mốc 3 (Định kỳ - Tháng)</label>
-                  <input 
-                    type="number" 
-                    className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm"
-                    value={tempSettings.milestone3}
-                    onChange={(e) => setTempSettings({...tempSettings, milestone3: parseInt(e.target.value) || 0})}
-                  />
+
+                <div className="space-y-4 pt-4">
+                  <h4 className="text-sm font-bold text-emerald-600 border-b border-emerald-100 pb-2">Thông báo bảo hành</h4>
+                  <div className="flex items-center gap-3 p-3 bg-emerald-50 rounded-xl border border-emerald-100">
+                    <input 
+                      type="checkbox"
+                      id="autoSend"
+                      checked={tempNotifySettings.autoSendWarranty}
+                      onChange={e => setTempNotifySettings({...tempNotifySettings, autoSendWarranty: e.target.checked})}
+                      className="w-4 h-4 text-emerald-600 rounded focus:ring-emerald-500"
+                    />
+                    <label htmlFor="autoSend" className="text-sm font-medium text-gray-700 cursor-pointer">
+                      Tự động gửi khi sắp hết hạn
+                    </label>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Gửi trước (ngày)</label>
+                    <input 
+                      type="number" 
+                      className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all text-sm"
+                      value={tempNotifySettings.daysBeforeExpiry}
+                      onChange={(e) => setTempNotifySettings({...tempNotifySettings, daysBeforeExpiry: parseInt(e.target.value) || 0})}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Mẫu tin nhắn</label>
+                    <textarea 
+                      className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all text-sm resize-none"
+                      rows={4}
+                      value={tempNotifySettings.messageTemplate}
+                      onChange={(e) => setTempNotifySettings({...tempNotifySettings, messageTemplate: e.target.value})}
+                      placeholder="Sử dụng {customerName}, {productName}, {serviceTag}, {expiryDate}..."
+                    />
+                    <p className="text-[10px] text-gray-400 mt-1 italic">
+                      * Biến: {'{customerName}'}, {'{productName}'}, {'{serviceTag}'}, {'{expiryDate}'}
+                    </p>
+                  </div>
                 </div>
               </div>
               <div className="flex gap-3">

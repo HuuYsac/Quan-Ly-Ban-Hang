@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { AppData, Settings as SettingsType } from '../types';
-import { Settings as SettingsIcon, DollarSign, Calendar, Moon, Sun, Monitor, Bell, HardDrive, FileText, Save, CheckCircle2, Users as UsersIcon, ShieldCheck, ShieldX, Trash2, Palette, HeartHandshake } from 'lucide-react';
+import { Settings as SettingsIcon, DollarSign, Calendar, Moon, Sun, Monitor, Bell, HardDrive, FileText, Save, CheckCircle2, Users as UsersIcon, ShieldCheck, ShieldX, Trash2, Palette, HeartHandshake, Download, Database } from 'lucide-react';
 import { auth, db } from '../firebase';
+import * as XLSX from 'xlsx';
 import { collection, getDocs, doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { ConfirmModal, Toast } from '../components/Notification';
 
@@ -13,7 +14,7 @@ interface SettingsProps {
 }
 
 export function Settings({ data, updateData, resetDatabase, isAdmin }: SettingsProps) {
-  const [activeTab, setActiveTab] = useState<'general' | 'appearance' | 'system'>('general');
+  const [activeTab, setActiveTab] = useState<'general' | 'appearance' | 'system' | 'backup'>('general');
   const [formData, setFormData] = useState<SettingsType>(
     data.settings || {
       currency: 'VND',
@@ -84,6 +85,37 @@ export function Settings({ data, updateData, resetDatabase, isAdmin }: SettingsP
     }
   };
 
+  const exportAllDataToExcel = () => {
+    try {
+      const wb = XLSX.utils.book_new();
+
+      // Helper to add sheet
+      const addSheet = (data: any[], name: string) => {
+        if (data && data.length > 0) {
+          const ws = XLSX.utils.json_to_sheet(data);
+          XLSX.utils.book_append_sheet(wb, ws, name);
+        }
+      };
+
+      addSheet(data.products, 'Sản phẩm');
+      addSheet(data.customers, 'Khách hàng');
+      addSheet(data.suppliers, 'Nhà cung cấp');
+      addSheet(data.orders, 'Đơn hàng');
+      addSheet(data.categories, 'Danh mục');
+      addSheet(data.repairs, 'Sửa chữa');
+      addSheet(data.leads, 'Tiềm năng');
+      addSheet(data.careTasks, 'Chăm sóc');
+      addSheet(data.promotions, 'Khuyến mãi');
+
+      const dateStr = new Date().toISOString().split('T')[0];
+      XLSX.writeFile(wb, `Sao_luu_du_lieu_QLBH_${dateStr}.xlsx`);
+      showToast('Đã xuất dữ liệu ra file Excel thành công!');
+    } catch (error) {
+      console.error('Error exporting to Excel:', error);
+      showToast('Có lỗi xảy ra khi xuất dữ liệu', 'error');
+    }
+  };
+
   useEffect(() => {
     if (data.settings) {
       setFormData(data.settings);
@@ -112,6 +144,7 @@ export function Settings({ data, updateData, resetDatabase, isAdmin }: SettingsP
     { id: 'general', label: 'Cài đặt chung', icon: SettingsIcon, adminOnly: true },
     { id: 'appearance', label: 'Giao diện', icon: Palette, adminOnly: false },
     { id: 'system', label: 'Cài đặt hệ thống', icon: UsersIcon, adminOnly: true },
+    { id: 'backup', label: 'Sao lưu & Xuất dữ liệu', icon: Database, adminOnly: true },
   ].filter(tab => !tab.adminOnly || isAdmin);
 
   // If active tab is hidden for current user, switch to first available tab
@@ -356,8 +389,58 @@ export function Settings({ data, updateData, resetDatabase, isAdmin }: SettingsP
                     </div>
                   )}
                 </div>
+            </div>
+          )}
 
-              {/* Database Reset Section */}
+          {activeTab === 'backup' && isAdmin && (
+            <div className="space-y-8">
+              <div>
+                <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wider mb-4 pb-2 border-b border-gray-100 flex items-center gap-2">
+                  <Database size={18} className="text-blue-600" />
+                  Sao lưu & Xuất dữ liệu
+                </h3>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="p-6 bg-blue-50 rounded-2xl border border-blue-100">
+                    <h4 className="font-bold text-blue-900 flex items-center gap-2 mb-2">
+                      <FileText size={18} />
+                      Xuất ra file Excel (.xlsx)
+                    </h4>
+                    <p className="text-sm text-blue-700 mb-6">
+                      Tải toàn bộ dữ liệu (Sản phẩm, Khách hàng, Đơn hàng...) về máy tính để lưu trữ hoặc mở bằng Excel.
+                    </p>
+                    <button
+                      onClick={exportAllDataToExcel}
+                      className="flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-bold transition-all shadow-lg shadow-blue-600/20 active:scale-95"
+                    >
+                      <Download size={18} />
+                      Tải về file Excel
+                    </button>
+                  </div>
+
+                  <div className="p-6 bg-gray-50 rounded-2xl border border-gray-200">
+                    <h4 className="font-bold text-gray-900 flex items-center gap-2 mb-2">
+                      <HardDrive size={18} />
+                      Thông tin lưu trữ
+                    </h4>
+                    <ul className="text-sm text-gray-600 space-y-2">
+                      <li className="flex justify-between">
+                        <span>Tổng sản phẩm:</span>
+                        <span className="font-bold">{data.products.length}</span>
+                      </li>
+                      <li className="flex justify-between">
+                        <span>Tổng khách hàng:</span>
+                        <span className="font-bold">{data.customers.length}</span>
+                      </li>
+                      <li className="flex justify-between">
+                        <span>Tổng đơn hàng:</span>
+                        <span className="font-bold">{data.orders.length}</span>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
               <div className="p-6 bg-red-50 rounded-2xl border border-red-100">
                 <h3 className="text-lg font-bold text-red-800 flex items-center gap-2 mb-2">
                   <Trash2 size={20} />

@@ -20,12 +20,15 @@ import { CompanyInfo } from './pages/CompanyInfo';
 import { CRM } from './pages/CRM';
 import { Members } from './pages/Members';
 import { Profile } from './pages/Profile';
+import Messages from './pages/Messages';
 import Warranty from './pages/Warranty';
 import Repairs from './pages/Repairs';
 import { useAppStore } from './hooks/useAppStore';
 import { Auth } from './pages/Auth';
 import { auth } from './firebase';
 import { onAuthStateChanged, User, sendEmailVerification } from 'firebase/auth';
+import { doc, getDoc, getDocFromServer } from 'firebase/firestore';
+import { db } from './firebase';
 import { Mail, LogOut, RefreshCw, ShieldAlert } from 'lucide-react';
 
 function AccessDenied() {
@@ -44,6 +47,7 @@ function AccessDenied() {
 
 export default function App() {
   const [activePage, setActivePage] = useState('dashboard');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const { data, updateData, loading: dataLoading, addItem, updateItem, deleteItem, resetDatabase } = useAppStore();
   const [user, setUser] = useState<User | null>(null);
   const [isApproved, setIsApproved] = useState<boolean | null>(null);
@@ -52,6 +56,19 @@ export default function App() {
   const [authLoading, setAuthLoading] = useState(true);
   const [resending, setResending] = useState(false);
   const [resendMessage, setResendMessage] = useState('');
+
+  useEffect(() => {
+    const testConnection = async () => {
+      try {
+        await getDocFromServer(doc(db, 'test', 'connection'));
+      } catch (error) {
+        if (error instanceof Error && error.message.includes('the client is offline')) {
+          console.error("Please check your Firebase configuration. The client is offline.");
+        }
+      }
+    };
+    testConnection();
+  }, []);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
@@ -207,6 +224,7 @@ export default function App() {
       case 'settings': return { title: 'Cài đặt hệ thống', subtitle: 'Tùy chỉnh hệ thống và giao diện' };
       case 'company-info': return { title: 'Thông tin Shop', subtitle: 'Cập nhật thông tin cửa hàng/doanh nghiệp' };
       case 'profile': return { title: 'Tài khoản của tôi', subtitle: 'Quản lý thông tin cá nhân và tài khoản' };
+      case 'messages': return { title: 'Tin nhắn nội bộ', subtitle: 'Trao đổi công việc giữa các nhân viên' };
       default: return { title: 'Đang phát triển', subtitle: 'Tính năng này sẽ sớm ra mắt' };
     }
   };
@@ -259,6 +277,9 @@ export default function App() {
       case 'company-info':
         if (!isAdmin) return <AccessDenied />;
         return <CompanyInfo data={data} updateData={updateData} />;
+      case 'messages':
+        if (!isApproved) return <AccessDenied />;
+        return <Messages />;
       case 'profile':
         return <Profile />;
       default:
@@ -275,13 +296,30 @@ export default function App() {
   const { title, subtitle } = getPageTitle();
 
   return (
-    <div className="flex min-h-screen bg-slate-50 font-sans text-gray-900">
-      <Sidebar activePage={activePage} setActivePage={setActivePage} data={data} isAdmin={isAdmin} isApproved={isApproved || false} userRole={userRole} />
+    <div className="flex min-h-screen bg-slate-50 font-sans text-gray-900 overflow-x-hidden">
+      <Sidebar 
+        activePage={activePage} 
+        setActivePage={(page) => {
+          setActivePage(page);
+          setSidebarOpen(false);
+        }} 
+        data={data} 
+        isAdmin={isAdmin} 
+        isApproved={isApproved || false} 
+        userRole={userRole}
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+      />
       
-      <div className="flex-1 ml-64 flex flex-col min-h-screen print:ml-0">
-        <Header title={title} subtitle={subtitle} onNavigate={setActivePage} />
+      <div className="flex-1 flex flex-col min-h-screen lg:ml-64 print:ml-0 transition-all duration-300">
+        <Header 
+          title={title} 
+          subtitle={subtitle} 
+          onNavigate={setActivePage} 
+          onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
+        />
         
-        <main className="flex-1 p-8 max-w-7xl mx-auto w-full print:p-0">
+        <main className="flex-1 p-4 md:p-8 max-w-7xl mx-auto w-full print:p-0">
           {renderPage()}
         </main>
       </div>

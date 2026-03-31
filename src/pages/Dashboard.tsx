@@ -152,7 +152,7 @@ export function Dashboard({ data, onNavigate, isAdmin }: DashboardProps) {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         {isAdmin && stats.pendingUsersCount > 0 ? (
           <StatCard 
             title="Thành viên mới" 

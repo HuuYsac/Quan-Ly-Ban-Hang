@@ -26,26 +26,16 @@ import {
   XCircle,
   CreditCard
 } from 'lucide-react';
-
-interface UserProfile {
-  uid: string;
-  email: string;
-  phone: string;
-  role?: 'admin' | 'staff' | 'user';
-  position?: string;
-  approved: boolean;
-  createdAt: string;
-  bankName?: string;
-  bankAccount?: string;
-  bankAccountName?: string;
-}
+import { useAppStore } from '../hooks/useAppStore';
+import { User } from '../types';
 
 export function Members() {
-  const [users, setUsers] = useState<UserProfile[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data } = useAppStore();
+  const users = data.users || [];
+  const loading = false; // Data is managed by useAppStore
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<'all' | 'approved' | 'pending'>('all');
-  const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState({
     role: 'user' as 'admin' | 'staff' | 'user',
@@ -53,24 +43,7 @@ export function Members() {
     approved: false
   });
 
-  useEffect(() => {
-    const q = query(collection(db, 'users'), orderBy('createdAt', 'desc'));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const usersData = snapshot.docs.map(doc => ({
-        ...doc.data(),
-        uid: doc.id
-      })) as UserProfile[];
-      setUsers(usersData);
-      setLoading(false);
-    }, (error) => {
-      console.error("Error fetching users:", error);
-      setLoading(false);
-    });
-
-    return () => unsubscribe();
-  }, []);
-
-  const handleToggleApproval = async (user: UserProfile) => {
+  const handleToggleApproval = async (user: User) => {
     try {
       const updates: any = {
         approved: !user.approved
@@ -103,7 +76,7 @@ export function Members() {
     }
   };
 
-  const handleEditUser = (user: UserProfile) => {
+  const handleEditUser = (user: User) => {
     setSelectedUser(user);
     setEditForm({
       role: user.role || 'user',

@@ -66,8 +66,8 @@ export function Auth() {
       console.error(err);
       if (err.code === 'auth/email-already-in-use') {
         setError('Email này đã được sử dụng.');
-      } else if (err.code === 'auth/invalid-credential' || err.code === 'auth/wrong-password' || err.code === 'auth/user-not-found') {
-        setError('Email hoặc mật khẩu không chính xác.');
+      } else if (err.code === 'auth/invalid-credential' || err.code === 'auth/wrong-password' || err.code === 'auth/user-not-found' || err.message?.includes('auth/invalid-credential')) {
+        setError('Email hoặc mật khẩu không chính xác. Vui lòng kiểm tra lại thông tin đăng nhập.');
       } else if (err.code === 'auth/weak-password') {
         setError('Mật khẩu quá yếu, vui lòng chọn mật khẩu mạnh hơn.');
       } else if (err.code === 'auth/network-request-failed') {

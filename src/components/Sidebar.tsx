@@ -17,7 +17,10 @@ import {
   LogOut,
   Store,
   UserCog,
-  User
+  User,
+  X,
+  MessageSquare,
+  MessageCircle
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { auth } from '../firebase';
@@ -30,12 +33,15 @@ interface SidebarProps {
   isAdmin: boolean;
   isApproved: boolean;
   userRole: 'admin' | 'staff' | 'user';
+  isOpen?: boolean;
+  onClose?: () => void;
 }
 
-export function Sidebar({ activePage, setActivePage, data, isAdmin, isApproved, userRole }: SidebarProps) {
+export function Sidebar({ activePage, setActivePage, data, isAdmin, isApproved, userRole, isOpen, onClose }: SidebarProps) {
   const [showLogoutConfirm, setShowLogoutConfirm] = React.useState(false);
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, section: 'Tổng quan', allowedRoles: ['admin', 'staff', 'user'] },
+    { id: 'messages', label: 'Tin nhắn nội bộ', icon: MessageSquare, section: 'Tổng quan', allowedRoles: ['admin', 'staff', 'user'] },
     { id: 'members', label: 'Thành viên', icon: UserCog, section: 'Hệ thống', allowedRoles: ['admin'] },
     { id: 'customers', label: 'Khách hàng', icon: Users, section: 'Quản lý cơ bản', allowedRoles: ['admin', 'staff', 'user'] },
     { id: 'suppliers', label: 'Nhà cung cấp', icon: Building2, section: 'Quản lý cơ bản', allowedRoles: ['admin'] },
@@ -55,14 +61,18 @@ export function Sidebar({ activePage, setActivePage, data, isAdmin, isApproved, 
 
   const filteredNavItems = navItems.filter(item => {
     if (isAdmin) return true;
-    if (item.allowedRoles.includes(userRole)) {
-      // If it's a staff/user role, they must be approved to see business pages
-      if (item.allowedRoles.includes('staff') || item.allowedRoles.includes('user')) {
-        return isApproved;
-      }
+    
+    // Check if the user's role is allowed for this item
+    if (!item.allowedRoles.includes(userRole)) return false;
+    
+    // For non-admin users, most items require the account to be approved
+    // Dashboard and Profile are usually accessible even if not fully approved for business features,
+    // but here we follow the existing logic where isApproved is required for most things.
+    if (item.id === 'dashboard' || item.id === 'profile') {
       return true;
     }
-    return false;
+    
+    return isApproved;
   });
   const sections = Array.from(new Set(filteredNavItems.map(item => item.section)));
 
@@ -75,8 +85,27 @@ export function Sidebar({ activePage, setActivePage, data, isAdmin, isApproved, 
   };
 
   return (
-    <div className="w-64 bg-white shadow-lg flex flex-col fixed h-screen z-10 print:hidden">
-      <div className="p-6 bg-gradient-to-br from-blue-800 to-blue-500 text-white text-center">
+    <>
+      {/* Mobile Overlay */}
+      {isOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-20 lg:hidden transition-opacity duration-300"
+          onClick={onClose}
+        />
+      )}
+
+      <div className={cn(
+        "w-64 bg-white shadow-lg flex flex-col fixed h-screen z-30 print:hidden transition-transform duration-300 ease-in-out lg:translate-x-0",
+        isOpen ? "translate-x-0" : "-translate-x-full"
+      )}>
+        <div className="p-6 bg-gradient-to-br from-blue-800 to-blue-500 text-white text-center relative">
+          {/* Close button for mobile */}
+          <button 
+            onClick={onClose}
+            className="absolute top-4 right-4 lg:hidden p-1 hover:bg-white/20 rounded-lg transition-colors"
+          >
+            <X size={20} />
+          </button>
         <div className="flex items-center justify-center gap-3 mb-2">
           {data.shopInfo?.logo ? (
             <div className="w-16 h-16 bg-white rounded-xl flex items-center justify-center overflow-hidden shadow-inner p-2">
@@ -93,7 +122,7 @@ export function Sidebar({ activePage, setActivePage, data, isAdmin, isApproved, 
             </div>
           )}
         </div>
-        <h1 className="text-xl font-bold m-0 truncate">{data.shopInfo?.name || 'Hữu Laptop'}</h1>
+        <h1 className="text-xl font-bold m-0 truncate">{data.currentStore?.name || data.shopInfo?.name || 'Hữu Laptop'}</h1>
         <p className="text-sm opacity-90">Hệ thống quản lý</p>
       </div>
 
@@ -111,14 +140,19 @@ export function Sidebar({ activePage, setActivePage, data, isAdmin, isApproved, 
                   key={item.id}
                   onClick={() => setActivePage(item.id)}
                   className={cn(
-                    "w-full flex items-center gap-3 px-4 py-3 mb-1 rounded-lg transition-all duration-200 text-sm font-medium",
+                    "w-full flex items-center gap-3 px-4 py-3 mb-1 rounded-lg transition-all duration-200 text-sm font-medium relative",
                     isActive 
                       ? "bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-md shadow-blue-500/30" 
                       : "text-gray-700 hover:bg-gray-100 hover:translate-x-1"
                   )}
                 >
                   <Icon size={18} className={cn(isActive ? "text-white" : "text-gray-500")} />
-                  {item.label}
+                  <span className="flex-1 text-left">{item.label}</span>
+                  {item.id === 'messages' && data.messages?.filter(m => m.receiverId === auth.currentUser?.uid && !m.read).length > 0 && (
+                    <span className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center border-2 border-white">
+                      {data.messages.filter(m => m.receiverId === auth.currentUser?.uid && !m.read).length}
+                    </span>
+                  )}
                 </button>
               );
             })}
@@ -164,6 +198,7 @@ export function Sidebar({ activePage, setActivePage, data, isAdmin, isApproved, 
           </div>
         </div>
       )}
-    </div>
+      </div>
+    </>
   );
 }

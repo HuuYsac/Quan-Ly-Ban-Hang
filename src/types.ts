@@ -208,6 +208,17 @@ export interface Promotion {
   createdAt: string;
 }
 
+export interface Store {
+  id: string;
+  name: string;
+  ownerUid: string;
+  createdAt: string;
+  address?: string;
+  phone?: string;
+  email?: string;
+  logo?: string;
+}
+
 export interface User {
   uid: string;
   email: string;
@@ -216,9 +227,46 @@ export interface User {
   position: string;
   approved: boolean;
   createdAt: string;
+  storeId?: string;
   bankName?: string;
   bankAccount?: string;
   bankAccountName?: string;
+}
+
+export interface Message {
+  id: string;
+  senderId: string;
+  senderName: string;
+  receiverId?: string;
+  receiverName?: string;
+  groupId?: string;
+  content: string;
+  createdAt: string;
+  read: boolean;
+  type?: 'text' | 'task';
+  taskId?: string;
+}
+
+export interface Group {
+  id: string;
+  name: string;
+  memberIds: string[];
+  createdBy: string;
+  createdAt: string;
+  lastMessage?: string;
+  lastMessageAt?: string;
+}
+
+export interface InternalTask {
+  id: string;
+  title: string;
+  description: string;
+  assignedTo: string;
+  dueDate: string;
+  status: 'pending' | 'in-progress' | 'completed';
+  createdBy: string;
+  createdAt: string;
+  messageId?: string;
 }
 
 export interface AppData {
@@ -234,8 +282,13 @@ export interface AppData {
   promotions: Promotion[];
   sales: Sale[];
   warrantyNotifications: WarrantyNotification[];
+  messages: Message[];
+  groups: Group[];
+  internalTasks: InternalTask[];
   shopInfo: ShopInfo;
   settings: Settings;
   cskhSettings?: CSKHSettings;
   notificationSettings?: NotificationSettings;
+  currentStore?: Store | null;
+  userStores?: Store[];
 }

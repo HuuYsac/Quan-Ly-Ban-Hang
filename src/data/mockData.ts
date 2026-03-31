@@ -41,5 +41,8 @@ export const initialData: AppData = {
   repairs: [],
   leads: [],
   careTasks: [],
-  promotions: []
+  promotions: [],
+  messages: [],
+  groups: [],
+  internalTasks: []
 };

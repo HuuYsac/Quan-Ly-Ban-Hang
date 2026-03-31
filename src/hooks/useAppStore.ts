@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { AppData, Customer, Supplier, Product, Category, Order, ShopInfo, Settings, CSKHSettings, NotificationSettings, WarrantyNotification } from '../types';
+import { AppData, Customer, Supplier, Product, Category, Order, ShopInfo, Settings, CSKHSettings, NotificationSettings, WarrantyNotification, Store, User as AppUser } from '../types';
 import { initialData } from '../data/mockData';
 import { db, auth } from '../firebase';
 import { 
@@ -9,8 +9,10 @@ import {
   setDoc, 
   updateDoc, 
   getDoc,
+  deleteDoc,
   writeBatch,
   query,
+  where,
   getDocs,
   limit
 } from 'firebase/firestore';
@@ -65,6 +67,7 @@ function handleFirestoreError(error: unknown, operationType: OperationType, path
     path
   }
   console.error('Firestore Error: ', JSON.stringify(errInfo));
+  throw new Error(JSON.stringify(errInfo));
 }
 
 export function useAppStore() {
@@ -113,15 +116,14 @@ export function useAppStore() {
     const startSyncing = (isAdminUser: boolean) => {
       clearUnsubscribers();
       
-      if (isAdminUser) {
-        const usersRef = collection(db, 'users');
-        const usersUnsubscribe = onSnapshot(usersRef, (snapshot) => {
+      // Sync all users for super admin
+      const usersRef = collection(db, 'users');
+      if (user.email === 'dieuhuu1995@gmail.com') {
+        const unsubAllUsers = onSnapshot(usersRef, (snapshot) => {
           const users = snapshot.docs.map(doc => ({ ...doc.data(), uid: doc.id } as any));
           setData(prev => ({ ...prev, users }));
-        }, (error) => {
-          handleFirestoreError(error, OperationType.GET, 'users', user);
         });
-        unsubscribers.push(usersUnsubscribe);
+        unsubscribers.push(unsubAllUsers);
       }
 
       const collectionsToSync: [string, keyof AppData][] = [
@@ -135,12 +137,15 @@ export function useAppStore() {
         ['careTasks', 'careTasks'],
         ['sales', 'sales'],
         ['warrantyNotifications', 'warrantyNotifications'],
-        ['promotions', 'promotions']
+        ['promotions', 'promotions'],
+        ['messages', 'messages'],
+        ['groups', 'groups'],
+        ['internalTasks', 'internalTasks']
       ];
 
       collectionsToSync.forEach(([name, key]) => syncCollection(name, key));
 
-      // Shared config
+      // Top-level config
       unsubscribers.push(onSnapshot(doc(db, 'config', 'shopInfo'), (doc) => {
         if (doc.exists()) setData(prev => ({ ...prev, shopInfo: doc.data() as ShopInfo }));
       }));
@@ -175,22 +180,6 @@ export function useAppStore() {
             approved: isOwner,
             createdAt: new Date().toISOString()
           });
-          
-          if (isOwner) {
-            const shopInfoSnap = await getDoc(doc(db, 'config', 'shopInfo'));
-            if (!shopInfoSnap.exists()) {
-              const seedBatch = writeBatch(db);
-              seedBatch.set(doc(db, 'config', 'shopInfo'), initialData.shopInfo);
-              seedBatch.set(doc(db, 'config', 'settings'), initialData.settings);
-              seedBatch.set(doc(db, 'config', 'cskhSettings'), { milestone1: 7, milestone2: 3, milestone3: 6 });
-              seedBatch.set(doc(db, 'config', 'notificationSettings'), {
-                zaloAccessToken: '', zaloOaId: '', smsApiKey: '', smsProvider: 'esms',
-                autoSendWarranty: false, daysBeforeExpiry: 7,
-                messageTemplate: 'Chào {customerName}, sản phẩm {productName} (S/N: {serviceTag}) của bạn sắp hết hạn bảo hành vào ngày {expiryDate}. Vui lòng liên hệ chúng tôi để được hỗ trợ.'
-              });
-              await seedBatch.commit();
-            }
-          }
         } catch (error) {
           console.error('Error seeding user:', error);
         }
@@ -208,7 +197,7 @@ export function useAppStore() {
         return;
       }
 
-      // Start syncing other collections if approved
+      // Start syncing top-level collections if approved
       startSyncing(isAdminUser);
     });
 
@@ -275,9 +264,12 @@ export function useAppStore() {
       await syncCollection('sales', 'sales');
       await syncCollection('warrantyNotifications', 'warrantyNotifications');
       await syncCollection('promotions', 'promotions');
+      await syncCollection('messages', 'messages');
+      await syncCollection('groups', 'groups');
+      await syncCollection('internalTasks', 'internalTasks');
 
     } catch (error) {
-      console.error('Error updating data:', error);
+      handleFirestoreError(error, OperationType.WRITE, 'updateData', user);
     }
   };
 
@@ -287,7 +279,7 @@ export function useAppStore() {
     try {
       await setDoc(doc(db, collectionName, item.id), item);
     } catch (error) {
-      console.error(`Error adding item to ${collectionName}:`, error);
+      handleFirestoreError(error, OperationType.WRITE, collectionName, user);
       throw error;
     }
   };
@@ -297,7 +289,7 @@ export function useAppStore() {
     try {
       await updateDoc(doc(db, collectionName, id), item);
     } catch (error) {
-      console.error(`Error updating item in ${collectionName}:`, error);
+      handleFirestoreError(error, OperationType.UPDATE, collectionName, user);
       throw error;
     }
   };
@@ -306,10 +298,9 @@ export function useAppStore() {
     if (!user) return;
     try {
       const itemRef = doc(db, collectionName, id);
-      const { deleteDoc } = await import('firebase/firestore');
       await deleteDoc(itemRef);
     } catch (error) {
-      console.error(`Error deleting item from ${collectionName}:`, error);
+      handleFirestoreError(error, OperationType.DELETE, collectionName, user);
       throw error;
     }
   };
@@ -326,7 +317,7 @@ export function useAppStore() {
     try {
       const collections = [
         'customers', 'suppliers', 'products', 'categories', 'orders', 
-        'repairs', 'leads', 'careTasks', 'sales', 'warrantyNotifications', 'promotions'
+        'repairs', 'leads', 'careTasks', 'sales', 'warrantyNotifications', 'promotions', 'messages', 'groups', 'internalTasks'
       ];
 
       for (const colName of collections) {
@@ -337,20 +328,6 @@ export function useAppStore() {
         });
         await batch.commit();
       }
-
-      // Also clear users except admins
-      const usersSnapshot = await getDocs(collection(db, 'users'));
-      const userBatch = writeBatch(db);
-      usersSnapshot.forEach((doc) => {
-        const userData = doc.data();
-        const isProtected = userData.email === 'dieuhuu1995@gmail.com' || 
-                            userData.email === 'huulaptop.info@gmail.com' || 
-                            userData.role === 'admin';
-        if (!isProtected) {
-          userBatch.delete(doc.ref);
-        }
-      });
-      await userBatch.commit();
 
       // Re-seed with blank data
       const seedBatch = writeBatch(db);
