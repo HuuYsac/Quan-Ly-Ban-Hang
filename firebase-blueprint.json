@@ -154,6 +154,73 @@
         "message": { "type": "string" }
       },
       "required": ["id", "customerId", "sentAt", "status", "type"]
+    },
+    "Store": {
+      "title": "Store",
+      "description": "Store metadata",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "ownerUid": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "address": { "type": "string" },
+        "phone": { "type": "string" },
+        "email": { "type": "string" },
+        "logo": { "type": "string" }
+      },
+      "required": ["id", "name", "ownerUid", "createdAt"]
+    },
+    "Message": {
+      "title": "Message",
+      "description": "Internal message between users or in groups",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "senderId": { "type": "string" },
+        "senderName": { "type": "string" },
+        "receiverId": { "type": "string" },
+        "receiverName": { "type": "string" },
+        "groupId": { "type": "string" },
+        "content": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "read": { "type": "boolean" },
+        "type": { "type": "string", "enum": ["text", "task"] },
+        "taskId": { "type": "string" }
+      },
+      "required": ["id", "senderId", "senderName", "content", "createdAt", "read"]
+    },
+    "Group": {
+      "title": "Group",
+      "description": "Group chat information",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "memberIds": { "type": "array", "items": { "type": "string" } },
+        "createdBy": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "lastMessage": { "type": "string" },
+        "lastMessageAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "name", "memberIds", "createdBy", "createdAt"]
+    },
+    "InternalTask": {
+      "title": "InternalTask",
+      "description": "Task assigned to a user",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "assignedTo": { "type": "string" },
+        "dueDate": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "in-progress", "completed"] },
+        "createdBy": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "messageId": { "type": "string" }
+      },
+      "required": ["id", "title", "assignedTo", "status", "createdBy", "createdAt"]
     }
   },
   "firestore": {
@@ -161,41 +228,57 @@
       "schema": { "$ref": "#/entities/User" },
       "description": "Stores user profiles"
     },
-    "users/{userId}/customers/{customerId}": {
+    "customers/{customerId}": {
       "schema": { "$ref": "#/entities/Customer" },
-      "description": "User's customers"
+      "description": "Customer database"
     },
-    "users/{userId}/suppliers/{supplierId}": {
+    "suppliers/{supplierId}": {
       "schema": { "$ref": "#/entities/Supplier" },
-      "description": "User's suppliers"
+      "description": "Supplier database"
     },
-    "users/{userId}/products/{productId}": {
+    "products/{productId}": {
       "schema": { "$ref": "#/entities/Product" },
-      "description": "User's products"
+      "description": "Product inventory"
     },
-    "users/{userId}/categories/{categoryId}": {
+    "categories/{categoryId}": {
       "schema": { "$ref": "#/entities/Category" },
-      "description": "User's categories"
+      "description": "Product categories"
     },
-    "users/{userId}/orders/{orderId}": {
+    "orders/{orderId}": {
       "schema": { "$ref": "#/entities/Order" },
-      "description": "User's orders"
+      "description": "Sales orders"
     },
-    "users/{userId}/warrantyNotifications/{notificationId}": {
+    "repairs/{repairId}": {
+      "schema": { "type": "object" },
+      "description": "Repair tickets"
+    },
+    "warrantyNotifications/{notificationId}": {
       "schema": { "$ref": "#/entities/WarrantyNotification" },
-      "description": "History of sent warranty notifications"
+      "description": "Warranty notification logs"
     },
-    "users/{userId}/config/shopInfo": {
+    "messages/{messageId}": {
+      "schema": { "$ref": "#/entities/Message" },
+      "description": "Internal messages between users or in groups"
+    },
+    "groups/{groupId}": {
+      "schema": { "$ref": "#/entities/Group" },
+      "description": "Group chat metadata"
+    },
+    "internalTasks/{taskId}": {
+      "schema": { "$ref": "#/entities/InternalTask" },
+      "description": "Internal tasks assigned via chat"
+    },
+    "config/shopInfo": {
       "schema": { "$ref": "#/entities/ShopInfo" },
-      "description": "User's shop info"
+      "description": "Shop general information"
     },
-    "users/{userId}/config/settings": {
+    "config/settings": {
       "schema": { "$ref": "#/entities/Settings" },
-      "description": "User's app settings"
+      "description": "Application settings"
     },
-    "users/{userId}/config/notificationSettings": {
+    "config/notificationSettings": {
       "schema": { "$ref": "#/entities/NotificationSettings" },
-      "description": "User's notification settings"
+      "description": "Notification API settings"
     }
   }
 }

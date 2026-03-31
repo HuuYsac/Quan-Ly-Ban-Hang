@@ -6,48 +6,14 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    // Check if user owns the resource
-    function isOwner(userId) {
-      return isAuthenticated() && request.auth.uid == userId;
-    }
-
-    // Verify UID hasn't been tampered with on create
-    function uidUnchanged() {
-      return !('uid' in request.resource.data) ||
-        request.resource.data.uid == request.auth.uid;
-    }
-
-    // Ensure uid field is not modified on update
-    function uidNotModified() {
-      return !('uid' in request.resource.data) ||
-        request.resource.data.uid == resource.data.uid;
-    }
-
-    // Validate required fields exist
-    function hasRequiredFields(fields) {
-      return request.resource.data.keys().hasAll(fields);
-    }
-
-    // Validate email format
-    function isValidEmail(email) {
-      return email is string &&
-        email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
-    }
-
-    // Validate User
-    function isValidUser(data) {
-      return hasRequiredFields(['uid', 'email', 'phone', 'createdAt', 'approved']) &&
-             data.uid is string &&
-             data.email is string && isValidEmail(data.email) &&
-             data.phone is string && data.phone.size() >= 8 && data.phone.size() <= 15 &&
-             data.approved is bool &&
-             data.createdAt is string;
-    }
-
-    // Check if user is approved
+    // Check if user is approved (Super admins or approved users)
     function isApproved() {
       return isAuthenticated() && (
+        request.auth.uid == 'bUo9YdUJKmQih6Se7V7P2uzIYY82' ||
         request.auth.token.email == 'dieuhuu1995@gmail.com' ||
+        request.auth.token.get('email', '') == 'dieuhuu1995@gmail.com' ||
+        request.auth.token.email == 'huulaptop.info@gmail.com' ||
+        request.auth.token.get('email', '') == 'huulaptop.info@gmail.com' ||
         (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.approved == true)
       );
@@ -56,78 +22,59 @@ service cloud.firestore {
     // Check if user is admin
     function isAdmin() {
       return isAuthenticated() && (
+        request.auth.uid == 'bUo9YdUJKmQih6Se7V7P2uzIYY82' ||
         request.auth.token.email == 'dieuhuu1995@gmail.com' ||
+        request.auth.token.get('email', '') == 'dieuhuu1995@gmail.com' ||
+        request.auth.token.email == 'huulaptop.info@gmail.com' ||
+        request.auth.token.get('email', '') == 'huulaptop.info@gmail.com' ||
         (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin')
       );
     }
 
-    // Check if user is staff or admin
-    function isStaff() {
-      return isApproved();
+    // Specific rule for users to allow self-creation and admin access
+    match /users/{userId} {
+      allow read: if isApproved();
+      allow write: if isAuthenticated() && request.auth.uid == userId;
+      allow write: if isAdmin();
     }
 
-    match /users/{userId} {
-      allow read: if isOwner(userId) || isAdmin();
-      allow create: if (isOwner(userId) || isAdmin()) && isValidUser(request.resource.data) && uidUnchanged();
-      allow update: if (isOwner(userId) || isAdmin()) && isValidUser(request.resource.data) && uidNotModified() && 
-                    request.resource.data.createdAt == resource.data.createdAt &&
-                    (isAdmin() || request.resource.data.approved == resource.data.approved);
+    // Specific rule for internal messages
+    match /messages/{messageId} {
+      allow read: if isApproved() && (
+        resource.data.senderId == request.auth.uid || 
+        resource.data.receiverId == request.auth.uid ||
+        (resource.data.groupId != null && 
+         get(/databases/$(database)/documents/groups/$(resource.data.groupId)).data.memberIds.hasAny([request.auth.uid]))
+      );
+      allow create: if isApproved() && request.resource.data.senderId == request.auth.uid;
+      allow update: if isApproved() && (
+        resource.data.senderId == request.auth.uid || 
+        resource.data.receiverId == request.auth.uid ||
+        (resource.data.groupId != null && 
+         get(/databases/$(database)/documents/groups/$(resource.data.groupId)).data.memberIds.hasAny([request.auth.uid]))
+      );
+    }
+
+    // Specific rule for groups
+    match /groups/{groupId} {
+      allow read: if isApproved() && resource.data.memberIds.hasAny([request.auth.uid]);
+      allow create: if isAdmin();
+      allow update: if isAdmin() || (isApproved() && resource.data.memberIds.hasAny([request.auth.uid]));
       allow delete: if isAdmin();
     }
 
-    // Shared collections
-    match /customers/{docId} {
-      allow read, write: if isStaff();
-    }
-    
-    match /products/{docId} {
-      allow read, write: if isStaff();
-    }
-    
-    match /categories/{docId} {
+    // Specific rule for internal tasks
+    match /internalTasks/{taskId} {
       allow read: if isApproved();
-      allow write: if isStaff();
-    }
-    
-    match /orders/{docId} {
-      allow read, write: if isStaff();
-    }
-    
-    match /repairs/{docId} {
-      allow read, write: if isStaff();
-    }
-    
-    match /leads/{docId} {
-      allow read, write: if isStaff();
-    }
-    
-    match /careTasks/{docId} {
-      allow read, write: if isStaff();
-    }
-    
-    match /sales/{docId} {
-      allow read, write: if isStaff();
-    }
-    
-    match /warrantyNotifications/{docId} {
-      allow read, write: if isStaff();
+      allow create: if isApproved();
+      allow update: if isApproved();
+      allow delete: if isAdmin();
     }
 
-    match /promotions/{docId} {
-      allow read, write: if isStaff();
-    }
-
-    // Suppliers - Admin only for write, staff can read
-    match /suppliers/{docId} {
-      allow read: if isApproved();
-      allow write: if isAdmin();
-    }
-
-    // Config - Admin only for write, staff can read
-    match /config/{docId} {
-      allow read: if isApproved();
-      allow write: if isAdmin();
+    // Default rule for other collections
+    match /{allPaths=**} {
+      allow read, write: if isApproved();
     }
   }
 }
