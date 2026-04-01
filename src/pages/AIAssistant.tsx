@@ -72,6 +72,7 @@ export function AIAssistant({ data }: AIAssistantProps) {
         3. Nếu sản phẩm không có trong danh sách, hãy thông báo lịch sự rằng hiện tại không có mẫu đó.
         4. Luôn sử dụng tiếng Việt tự nhiên, phù hợp với ngữ cảnh bán hàng.
         5. Khi liệt kê sản phẩm, hãy định dạng rõ ràng để nhân viên dễ theo dõi.
+        6. KHÔNG SỬ DỤNG ký tự ** để in đậm văn bản. Hãy để văn bản bình thường.
       `;
 
       const chat = ai.chats.create({
@@ -82,7 +83,7 @@ export function AIAssistant({ data }: AIAssistantProps) {
       });
 
       const result = await chat.sendMessage({ message: userMessage });
-      const responseText = result.text;
+      const responseText = result.text.replace(/\*\*/g, '');
 
       // Identify products mentioned in the response
       const mentionedProducts = data.products.filter(p => 
@@ -137,10 +138,13 @@ export function AIAssistant({ data }: AIAssistantProps) {
           - Liệt kê 3-4 điểm nổi bật.
           - Có lời kêu gọi hành động (CTA).
           - Sử dụng emoji phù hợp.
-          - Ngôn ngữ trẻ trung, năng động.`
+          - Ngôn ngữ trẻ trung, năng động.
+          - KHÔNG SỬ DỤNG ký tự ** để in đậm văn bản. Hãy để văn bản bình thường.`
       });
 
-      setFbPost(response.text);
+      // Remove any remaining ** characters just in case
+      const cleanPost = response.text.replace(/\*\*/g, '');
+      setFbPost(cleanPost);
     } catch (error) {
       console.error('Error generating FB post:', error);
     } finally {
