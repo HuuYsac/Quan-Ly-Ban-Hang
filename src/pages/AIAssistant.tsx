@@ -46,16 +46,24 @@ export function AIAssistant({ data }: AIAssistantProps) {
     setIsLoading(true);
 
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || '' });
-      const model = ai.models.get({ model: "gemini-3-flash-preview" });
+      const apiKey = process.env.GEMINI_API_KEY;
+      if (!apiKey) {
+        throw new Error('API_KEY_MISSING: Vui lòng cấu hình GEMINI_API_KEY trong môi trường.');
+      }
+      
+      const ai = new GoogleGenAI({ apiKey });
 
-      const productsContext = data.products.map(p => 
+      // Limit product context to avoid token limits if there are many products
+      const maxProducts = 300;
+      const productsToInclude = data.products.slice(0, maxProducts);
+      
+      const productsContext = productsToInclude.map(p => 
         `- ${p.name} (ID: ${p.id}): ${formatCurrency(p.price)}, Kho: ${p.stock}, Danh mục: ${p.category}`
       ).join('\n');
 
       const systemInstruction = `
         Bạn là một trợ lý bán hàng thông minh cho một cửa hàng máy tính và thiết bị công nghệ tại Việt Nam.
-        Dưới đây là danh sách sản phẩm hiện có trong kho:
+        Dưới đây là danh sách sản phẩm hiện có trong kho${data.products.length > maxProducts ? ' (chỉ hiển thị ' + maxProducts + ' sản phẩm đầu tiên)' : ''}:
         ${productsContext}
 
         Nhiệm vụ của bạn:
@@ -87,11 +95,20 @@ export function AIAssistant({ data }: AIAssistantProps) {
         content: responseText,
         products: mentionedProducts.length > 0 ? mentionedProducts : undefined
       }]);
-    } catch (error) {
-      console.error('AI Error:', error);
+    } catch (error: any) {
+      console.error('AI Error Details:', error);
+      const errorMessage = error?.message || '';
+      let displayMessage = 'Xin lỗi, đã có lỗi xảy ra khi kết nối với trí tuệ nhân tạo. Vui lòng thử lại sau.';
+      
+      if (errorMessage.includes('API_KEY_INVALID')) {
+        displayMessage = 'Lỗi: API Key không hợp lệ. Vui lòng liên hệ quản trị viên.';
+      } else if (errorMessage.includes('max tokens limit')) {
+        displayMessage = 'Lỗi: Dữ liệu quá lớn để xử lý. Vui lòng thử lại với câu hỏi ngắn hơn.';
+      }
+
       setMessages(prev => [...prev, { 
         role: 'model', 
-        content: 'Xin lỗi, đã có lỗi xảy ra khi kết nối với trí tuệ nhân tạo. Vui lòng thử lại sau.' 
+        content: displayMessage 
       }]);
     } finally {
       setIsLoading(false);
@@ -102,7 +119,12 @@ export function AIAssistant({ data }: AIAssistantProps) {
     setIsGeneratingPost(true);
     setFbPost(null);
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || '' });
+      const apiKey = process.env.GEMINI_API_KEY;
+      if (!apiKey) {
+        throw new Error('API_KEY_MISSING: Vui lòng cấu hình GEMINI_API_KEY trong môi trường.');
+      }
+      
+      const ai = new GoogleGenAI({ apiKey });
       const response = await ai.models.generateContent({
         model: "gemini-3-flash-preview",
         contents: `Viết một bài đăng Facebook ngắn gọn, hấp dẫn để bán sản phẩm sau:
