@@ -101,10 +101,19 @@ export function AIAssistant({ data }: AIAssistantProps) {
       const errorMessage = error?.message || '';
       let displayMessage = 'Xin lỗi, đã có lỗi xảy ra khi kết nối với trí tuệ nhân tạo. Vui lòng thử lại sau.';
       
-      if (errorMessage.includes('API_KEY_INVALID')) {
+      if (errorMessage.includes('API_KEY_MISSING')) {
+        displayMessage = 'Lỗi: Thiếu API Key. Vui lòng liên hệ quản trị viên để cấu hình hệ thống.';
+      } else if (errorMessage.includes('API_KEY_INVALID')) {
         displayMessage = 'Lỗi: API Key không hợp lệ. Vui lòng liên hệ quản trị viên.';
       } else if (errorMessage.includes('max tokens limit')) {
         displayMessage = 'Lỗi: Dữ liệu quá lớn để xử lý. Vui lòng thử lại với câu hỏi ngắn hơn.';
+      } else if (errorMessage.includes('PERMISSION_DENIED')) {
+        displayMessage = 'Lỗi: Không có quyền truy cập API. Vui lòng kiểm tra lại cấu hình API Key.';
+      } else if (errorMessage.includes('quota')) {
+        displayMessage = 'Lỗi: Hết hạn mức sử dụng AI (Quota exceeded). Vui lòng thử lại sau.';
+      } else {
+        // Show a bit more detail for other errors
+        displayMessage = `Lỗi kết nối AI: ${errorMessage.substring(0, 100)}${errorMessage.length > 100 ? '...' : ''}`;
       }
 
       setMessages(prev => [...prev, { 
