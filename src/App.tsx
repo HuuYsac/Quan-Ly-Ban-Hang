@@ -30,7 +30,7 @@ import { auth } from './firebase';
 import { onAuthStateChanged, User, sendEmailVerification } from 'firebase/auth';
 import { doc, getDoc, getDocFromServer } from 'firebase/firestore';
 import { db } from './firebase';
-import { Mail, LogOut, RefreshCw, ShieldAlert } from 'lucide-react';
+import { Mail, LogOut, RefreshCw, ShieldAlert, Sparkles } from 'lucide-react';
 
 function AccessDenied() {
   return (
