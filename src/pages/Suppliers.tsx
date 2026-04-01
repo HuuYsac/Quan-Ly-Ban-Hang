@@ -160,7 +160,11 @@ export function Suppliers({ data, updateData, addItem, updateItem, deleteItem, i
             </thead>
             <tbody className="divide-y divide-gray-100">
               {filteredSuppliers.map((supplier) => (
-                <tr key={supplier.id} className="hover:bg-gray-50/50 transition-colors">
+                <tr 
+                  key={supplier.id} 
+                  onClick={() => handleEdit(supplier)}
+                  className="hover:bg-gray-50/50 transition-colors cursor-pointer group"
+                >
                   <td className="p-4">
                     <div className="font-medium text-gray-900">{supplier.name}</div>
                     <div className="text-xs text-gray-500 mt-1">{supplier.id}</div>
@@ -178,13 +182,19 @@ export function Suppliers({ data, updateData, addItem, updateItem, deleteItem, i
                     {isAdmin && (
                       <div className="flex items-center justify-center gap-2">
                         <button 
-                          onClick={() => handleEdit(supplier)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleEdit(supplier);
+                          }}
                           className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors" title="Sửa thông tin"
                         >
                           <Edit size={16} />
                         </button>
                         <button 
-                          onClick={() => handleDelete(supplier.id)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDelete(supplier.id);
+                          }}
                           className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors" title="Xóa"
                         >
                           <Trash2 size={16} />
@@ -201,7 +211,11 @@ export function Suppliers({ data, updateData, addItem, updateItem, deleteItem, i
         {/* Mobile Cards */}
         <div className="md:hidden divide-y divide-gray-100">
           {filteredSuppliers.map((supplier) => (
-            <div key={supplier.id} className="p-4 space-y-3">
+            <div 
+              key={supplier.id} 
+              onClick={() => handleEdit(supplier)}
+              className="p-4 space-y-3 cursor-pointer hover:bg-gray-50 transition-all"
+            >
               <div className="flex items-start justify-between">
                 <div>
                   <div className="font-medium text-gray-900">{supplier.name}</div>
@@ -210,13 +224,19 @@ export function Suppliers({ data, updateData, addItem, updateItem, deleteItem, i
                 {isAdmin && (
                   <div className="flex items-center gap-1">
                     <button 
-                      onClick={() => handleEdit(supplier)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleEdit(supplier);
+                      }}
                       className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
                     >
                       <Edit size={18} />
                     </button>
                     <button 
-                      onClick={() => handleDelete(supplier.id)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDelete(supplier.id);
+                      }}
                       className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
                     >
                       <Trash2 size={18} />

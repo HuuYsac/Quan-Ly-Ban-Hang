@@ -145,7 +145,11 @@ export function Categories({ data, updateData, addItem, updateItem, deleteItem }
             </thead>
             <tbody className="divide-y divide-gray-100">
               {filteredCategories.map((category) => (
-                <tr key={category.id} className="hover:bg-gray-50/50 transition-colors">
+                <tr 
+                  key={category.id} 
+                  onClick={() => handleEdit(category)}
+                  className="hover:bg-gray-50/50 transition-colors cursor-pointer group"
+                >
                   <td className="p-4">
                     <div className="font-medium text-gray-900">{category.name}</div>
                     <div className="text-xs text-gray-500 mt-1">{category.id}</div>
@@ -156,13 +160,19 @@ export function Categories({ data, updateData, addItem, updateItem, deleteItem }
                   <td className="p-4 text-center">
                     <div className="flex items-center justify-center gap-2">
                       <button 
-                        onClick={() => handleEdit(category)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleEdit(category);
+                        }}
                         className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors" title="Sửa thông tin"
                       >
                         <Edit size={16} />
                       </button>
                       <button 
-                        onClick={() => setConfirmingDelete(category.id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setConfirmingDelete(category.id);
+                        }}
                         className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors" title="Xóa"
                       >
                         <Trash2 size={16} />

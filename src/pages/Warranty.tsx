@@ -419,7 +419,14 @@ const Warranty: React.FC = () => {
             </thead>
             <tbody className="divide-y divide-gray-100">
               {filteredWarranties.map((warranty, idx) => (
-                <tr key={`${warranty.orderId}-${idx}`} className="hover:bg-gray-50/50 transition-colors group">
+                <tr 
+                  key={`${warranty.orderId}-${idx}`} 
+                  onClick={() => {
+                    setSelectedWarranty(warranty);
+                    setIsRepairModalOpen(true);
+                  }}
+                  className="hover:bg-gray-50/50 transition-colors group cursor-pointer"
+                >
                   <td className="p-4">
                     <div className="flex flex-col">
                       <span className="font-bold text-gray-900">{warranty.customerName}</span>
@@ -535,7 +542,14 @@ const Warranty: React.FC = () => {
         {/* Mobile Cards */}
         <div className="md:hidden divide-y divide-gray-100">
           {filteredWarranties.map((warranty, idx) => (
-            <div key={`${warranty.orderId}-${idx}`} className="p-4 space-y-3">
+            <div 
+              key={`${warranty.orderId}-${idx}`} 
+              onClick={() => {
+                setSelectedWarranty(warranty);
+                setIsRepairModalOpen(true);
+              }}
+              className="p-4 space-y-3 cursor-pointer hover:bg-gray-50 transition-all border-b border-gray-100"
+            >
               <div className="flex justify-between items-start">
                 <div className="space-y-1">
                   <div className="font-bold text-gray-900">{warranty.customerName}</div>

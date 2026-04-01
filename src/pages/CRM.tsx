@@ -91,7 +91,7 @@ export function CRM({ data, updateData, addItem, updateItem, deleteItem }: CRMPr
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    data.orders.forEach(order => {
+    data.orders?.forEach(order => {
       // Only generate care tasks for completed/delivered and paid orders
       if (!(['Hoàn thành', 'Đã giao'].includes(order.status) && order.paymentStatus === 'Đã thanh toán')) {
         return;
@@ -136,7 +136,7 @@ export function CRM({ data, updateData, addItem, updateItem, deleteItem }: CRMPr
       });
 
       // Add Warranty Expiration Tasks
-      order.products.forEach(product => {
+      order.products?.forEach(product => {
         if (product.serviceTag && product.purchaseDate && product.warrantyMonths) {
           const purchaseDate = parseDate(product.purchaseDate);
           const expiryDate = new Date(purchaseDate);
@@ -360,7 +360,7 @@ export function CRM({ data, updateData, addItem, updateItem, deleteItem }: CRMPr
   });
 
   const getGoogleCalendarLink = (task: CareTask) => {
-    const customer = data.customers.find(c => c.id === task.customerId);
+    const customer = data.customers?.find(c => c.id === task.customerId);
     const title = encodeURIComponent(`CRM: ${task.customerName} - ${task.description}`);
     const taskDate = new Date(task.taskDate);
     const dateStr = taskDate.toISOString().replace(/-|:|\.\d+/g, '');
@@ -397,12 +397,12 @@ export function CRM({ data, updateData, addItem, updateItem, deleteItem }: CRMPr
   const getWarrantyMessage = (task: CareTask) => {
     if (!task.id.endsWith('-warranty')) return `Chào ${task.customerName}, mình từ Hữu Laptop...`;
     
-    const order = data.orders.find(o => o.id === task.orderId);
+    const order = data.orders?.find(o => o.id === task.orderId);
     if (!order) return '';
     
     const match = task.description.match(/\(S\/N: (.*?)\)/);
     const serviceTag = match ? match[1] : '';
-    const product = order.products.find(p => p.serviceTag === serviceTag);
+    const product = order.products?.find(p => p.serviceTag === serviceTag);
     
     if (!product) return '';
 
@@ -464,7 +464,7 @@ export function CRM({ data, updateData, addItem, updateItem, deleteItem }: CRMPr
   const handleConvertToCustomer = async (lead: Lead) => {
     try {
       // Robust ID generation for customer
-      const maxId = data.customers.reduce((max, c) => {
+      const maxId = (data.customers || []).reduce((max, c) => {
         const idNum = parseInt(c.id.replace('KH', ''));
         return isNaN(idNum) ? max : Math.max(max, idNum);
       }, 0);
@@ -682,7 +682,11 @@ export function CRM({ data, updateData, addItem, updateItem, deleteItem }: CRMPr
                           animate={{ opacity: 1, x: 0 }}
                           exit={{ opacity: 0, x: 20 }}
                           transition={{ delay: index * 0.05 }}
-                          className="hover:bg-gray-50/50 transition-colors group"
+                          onClick={() => {
+                            setEditingLead(lead);
+                            setShowLeadModal(true);
+                          }}
+                          className="hover:bg-gray-50/50 transition-colors group cursor-pointer"
                         >
                         <td className="px-4 py-4">
                           <div className="flex flex-col">
@@ -765,7 +769,11 @@ export function CRM({ data, updateData, addItem, updateItem, deleteItem }: CRMPr
                       animate={{ opacity: 1, scale: 1 }}
                       exit={{ opacity: 0, scale: 0.95 }}
                       transition={{ delay: index * 0.05 }}
-                      className="bg-gray-50 p-4 rounded-2xl border border-gray-100 space-y-4"
+                      onClick={() => {
+                        setEditingLead(lead);
+                        setShowLeadModal(true);
+                      }}
+                      className="bg-gray-50 p-4 rounded-2xl border border-gray-100 space-y-4 cursor-pointer hover:border-blue-300 hover:shadow-md transition-all"
                     >
                     <div className="flex justify-between items-start">
                       <div>
@@ -988,7 +996,7 @@ export function CRM({ data, updateData, addItem, updateItem, deleteItem }: CRMPr
                                 
                                 const isToday = tDate.getTime() === today.getTime();
                                 const isPast = tDate.getTime() < today.getTime();
-                                const customer = data.customers.find(c => c.id === task.customerId);
+                                const customer = data.customers?.find(c => c.id === task.customerId);
                                 
                                 return (
                                   <motion.tr 
@@ -997,7 +1005,8 @@ export function CRM({ data, updateData, addItem, updateItem, deleteItem }: CRMPr
                                     animate={{ opacity: 1, y: 0 }}
                                     exit={{ opacity: 0, y: -10 }}
                                     transition={{ delay: index * 0.03 }}
-                                    className={`hover:bg-gray-50/50 transition-colors group ${task.status === 'completed' ? 'opacity-60' : ''}`}
+                                    className={`hover:bg-gray-50/50 transition-colors group cursor-pointer ${task.status === 'completed' ? 'opacity-60' : ''}`}
+                                    onClick={() => handleToggleTaskStatus(task)}
                                   >
                                 <td className="px-4 py-4">
                                   <div className="flex items-center gap-3">
@@ -1124,7 +1133,7 @@ export function CRM({ data, updateData, addItem, updateItem, deleteItem }: CRMPr
 
                             const isToday = tDate.getTime() === today.getTime();
                             const isPast = tDate.getTime() < today.getTime();
-                            const customer = data.customers.find(c => c.id === task.customerId);
+                            const customer = data.customers?.find(c => c.id === task.customerId);
 
                             return (
                               <motion.div 
@@ -1133,7 +1142,8 @@ export function CRM({ data, updateData, addItem, updateItem, deleteItem }: CRMPr
                                 animate={{ opacity: 1, scale: 1 }}
                                 exit={{ opacity: 0, scale: 0.98 }}
                                 transition={{ delay: index * 0.03 }}
-                                className={`p-4 rounded-2xl border transition-all ${task.status === 'completed' ? 'bg-gray-50 border-gray-100 opacity-75' : 'bg-white border-gray-200 shadow-sm'}`}
+                                onClick={() => handleToggleTaskStatus(task)}
+                                className={`p-4 rounded-2xl border transition-all cursor-pointer hover:border-blue-300 hover:shadow-md ${task.status === 'completed' ? 'bg-gray-50 border-gray-100 opacity-75' : 'bg-white border-gray-200 shadow-sm'}`}
                               >
                             <div className="flex justify-between items-start mb-3">
                               <div className="flex items-center gap-3">

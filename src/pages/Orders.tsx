@@ -698,7 +698,11 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
             </thead>
             <tbody className="divide-y divide-gray-100">
               {filteredOrders.map((order) => (
-                <tr key={order.id} className="hover:bg-gray-50/50 transition-colors">
+                <tr 
+                  key={order.id} 
+                  onClick={() => setViewOrder(order)}
+                  className="hover:bg-gray-50/50 transition-colors cursor-pointer group"
+                >
                   <td className="p-4 font-medium text-gray-900">{order.id}</td>
                   <td className="p-4 text-sm text-gray-700">{order.customerName}</td>
                   <td className="p-4 text-sm text-gray-500">
@@ -785,7 +789,11 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
         {/* Mobile Cards */}
         <div className="md:hidden divide-y divide-gray-100">
           {filteredOrders.map((order) => (
-            <div key={order.id} className="p-4 space-y-3">
+            <div 
+              key={order.id} 
+              onClick={() => setViewOrder(order)}
+              className="p-4 space-y-3 cursor-pointer hover:bg-gray-50 transition-all"
+            >
               <div className="flex justify-between items-start">
                 <div>
                   <div className="font-bold text-gray-900">{order.id}</div>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { AppData, Settings as SettingsType } from '../types';
-import { Settings as SettingsIcon, DollarSign, Calendar, Moon, Sun, Monitor, Bell, HardDrive, FileText, Save, CheckCircle2, Users as UsersIcon, ShieldCheck, ShieldX, Trash2, Palette, HeartHandshake, Download, Database } from 'lucide-react';
+import { Settings as SettingsIcon, DollarSign, Calendar, Moon, Sun, Monitor, Bell, HardDrive, FileText, Save, CheckCircle2, Users as UsersIcon, ShieldCheck, ShieldX, Trash2, Palette, HeartHandshake, Download, Database, Upload, RefreshCw } from 'lucide-react';
 import { auth, db } from '../firebase';
 import * as XLSX from 'xlsx';
 import { collection, getDocs, doc, updateDoc, deleteDoc } from 'firebase/firestore';
@@ -31,6 +31,7 @@ export function Settings({ data, updateData, resetDatabase, isAdmin }: SettingsP
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [userToDelete, setUserToDelete] = useState<string | null>(null);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const [isImporting, setIsImporting] = useState(false);
 
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
     setToast({ message, type });
@@ -92,6 +93,8 @@ export function Settings({ data, updateData, resetDatabase, isAdmin }: SettingsP
       // Helper to add sheet
       const addSheet = (data: any[], name: string) => {
         if (data && data.length > 0) {
+          // Flatten nested objects for Excel if needed, but here we keep it simple
+          // as sheet_to_json will try to reconstruct or we handle it
           const ws = XLSX.utils.json_to_sheet(data);
           XLSX.utils.book_append_sheet(wb, ws, name);
         }
@@ -114,6 +117,82 @@ export function Settings({ data, updateData, resetDatabase, isAdmin }: SettingsP
       console.error('Error exporting to Excel:', error);
       showToast('Có lỗi xảy ra khi xuất dữ liệu', 'error');
     }
+  };
+
+  const handleImportExcel = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsImporting(true);
+    const reader = new FileReader();
+    reader.onload = async (evt) => {
+      try {
+        const bstr = evt.target?.result;
+        const wb = XLSX.read(bstr, { type: 'binary' });
+        
+        const importedData: Partial<AppData> = {};
+        
+        const sheetMapping: { [key: string]: keyof AppData } = {
+          'Sản phẩm': 'products',
+          'Khách hàng': 'customers',
+          'Nhà cung cấp': 'suppliers',
+          'Đơn hàng': 'orders',
+          'Danh mục': 'categories',
+          'Sửa chữa': 'repairs',
+          'Tiềm năng': 'leads',
+          'Chăm sóc': 'careTasks',
+          'Khuyến mãi': 'promotions'
+        };
+
+        wb.SheetNames.forEach(sheetName => {
+          const key = sheetMapping[sheetName];
+          if (key) {
+            const ws = wb.Sheets[sheetName];
+            const jsonData = XLSX.utils.sheet_to_json(ws);
+            
+            // Basic data cleaning/parsing for complex types if they were stringified or flattened
+            const cleanedData = jsonData.map((item: any) => {
+              // Handle specific fields that might be JSON strings or need special parsing
+              // For example, tags in customers are arrays
+              if (key === 'customers' && typeof item.tags === 'string') {
+                try { item.tags = JSON.parse(item.tags); } catch(e) { item.tags = item.tags.split(',').map((t: string) => t.trim()); }
+              }
+              if (key === 'customers' && typeof item.devices === 'string') {
+                try { item.devices = JSON.parse(item.devices); } catch(e) { item.devices = []; }
+              }
+              if (key === 'orders' && typeof item.items === 'string') {
+                try { item.items = JSON.parse(item.items); } catch(e) { item.items = []; }
+              }
+              
+              // Ensure numeric fields are numbers
+              const numericFields = ['price', 'cost', 'stock', 'minStock', 'debt', 'total', 'amount', 'discount', 'paid'];
+              numericFields.forEach(field => {
+                if (item[field] !== undefined) item[field] = Number(item[field]);
+              });
+
+              return item;
+            });
+
+            importedData[key] = cleanedData as any;
+          }
+        });
+
+        if (Object.keys(importedData).length > 0) {
+          await updateData(importedData);
+          showToast(`Đã nhập dữ liệu từ ${Object.keys(importedData).length} danh mục thành công!`);
+        } else {
+          showToast('Không tìm thấy dữ liệu hợp lệ trong file', 'error');
+        }
+      } catch (error) {
+        console.error('Error importing Excel:', error);
+        showToast('Có lỗi xảy ra khi nhập dữ liệu. Vui lòng kiểm tra định dạng file.', 'error');
+      } finally {
+        setIsImporting(false);
+        // Reset input
+        e.target.value = '';
+      }
+    };
+    reader.readAsBinaryString(file);
   };
 
   useEffect(() => {
@@ -409,13 +488,34 @@ export function Settings({ data, updateData, resetDatabase, isAdmin }: SettingsP
                     <p className="text-sm text-blue-700 mb-6">
                       Tải toàn bộ dữ liệu (Sản phẩm, Khách hàng, Đơn hàng...) về máy tính để lưu trữ hoặc mở bằng Excel.
                     </p>
-                    <button
-                      onClick={exportAllDataToExcel}
-                      className="flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-bold transition-all shadow-lg shadow-blue-600/20 active:scale-95"
-                    >
-                      <Download size={18} />
-                      Tải về file Excel
-                    </button>
+                    <div className="flex flex-wrap gap-3">
+                      <button
+                        onClick={exportAllDataToExcel}
+                        className="flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-bold transition-all shadow-lg shadow-blue-600/20 active:scale-95"
+                      >
+                        <Download size={18} />
+                        Tải về file Excel
+                      </button>
+
+                      <label className="flex items-center gap-2 px-6 py-3 bg-white border-2 border-blue-600 text-blue-600 hover:bg-blue-50 rounded-xl text-sm font-bold transition-all cursor-pointer active:scale-95">
+                        {isImporting ? (
+                          <RefreshCw className="animate-spin" size={18} />
+                        ) : (
+                          <Upload size={18} />
+                        )}
+                        {isImporting ? 'Đang nhập...' : 'Nhập từ Excel'}
+                        <input
+                          type="file"
+                          accept=".xlsx, .xls"
+                          onChange={handleImportExcel}
+                          disabled={isImporting}
+                          className="hidden"
+                        />
+                      </label>
+                    </div>
+                    <p className="text-[10px] text-blue-500 mt-3 italic">
+                      * Lưu ý: File nhập vào nên có định dạng giống với file xuất ra từ hệ thống để đảm bảo tính chính xác.
+                    </p>
                   </div>
 
                   <div className="p-6 bg-gray-50 rounded-2xl border border-gray-200">

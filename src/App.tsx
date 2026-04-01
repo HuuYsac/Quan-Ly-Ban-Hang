@@ -18,6 +18,7 @@ import { Reports } from './pages/Reports';
 import { Settings } from './pages/Settings';
 import { CompanyInfo } from './pages/CompanyInfo';
 import { CRM } from './pages/CRM';
+import { AIAssistant } from './pages/AIAssistant';
 import { Members } from './pages/Members';
 import { Profile } from './pages/Profile';
 import Messages from './pages/Messages';
@@ -225,6 +226,7 @@ export default function App() {
       case 'company-info': return { title: 'Thông tin Shop', subtitle: 'Cập nhật thông tin cửa hàng/doanh nghiệp' };
       case 'profile': return { title: 'Tài khoản của tôi', subtitle: 'Quản lý thông tin cá nhân và tài khoản' };
       case 'messages': return { title: 'Tin nhắn nội bộ', subtitle: 'Trao đổi công việc giữa các nhân viên' };
+      case 'ai-assistant': return { title: 'Trợ lý AI Thông minh', subtitle: 'Tư vấn sản phẩm & Sáng tạo nội dung' };
       default: return { title: 'Đang phát triển', subtitle: 'Tính năng này sẽ sớm ra mắt' };
     }
   };
@@ -235,6 +237,8 @@ export default function App() {
     switch (activePage) {
       case 'dashboard':
         return <Dashboard data={data} onNavigate={setActivePage} isAdmin={isAdmin} />;
+      case 'ai-assistant':
+        return <AIAssistant data={data} />;
       case 'members':
         if (!isAdmin) return <AccessDenied />;
         return <Members />;

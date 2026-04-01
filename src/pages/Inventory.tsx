@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { AppData } from '../types';
-import { ClipboardList, Search, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { ClipboardList, Search, AlertTriangle, CheckCircle2, X } from 'lucide-react';
 import { formatCurrency } from '../lib/utils';
 
 interface InventoryProps {
@@ -12,6 +12,7 @@ interface InventoryProps {
 export function Inventory({ data, updateData, isAdmin }: InventoryProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [filter, setFilter] = useState<'all' | 'low' | 'out'>('all');
+  const [viewProduct, setViewProduct] = useState<any | null>(null);
 
   const filteredProducts = data.products.filter(p => {
     const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase()) || p.id.toLowerCase().includes(searchTerm.toLowerCase());
@@ -112,7 +113,11 @@ export function Inventory({ data, updateData, isAdmin }: InventoryProps) {
             </thead>
             <tbody className="divide-y divide-gray-100">
               {filteredProducts.map((product) => (
-                <tr key={product.id} className="hover:bg-gray-50/50 transition-colors">
+                <tr 
+                  key={product.id} 
+                  onClick={() => setViewProduct(product)}
+                  className="hover:bg-gray-50/50 transition-colors cursor-pointer group"
+                >
                   <td className="p-4">
                     <div className="font-medium text-gray-900">{product.name}</div>
                     <div className="text-xs text-gray-500 mt-1">{product.id}</div>
@@ -155,7 +160,11 @@ export function Inventory({ data, updateData, isAdmin }: InventoryProps) {
         {/* Mobile Cards */}
         <div className="md:hidden divide-y divide-gray-100">
           {filteredProducts.map((product) => (
-            <div key={product.id} className="p-4 space-y-3">
+            <div 
+              key={product.id} 
+              onClick={() => setViewProduct(product)}
+              className="p-4 space-y-3 cursor-pointer hover:bg-gray-50 transition-all"
+            >
               <div className="flex justify-between items-start">
                 <div>
                   <div className="font-bold text-gray-900">{product.name}</div>
@@ -197,6 +206,57 @@ export function Inventory({ data, updateData, isAdmin }: InventoryProps) {
           )}
         </div>
       </div>
+
+      {/* Product Detail Modal */}
+      {viewProduct && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[9999] sm:p-4">
+          <div className="bg-white sm:rounded-2xl shadow-2xl w-full max-w-md h-full sm:h-auto animate-in fade-in zoom-in-95 duration-200 relative">
+            <div className="p-6">
+              <div className="flex justify-between items-start mb-6">
+                <div className="w-12 h-12 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center">
+                  <ClipboardList size={24} />
+                </div>
+                <button 
+                  onClick={() => setViewProduct(null)}
+                  className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">{viewProduct.name}</h3>
+              <p className="text-sm text-gray-500 mb-6">{viewProduct.category}</p>
+              
+              <div className="grid grid-cols-2 gap-4 mb-8">
+                <div className="p-4 bg-slate-50 rounded-xl">
+                  <p className="text-xs text-gray-500 mb-1">Tồn kho</p>
+                  <p className={`text-lg font-bold ${viewProduct.stock < viewProduct.minStock ? 'text-rose-600' : 'text-emerald-600'}`}>
+                    {viewProduct.stock}
+                  </p>
+                </div>
+                <div className="p-4 bg-slate-50 rounded-xl">
+                  <p className="text-xs text-gray-500 mb-1">Giá bán</p>
+                  <p className="text-lg font-bold text-gray-900">{formatCurrency(viewProduct.price)}</p>
+                </div>
+                <div className="p-4 bg-slate-50 rounded-xl">
+                  <p className="text-xs text-gray-500 mb-1">Tối thiểu</p>
+                  <p className="text-lg font-bold text-gray-500">{viewProduct.minStock}</p>
+                </div>
+                <div className="p-4 bg-slate-50 rounded-xl">
+                  <p className="text-xs text-gray-500 mb-1">Mã SP</p>
+                  <p className="text-sm font-mono font-bold text-gray-900">{viewProduct.id}</p>
+                </div>
+              </div>
+
+              <button 
+                onClick={() => setViewProduct(null)}
+                className="w-full py-3 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold transition-all"
+              >
+                Đóng
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -205,7 +205,11 @@ export function Members() {
             </thead>
             <tbody className="divide-y divide-gray-100">
               {filteredUsers.map((user) => (
-                <tr key={user.uid} className="hover:bg-gray-50/50 transition-colors group">
+                <tr 
+                  key={user.uid} 
+                  onClick={() => handleEditUser(user)}
+                  className="hover:bg-gray-50/50 transition-colors group cursor-pointer"
+                >
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold">
@@ -281,7 +285,10 @@ export function Members() {
                   <td className="px-6 py-4 text-right">
                     <div className="flex items-center justify-end gap-2">
                       <button
-                        onClick={() => handleToggleApproval(user)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleToggleApproval(user);
+                        }}
                         title={user.approved ? "Thu hồi phê duyệt" : "Phê duyệt ngay"}
                         className={`p-2 rounded-lg transition-colors ${
                           user.approved 
@@ -292,14 +299,20 @@ export function Members() {
                         {user.approved ? <UserX size={18} /> : <UserCheck size={18} />}
                       </button>
                       <button
-                        onClick={() => handleEditUser(user)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleEditUser(user);
+                        }}
                         className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                         title="Chỉnh sửa vai trò"
                       >
                         <Shield size={18} />
                       </button>
                       <button
-                        onClick={() => handleDeleteUser(user.uid)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteUser(user.uid);
+                        }}
                         className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                         title="Xóa thành viên"
                       >

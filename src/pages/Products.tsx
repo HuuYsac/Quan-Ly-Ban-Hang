@@ -256,7 +256,11 @@ export function Products({ data, updateData, addItem, updateItem, deleteItem, is
             </thead>
             <tbody className="divide-y divide-gray-100">
               {filteredProducts.map((product) => (
-                <tr key={product.id} className="hover:bg-gray-50/50 transition-colors">
+                <tr 
+                  key={product.id} 
+                  onClick={() => handleEdit(product)}
+                  className="hover:bg-gray-50/50 transition-colors cursor-pointer group"
+                >
                   <td className="p-4">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center text-gray-500 shrink-0">
@@ -291,13 +295,19 @@ export function Products({ data, updateData, addItem, updateItem, deleteItem, is
                   <td className="p-4 text-center">
                     <div className="flex items-center justify-center gap-2">
                       <button 
-                        onClick={() => handleEdit(product)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleEdit(product);
+                        }}
                         className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
                       >
                         <Edit size={16} />
                       </button>
                       <button 
-                        onClick={() => setConfirmingDelete(product.id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setConfirmingDelete(product.id);
+                        }}
                         className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
                       >
                         <Trash2 size={16} />
@@ -313,7 +323,11 @@ export function Products({ data, updateData, addItem, updateItem, deleteItem, is
         {/* Mobile Cards */}
         <div className="md:hidden divide-y divide-gray-100">
           {filteredProducts.map((product) => (
-            <div key={product.id} className="p-4 space-y-3">
+            <div 
+              key={product.id} 
+              onClick={() => handleEdit(product)}
+              className="p-4 space-y-3 cursor-pointer hover:bg-gray-50 transition-all"
+            >
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center text-gray-500 shrink-0">
@@ -326,13 +340,19 @@ export function Products({ data, updateData, addItem, updateItem, deleteItem, is
                 </div>
                 <div className="flex items-center gap-1">
                   <button 
-                    onClick={() => handleEdit(product)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleEdit(product);
+                    }}
                     className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
                   >
                     <Edit size={18} />
                   </button>
                   <button 
-                    onClick={() => setConfirmingDelete(product.id)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setConfirmingDelete(product.id);
+                    }}
                     className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
                   >
                     <Trash2 size={18} />

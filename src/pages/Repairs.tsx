@@ -226,7 +226,11 @@ const Repairs: React.FC = () => {
             </thead>
             <tbody className="divide-y divide-gray-100">
               {filteredRepairs.map((repair) => (
-                <tr key={repair.id} className="hover:bg-gray-50/50 transition-colors group">
+                <tr 
+                  key={repair.id} 
+                  onClick={() => handleEdit(repair)}
+                  className="hover:bg-gray-50/50 transition-colors group cursor-pointer"
+                >
                   <td className="p-4">
                     <div className="flex flex-col">
                       <span className="font-bold text-gray-900">{repair.customerName}</span>
@@ -308,7 +312,11 @@ const Repairs: React.FC = () => {
         {/* Mobile Cards */}
         <div className="md:hidden divide-y divide-gray-100">
           {filteredRepairs.map((repair) => (
-            <div key={repair.id} className="p-4 space-y-3">
+            <div 
+              key={repair.id} 
+              onClick={() => handleEdit(repair)}
+              className="p-4 space-y-3 cursor-pointer hover:bg-gray-50 transition-all"
+            >
               <div className="flex justify-between items-start">
                 <div className="space-y-1">
                   <div className="font-bold text-gray-900">{repair.customerName}</div>

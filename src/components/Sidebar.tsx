@@ -20,7 +20,8 @@ import {
   User,
   X,
   MessageSquare,
-  MessageCircle
+  MessageCircle,
+  Sparkles
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { auth } from '../firebase';
@@ -41,6 +42,7 @@ export function Sidebar({ activePage, setActivePage, data, isAdmin, isApproved, 
   const [showLogoutConfirm, setShowLogoutConfirm] = React.useState(false);
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, section: 'Tổng quan', allowedRoles: ['admin', 'staff', 'user'] },
+    { id: 'ai-assistant', label: 'Trợ lý AI', icon: Sparkles, section: 'Tổng quan', allowedRoles: ['admin', 'staff', 'user'] },
     { id: 'messages', label: 'Tin nhắn nội bộ', icon: MessageSquare, section: 'Tổng quan', allowedRoles: ['admin', 'staff', 'user'] },
     { id: 'members', label: 'Thành viên', icon: UserCog, section: 'Hệ thống', allowedRoles: ['admin'] },
     { id: 'customers', label: 'Khách hàng', icon: Users, section: 'Quản lý cơ bản', allowedRoles: ['admin', 'staff', 'user'] },

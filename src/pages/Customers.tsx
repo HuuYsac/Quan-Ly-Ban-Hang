@@ -230,7 +230,11 @@ export function Customers({ data, updateData, addItem, updateItem, deleteItem }:
                 const warrantyStatus = getWarrantyStatus(customer);
                 
                 return (
-                  <tr key={customer.id} className="hover:bg-gray-50/50 transition-colors">
+                  <tr 
+                    key={customer.id} 
+                    onClick={() => handleEdit(customer)}
+                    className="hover:bg-gray-50/50 transition-colors cursor-pointer group"
+                  >
                     <td className="p-4">
                       <div className="font-medium text-gray-900">{customer.name}</div>
                       <div className="text-xs text-gray-500 mt-1">
@@ -324,7 +328,11 @@ export function Customers({ data, updateData, addItem, updateItem, deleteItem }:
           {filteredCustomers.map((customer) => {
             const warrantyStatus = getWarrantyStatus(customer);
             return (
-              <div key={customer.id} className="p-4 space-y-3">
+              <div 
+                key={customer.id} 
+                onClick={() => handleEdit(customer)}
+                className="p-4 space-y-3 cursor-pointer hover:bg-gray-50 transition-all"
+              >
                 <div className="flex justify-between items-start">
                   <div>
                     <div className="font-bold text-gray-900">{customer.name}</div>

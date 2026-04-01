@@ -65,22 +65,22 @@ export function Dashboard({ data, onNavigate, isAdmin }: DashboardProps) {
     const todayStr = today.toISOString().split('T')[0];
     
     // Revenue & Orders
-    const todayOrders = data.orders.filter(o => o.date === todayStr);
+    const todayOrders = data.orders?.filter(o => o.date === todayStr) || [];
     const todayRevenue = todayOrders.reduce((sum, o) => sum + o.total, 0);
     
-    const paidOrders = data.orders.filter(o => o.paymentStatus === 'Đã thanh toán');
+    const paidOrders = data.orders?.filter(o => o.paymentStatus === 'Đã thanh toán') || [];
     const totalRevenue = paidOrders.reduce((sum, o) => sum + o.total, 0);
 
     // Low Stock
-    const lowStockProducts = data.products.filter(p => p.stock <= p.minStock);
+    const lowStockProducts = data.products?.filter(p => p.stock <= p.minStock) || [];
 
     // Pending Repairs
-    const pendingRepairs = data.repairs.filter(r => r.status === 'Đang sửa');
+    const pendingRepairs = data.repairs?.filter(r => r.status === 'Đang sửa') || [];
 
     // Expiring Warranties (within 30 days)
     const expiringWarranties: any[] = [];
-    data.orders.forEach(order => {
-      order.products.forEach(product => {
+    data.orders?.forEach(order => {
+      order.products?.forEach(product => {
         if (product.serviceTag && product.purchaseDate && product.warrantyMonths) {
           const purchaseDate = new Date(product.purchaseDate);
           const expiryDate = new Date(purchaseDate);
@@ -109,7 +109,7 @@ export function Dashboard({ data, onNavigate, isAdmin }: DashboardProps) {
     const chartData = Array.from({ length: 7 }).map((_, i) => {
       const date = subDays(today, 6 - i);
       const dateStr = format(date, 'yyyy-MM-dd');
-      const dayRevenue = data.orders
+      const dayRevenue = (data.orders || [])
         .filter(o => o.date === dateStr && o.paymentStatus === 'Đã thanh toán')
         .reduce((sum, o) => sum + o.total, 0);
       
@@ -123,8 +123,8 @@ export function Dashboard({ data, onNavigate, isAdmin }: DashboardProps) {
       todayRevenue,
       todayOrdersCount: todayOrders.length,
       totalRevenue,
-      customerCount: data.customers.length,
-      productCount: data.products.length,
+      customerCount: data.customers?.length || 0,
+      productCount: data.products?.length || 0,
       lowStockCount: lowStockProducts.length,
       lowStockProducts: lowStockProducts.slice(0, 3),
       pendingRepairsCount: pendingRepairs.length,
@@ -388,7 +388,7 @@ export function Dashboard({ data, onNavigate, isAdmin }: DashboardProps) {
                 <div 
                   key={i} 
                   onClick={() => {
-                    const customer = data.customers.find(c => c.id === w.customerId);
+                    const customer = data.customers?.find(c => c.id === w.customerId);
                     if (customer) setViewCustomer(customer);
                   }}
                   className="flex items-center justify-between p-2 hover:bg-slate-50 rounded-lg transition-colors cursor-pointer group"
@@ -418,7 +418,7 @@ export function Dashboard({ data, onNavigate, isAdmin }: DashboardProps) {
             </button>
           </div>
           <div className="space-y-1">
-            {data.orders.slice(0, 6).map((order, idx) => (
+            {(data.orders || []).slice(0, 6).map((order, idx) => (
               <div 
                 key={order.id} 
                 onClick={() => setViewOrder(order)}
@@ -435,7 +435,7 @@ export function Dashboard({ data, onNavigate, isAdmin }: DashboardProps) {
                       className="text-sm font-bold text-gray-900 truncate hover:text-blue-600 transition-colors"
                       onClick={(e) => {
                         e.stopPropagation();
-                        const customer = data.customers.find(c => c.id === order.customerId);
+                        const customer = data.customers?.find(c => c.id === order.customerId);
                         if (customer) setViewCustomer(customer);
                       }}
                     >
@@ -512,11 +512,11 @@ export function Dashboard({ data, onNavigate, isAdmin }: DashboardProps) {
                 <div className="grid grid-cols-2 gap-x-8 gap-y-1 mb-6 text-sm">
                   <div className="col-span-1 space-y-1">
                     <p><span className="font-semibold">Họ tên người mua hàng:</span> {viewOrder.customerName}</p>
-                    <p><span className="font-semibold">Tên đơn vị:</span> {data.customers.find(c => c.id === viewOrder.customerId)?.companyName || ''}</p>
-                    <p><span className="font-semibold">Địa chỉ:</span> {data.customers.find(c => c.id === viewOrder.customerId)?.address || ''}</p>
+                    <p><span className="font-semibold">Tên đơn vị:</span> {data.customers?.find(c => c.id === viewOrder.customerId)?.companyName || ''}</p>
+                    <p><span className="font-semibold">Địa chỉ:</span> {data.customers?.find(c => c.id === viewOrder.customerId)?.address || ''}</p>
                   </div>
                   <div className="col-span-1 text-right">
-                    <p><span className="font-semibold">Số điện thoại:</span> {data.customers.find(c => c.id === viewOrder.customerId)?.phone || ''}</p>
+                    <p><span className="font-semibold">Số điện thoại:</span> {data.customers?.find(c => c.id === viewOrder.customerId)?.phone || ''}</p>
                   </div>
                 </div>
 
@@ -533,7 +533,7 @@ export function Dashboard({ data, onNavigate, isAdmin }: DashboardProps) {
                     </tr>
                   </thead>
                   <tbody>
-                    {viewOrder.products.map((item, idx) => (
+                    {(viewOrder.products || []).map((item, idx) => (
                       <tr key={idx}>
                         <td className="border border-black p-2 text-center">{idx + 1}</td>
                         <td className="border border-black p-2">
@@ -643,7 +643,7 @@ export function Dashboard({ data, onNavigate, isAdmin }: DashboardProps) {
                 <div className="border-t border-gray-100 pt-6 mb-6">
                   <h4 className="text-sm font-bold text-gray-900 mb-4">Sản phẩm</h4>
                   <div className="space-y-3">
-                    {viewOrder.products.map((item, idx) => (
+                    {(viewOrder.products || []).map((item, idx) => (
                       <div key={idx} className="flex justify-between items-center p-3 bg-slate-50 rounded-xl">
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-bold text-gray-900 truncate">{item.name}</p>
@@ -743,7 +743,7 @@ export function Dashboard({ data, onNavigate, isAdmin }: DashboardProps) {
                     Thiết bị đang sử dụng
                   </h4>
                   <div className="grid grid-cols-1 gap-3">
-                    {viewCustomer.devices.map((device, idx) => (
+                    {(viewCustomer.devices || []).map((device, idx) => (
                       <div key={idx} className="p-4 bg-slate-50 rounded-xl border border-slate-100">
                         <div className="flex justify-between items-start mb-2">
                           <p className="font-bold text-gray-900">{device.name}</p>
