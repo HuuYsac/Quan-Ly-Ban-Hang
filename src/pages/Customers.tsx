@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { AppData, Customer } from '../types';
 import { formatCurrency } from '../lib/utils';
-import { Users, Search, Plus, Edit, Trash2, Laptop, ShieldCheck, ShieldAlert, Wrench, Tag, X } from 'lucide-react';
+import { Users, Search, Plus, Edit, Trash2, Laptop, ShieldCheck, ShieldAlert, Wrench, Tag, X, ShoppingBag } from 'lucide-react';
 
 interface CustomersProps {
   data: AppData;
@@ -28,7 +28,19 @@ export function Customers({ data, updateData, addItem, updateItem, deleteItem }:
     tags: ''
   });
 
-  const filteredCustomers = data.customers.filter(c => 
+  const [expandedOrders, setExpandedOrders] = useState<Set<string>>(new Set());
+
+  const toggleOrderExpansion = (orderId: string) => {
+    const newExpanded = new Set(expandedOrders);
+    if (newExpanded.has(orderId)) {
+      newExpanded.delete(orderId);
+    } else {
+      newExpanded.add(orderId);
+    }
+    setExpandedOrders(newExpanded);
+  };
+
+  const filteredCustomers = (data.customers || []).filter(c => 
     c.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
     c.phone.includes(searchTerm) ||
     (c.tags && c.tags.some(t => t.toLowerCase().includes(searchTerm.toLowerCase())))
@@ -220,6 +232,7 @@ export function Customers({ data, updateData, addItem, updateItem, deleteItem }:
               <tr className="bg-gray-50 text-gray-500 text-sm uppercase tracking-wider">
                 <th className="p-4 font-medium">Khách hàng</th>
                 <th className="p-4 font-medium">Phân loại / Thẻ</th>
+                <th className="p-4 font-medium">Đơn hàng</th>
                 <th className="p-4 font-medium">Thiết bị & Bảo hành</th>
                 <th className="p-4 font-medium text-right">Công nợ</th>
                 <th className="p-4 font-medium text-center">Thao tác</th>
@@ -258,6 +271,17 @@ export function Customers({ data, updateData, addItem, updateItem, deleteItem }:
                         ) : (
                           <span className="text-xs text-gray-400 italic">Chưa phân loại</span>
                         )}
+                      </div>
+                    </td>
+                    <td className="p-4">
+                      <div className="flex flex-col gap-1">
+                        <div className="text-sm font-bold text-blue-600 flex items-center gap-1.5">
+                          <ShoppingBag size={14} />
+                          {(data.orders || []).filter(o => o.customerId === customer.id).length} đơn hàng
+                        </div>
+                        <div className="text-[11px] text-gray-500 font-medium">
+                          Tổng chi: {formatCurrency((data.orders || []).filter(o => o.customerId === customer.id).reduce((sum, o) => sum + (o.total || 0), 0))}
+                        </div>
                       </div>
                     </td>
                     <td className="p-4">
@@ -342,7 +366,11 @@ export function Customers({ data, updateData, addItem, updateItem, deleteItem }:
                     )}
                   </div>
                   <div className="text-right">
-                    <div className="text-[10px] text-gray-400 uppercase font-bold">Công nợ</div>
+                    <div className="text-[10px] text-gray-400 uppercase font-bold">Đơn hàng</div>
+                    <div className="text-sm font-bold text-blue-600">
+                      {(data.orders || []).filter(o => o.customerId === customer.id).length} đơn
+                    </div>
+                    <div className="text-[10px] text-gray-400 uppercase font-bold mt-1">Công nợ</div>
                     <div className={`text-sm font-bold ${customer.debt > 0 ? 'text-rose-600' : 'text-gray-400'}`}>
                       {customer.debt > 0 ? formatCurrency(customer.debt) : '0 đ'}
                     </div>
@@ -521,6 +549,120 @@ export function Customers({ data, updateData, addItem, updateItem, deleteItem }:
                   <p className="text-xs text-gray-500 mt-1">Giúp bạn dễ dàng tìm kiếm và lọc khách hàng sau này.</p>
                 </div>
               </div>
+
+              {editingId && (
+                <div className="mt-8 pt-8 border-t border-gray-100">
+                  <h4 className="text-sm font-bold text-gray-900 mb-4 flex items-center gap-2">
+                    <ShoppingBag size={16} className="text-blue-600" />
+                    Lịch sử đơn hàng
+                  </h4>
+                  <div className="space-y-3">
+                    {(data.orders || []).filter(o => o.customerId === editingId).length > 0 ? (
+                      (data.orders || []).filter(o => o.customerId === editingId)
+                        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                        .map(order => {
+                          const isExpanded = expandedOrders.has(order.id);
+                          return (
+                            <div key={order.id} className="bg-gray-50 rounded-xl border border-gray-100 overflow-hidden">
+                              <div 
+                                onClick={() => toggleOrderExpansion(order.id)}
+                                className="flex items-center justify-between p-3 cursor-pointer hover:bg-gray-100/50 transition-colors"
+                              >
+                                <div>
+                                  <div className="text-sm font-bold text-gray-900 flex items-center gap-2">
+                                    #{order.id}
+                                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full border ${
+                                      order.paymentStatus === 'Đã thanh toán' 
+                                        ? 'bg-emerald-50 text-emerald-600 border-emerald-100' 
+                                        : 'bg-rose-50 text-rose-600 border-rose-100'
+                                    }`}>
+                                      {order.paymentStatus}
+                                    </span>
+                                  </div>
+                                  <div className="text-[10px] text-gray-500 font-medium">{order.date} {order.time}</div>
+                                </div>
+                                <div className="flex items-center gap-4">
+                                  <div className="text-right">
+                                    <div className="text-sm font-black text-blue-600">{formatCurrency(order.total)}</div>
+                                    <div className="text-[10px] text-gray-400 font-bold uppercase tracking-tighter">
+                                      {order.products?.length || 0} sản phẩm
+                                    </div>
+                                  </div>
+                                  <div className={`transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}>
+                                    <Plus size={14} className="text-gray-400" />
+                                  </div>
+                                </div>
+                              </div>
+                              
+                              {isExpanded && (
+                                <div className="p-3 pt-0 border-t border-gray-100 bg-white/50">
+                                  <div className="mt-3 space-y-3">
+                                    {(order.products || []).map((item, idx) => {
+                                      const itemSubtotal = item.discountType === 'percent'
+                                        ? (item.price * item.quantity) * (1 - (item.discount || 0) / 100)
+                                        : Math.max(0, (item.price * item.quantity) - (item.discount || 0));
+                                      
+                                      return (
+                                        <div key={idx} className="flex justify-between items-start gap-4 text-xs">
+                                          <div className="flex-1">
+                                            <div className="font-bold text-gray-800">{item.name}</div>
+                                            <div className="flex flex-wrap gap-2 mt-1">
+                                              {item.serviceTag && (
+                                                <span className="text-[10px] bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded font-mono font-bold border border-blue-100">
+                                                  S/N: {item.serviceTag}
+                                                </span>
+                                              )}
+                                              <span className="text-[10px] text-gray-500">
+                                                SL: <span className="font-bold text-gray-700">{item.quantity}</span>
+                                              </span>
+                                              <span className="text-[10px] text-gray-500">
+                                                Đơn giá: <span className="font-bold text-gray-700">{formatCurrency(item.price)}</span>
+                                              </span>
+                                            </div>
+                                            {(item.cpu || item.ram || item.ssd || item.screen) && (
+                                              <div className="text-[9px] text-gray-400 mt-1 flex flex-wrap gap-x-2 italic">
+                                                {item.cpu && <span>CPU: {item.cpu}</span>}
+                                                {item.ram && <span>RAM: {item.ram}</span>}
+                                                {item.ssd && <span>SSD: {item.ssd}</span>}
+                                                {item.screen && <span>Màn: {item.screen}</span>}
+                                              </div>
+                                            )}
+                                            <div className="text-[9px] text-emerald-600 mt-1 font-medium italic">
+                                              Ngày mua: {item.purchaseDate || order.date} | Bảo hành: {item.warrantyMonths || 12} tháng
+                                            </div>
+                                          </div>
+                                          <div className="text-right">
+                                            <div className="font-bold text-gray-900">
+                                              {formatCurrency(itemSubtotal)}
+                                            </div>
+                                            {item.discount > 0 && (
+                                              <div className="text-[10px] text-rose-500 font-bold">
+                                                -{item.discountType === 'percent' ? `${item.discount}%` : formatCurrency(item.discount)}
+                                              </div>
+                                            )}
+                                          </div>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                  {order.notes && (
+                                    <div className="mt-3 p-2 bg-amber-50 rounded-lg border border-amber-100 text-[10px] text-amber-800 italic">
+                                      <span className="font-bold not-italic mr-1">Ghi chú:</span> {order.notes}
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })
+                    ) : (
+                      <div className="text-center py-6 bg-gray-50 rounded-xl border border-dashed border-gray-200">
+                        <p className="text-xs text-gray-400 italic">Chưa có đơn hàng nào.</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
 
               <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
                 <button 

@@ -73,7 +73,11 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
 
   const filteredOrders = (data.orders || []).filter(o => {
     const matchesSearch = (o.id || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
-      (o.customerName || '').toLowerCase().includes(searchTerm.toLowerCase());
+      (o.customerName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (o.products || []).some(p => 
+        (p.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (p.serviceTag || '').toLowerCase().includes(searchTerm.toLowerCase())
+      );
     
     const matchesMonth = monthFilter === 'Tất cả' || (o.date && o.date.startsWith(monthFilter));
     
@@ -573,6 +577,8 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
           customerId: customer.id,
           customerName: customer.name,
           customerPhone: customer.phone,
+          customerEmail: customer.email,
+          customerAddress: customer.address,
           date: now.toISOString().split('T')[0],
           time: now.toTimeString().split(' ')[0].substring(0, 5),
           products: finalItems,
@@ -741,7 +747,18 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
                   className="hover:bg-gray-50/50 transition-colors cursor-pointer group"
                 >
                   <td className="p-4 font-medium text-gray-900">{order.id}</td>
-                  <td className="p-4 text-sm text-gray-700">{order.customerName}</td>
+                  <td className="p-4">
+                    <div className="text-sm font-bold text-gray-900">{order.customerName}</div>
+                    <div className="text-[10px] text-gray-500 mt-1 space-y-0.5">
+                      {(order.products || []).map((p, i) => (
+                        <div key={i} className="flex items-center gap-1">
+                          <span className="w-1 h-1 rounded-full bg-blue-400"></span>
+                          <span className="truncate max-w-[150px]">{p.name} (x{p.quantity})</span>
+                          {p.serviceTag && <span className="text-blue-600 font-mono font-bold">[{p.serviceTag}]</span>}
+                        </div>
+                      ))}
+                    </div>
+                  </td>
                   <td className="p-4 text-sm text-gray-500">
                     {order.date} <span className="text-xs ml-1">{order.time}</span>
                   </td>
@@ -970,8 +987,9 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
                   <div>
                     <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Thông tin khách hàng</h3>
                     <p className="text-base font-bold text-gray-900">{viewOrder.customerName}</p>
-                    <p className="text-sm text-gray-600">{data.customers.find(c => c.id === viewOrder.customerId)?.phone}</p>
-                    <p className="text-sm text-gray-600">{data.customers.find(c => c.id === viewOrder.customerId)?.address}</p>
+                    <p className="text-sm text-gray-600">{viewOrder.customerPhone}</p>
+                    {viewOrder.customerEmail && <p className="text-sm text-gray-600">{viewOrder.customerEmail}</p>}
+                    {viewOrder.customerAddress && <p className="text-sm text-gray-600">{viewOrder.customerAddress}</p>}
                   </div>
                   <div className="text-right">
                     <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Hình thức thanh toán</h3>
@@ -987,9 +1005,10 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
                   <thead>
                     <tr className="bg-blue-600 text-white">
                       <th className="p-3 text-left text-xs font-bold uppercase">Sản phẩm</th>
-                      <th className="p-3 text-center text-xs font-bold uppercase w-20">SL</th>
-                      <th className="p-3 text-right text-xs font-bold uppercase w-32">Đơn giá</th>
-                      <th className="p-3 text-right text-xs font-bold uppercase w-32">Thành tiền</th>
+                      <th className="p-3 text-center text-xs font-bold uppercase w-16">SL</th>
+                      <th className="p-3 text-right text-xs font-bold uppercase w-28">Đơn giá</th>
+                      <th className="p-3 text-right text-xs font-bold uppercase w-24">Giảm giá</th>
+                      <th className="p-3 text-right text-xs font-bold uppercase w-28">Thành tiền</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
@@ -1006,16 +1025,24 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
                               {item.screen && <span>Màn: {item.screen}</span>}
                             </div>
                           )}
+                          <div className="text-[10px] text-emerald-600 mt-0.5 font-medium">
+                            Ngày mua: {item.purchaseDate || viewOrder.date} | Bảo hành: {item.warrantyMonths || 12} tháng
+                          </div>
                         </td>
                         <td className="p-4 text-center font-medium text-gray-900">{item.quantity}</td>
                         <td className="p-4 text-right font-medium text-gray-900">{formatCurrency(item.price).replace('₫', '').trim()}</td>
+                        <td className="p-4 text-right font-medium text-rose-600">
+                          {item.discountType === 'amount' 
+                            ? formatCurrency(item.discount || 0).replace('₫', '').trim()
+                            : `${item.discount || 0}%`}
+                        </td>
                         <td className="p-4 text-right font-bold text-gray-900">{formatCurrency(item.subtotal || 0).replace('₫', '').trim()}</td>
                       </tr>
                     ))}
                   </tbody>
                   <tfoot>
                     <tr className="bg-gray-50 border-t-2 border-gray-200">
-                      <td colSpan={3} className="p-4 text-right font-bold text-gray-600 uppercase">Tổng cộng:</td>
+                      <td colSpan={4} className="p-4 text-right font-bold text-gray-600 uppercase">Tổng cộng:</td>
                       <td className="p-4 text-right font-black text-xl text-blue-700">{formatCurrency(viewOrder.total)}</td>
                     </tr>
                   </tfoot>
@@ -1072,6 +1099,8 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
                   <div>
                     <p className="text-sm text-gray-500 mb-1">Khách hàng</p>
                     <p className="font-medium text-gray-900">{viewOrder.customerName}</p>
+                    <p className="text-xs text-gray-500">{viewOrder.customerPhone}</p>
+                    {viewOrder.customerAddress && <p className="text-xs text-gray-500">{viewOrder.customerAddress}</p>}
                   </div>
                   <div>
                     <p className="text-sm text-gray-500 mb-1">Thời gian</p>
@@ -1112,6 +1141,9 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
                               {item.screen && <span>Màn: {item.screen}</span>}
                             </div>
                           )}
+                          <div className="text-[10px] text-emerald-600 mt-0.5 font-medium">
+                            Ngày mua: {item.purchaseDate || viewOrder.date} | Bảo hành: {item.warrantyMonths || 12} tháng
+                          </div>
                         </td>
                         <td className="p-3 text-sm text-gray-900 text-center">{item.quantity}</td>
                         <td className="p-3 text-sm text-gray-900 text-right">{formatCurrency(item.price)}</td>
