@@ -55,7 +55,7 @@ export function AIAssistant({ data }: AIAssistantProps) {
 
       // Limit product context to avoid token limits if there are many products
       const maxProducts = 300;
-      const productsToInclude = data.products.slice(0, maxProducts);
+      const productsToInclude = (data.products || []).slice(0, maxProducts);
       
       const productsContext = productsToInclude.map(p => 
         `- ${p.name} (ID: ${p.id}): ${formatCurrency(p.price)}, Kho: ${p.stock}, Danh mục: ${p.category}`
@@ -63,7 +63,7 @@ export function AIAssistant({ data }: AIAssistantProps) {
 
       const systemInstruction = `
         Bạn là một trợ lý bán hàng thông minh cho một cửa hàng máy tính và thiết bị công nghệ tại Việt Nam.
-        Dưới đây là danh sách sản phẩm hiện có trong kho${data.products.length > maxProducts ? ' (chỉ hiển thị ' + maxProducts + ' sản phẩm đầu tiên)' : ''}:
+        Dưới đây là danh sách sản phẩm hiện có trong kho${(data.products || []).length > maxProducts ? ' (chỉ hiển thị ' + maxProducts + ' sản phẩm đầu tiên)' : ''}:
         ${productsContext}
 
         Nhiệm vụ của bạn:
@@ -86,7 +86,7 @@ export function AIAssistant({ data }: AIAssistantProps) {
       const responseText = result.text.replace(/\*\*/g, '');
 
       // Identify products mentioned in the response
-      const mentionedProducts = data.products.filter(p => 
+      const mentionedProducts = (data.products || []).filter(p => 
         responseText.toLowerCase().includes(p.name.toLowerCase()) || 
         responseText.includes(p.id)
       );

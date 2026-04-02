@@ -360,7 +360,7 @@ export function CRM({ data, updateData, addItem, updateItem, deleteItem }: CRMPr
   });
 
   const getGoogleCalendarLink = (task: CareTask) => {
-    const customer = data.customers?.find(c => c.id === task.customerId);
+    const customer = (data.customers || []).find(c => c.id === task.customerId);
     const title = encodeURIComponent(`CRM: ${task.customerName} - ${task.description}`);
     const taskDate = new Date(task.taskDate);
     const dateStr = taskDate.toISOString().replace(/-|:|\.\d+/g, '');
@@ -397,12 +397,12 @@ export function CRM({ data, updateData, addItem, updateItem, deleteItem }: CRMPr
   const getWarrantyMessage = (task: CareTask) => {
     if (!task.id.endsWith('-warranty')) return `Chào ${task.customerName}, mình từ Hữu Laptop...`;
     
-    const order = data.orders?.find(o => o.id === task.orderId);
+    const order = (data.orders || []).find(o => o.id === task.orderId);
     if (!order) return '';
     
     const match = task.description.match(/\(S\/N: (.*?)\)/);
     const serviceTag = match ? match[1] : '';
-    const product = order.products?.find(p => p.serviceTag === serviceTag);
+    const product = (order.products || []).find(p => p.serviceTag === serviceTag);
     
     if (!product) return '';
 

@@ -70,10 +70,10 @@ const Warranty: React.FC = () => {
     const items: WarrantyItem[] = [];
     const today = new Date();
 
-    data.orders.forEach(order => {
-      const customer = data.customers.find(c => c.id === order.customerId);
+    (data.orders || []).forEach(order => {
+      const customer = (data.customers || []).find(c => c.id === order.customerId);
       
-      order.products.forEach(product => {
+      (order.products || []).forEach(product => {
         if (product.serviceTag && product.purchaseDate && product.warrantyMonths) {
           const purchaseDate = new Date(product.purchaseDate);
           const expiryDate = new Date(purchaseDate);
@@ -369,7 +369,7 @@ const Warranty: React.FC = () => {
                 {(data.warrantyNotifications || []).sort((a, b) => new Date(b.sentAt).getTime() - new Date(a.sentAt).getTime()).map(notif => (
                   <tr key={notif.id} className="hover:bg-gray-50/50 transition-colors">
                     <td className="p-4">
-                      <div className="font-bold text-gray-900">{data.customers.find(c => c.id === notif.customerId)?.name || 'N/A'}</div>
+                      <div className="font-bold text-gray-900">{(data.customers || []).find(c => c.id === notif.customerId)?.name || 'N/A'}</div>
                     </td>
                     <td className="p-4">
                       <div className="text-sm font-medium text-blue-600">{notif.serviceTag}</div>
