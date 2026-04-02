@@ -71,11 +71,11 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
     setToast({ message, type });
   };
 
-  const filteredOrders = data.orders.filter(o => {
-    const matchesSearch = o.id.toLowerCase().includes(searchTerm.toLowerCase()) || 
-      o.customerName.toLowerCase().includes(searchTerm.toLowerCase());
+  const filteredOrders = (data.orders || []).filter(o => {
+    const matchesSearch = (o.id || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
+      (o.customerName || '').toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesMonth = monthFilter === 'Tất cả' || o.date.startsWith(monthFilter);
+    const matchesMonth = monthFilter === 'Tất cả' || (o.date && o.date.startsWith(monthFilter));
     
     if (!matchesMonth) return false;
 
@@ -88,7 +88,7 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
   // Get unique months from orders for the filter
   const availableMonths = useMemo(() => {
     const months = new Set<string>();
-    data.orders.forEach(o => {
+    (data.orders || []).forEach(o => {
       if (o.date) {
         months.add(o.date.substring(0, 7)); // YYYY-MM
       }
@@ -97,28 +97,28 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
   }, [data.orders]);
 
   const handleDelete = async (id: string) => {
-    const orderToDelete = data.orders.find(o => o.id === id);
+    const orderToDelete = (data.orders || []).find(o => o.id === id);
     if (!orderToDelete) return;
 
     try {
       // Revert stock
-      for (const item of orderToDelete.products) {
-        const product = data.products.find(p => p.id === item.productId);
+      for (const item of (orderToDelete.products || [])) {
+        const product = (data.products || []).find(p => p.id === item.productId);
         if (product) {
           await updateItem('products', product.id, {
             ...product,
-            stock: product.stock + item.quantity
+            stock: (product.stock || 0) + (item.quantity || 0)
           });
         }
       }
 
       // Revert debt
       if (orderToDelete.paymentStatus === 'Công nợ') {
-        const customer = data.customers.find(c => c.id === orderToDelete.customerId);
+        const customer = (data.customers || []).find(c => c.id === orderToDelete.customerId);
         if (customer) {
           await updateItem('customers', customer.id, {
             ...customer,
-            debt: customer.debt - orderToDelete.total
+            debt: (customer.debt || 0) - (orderToDelete.total || 0)
           });
         }
       }
@@ -133,7 +133,7 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
   };
 
   const togglePaymentStatus = async (id: string) => {
-    const order = data.orders.find(o => o.id === id);
+    const order = (data.orders || []).find(o => o.id === id);
     if (!order) return;
 
     const newPaymentStatus = order.paymentStatus === 'Đã thanh toán' ? 'Công nợ' : 'Đã thanh toán';
@@ -141,12 +141,12 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
 
     try {
       // Update debt
-      const customer = data.customers.find(c => c.id === order.customerId);
+      const customer = (data.customers || []).find(c => c.id === order.customerId);
       if (customer) {
-        const debtChange = newPaymentStatus === 'Công nợ' ? order.total : -order.total;
+        const debtChange = newPaymentStatus === 'Công nợ' ? (order.total || 0) : -(order.total || 0);
         await updateItem('customers', customer.id, {
           ...customer,
-          debt: customer.debt + debtChange
+          debt: (customer.debt || 0) + debtChange
         });
       }
 
@@ -162,7 +162,7 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
   };
 
   const updateOrderStatus = async (id: string, nextStatus: Order['status']) => {
-    const order = data.orders.find(o => o.id === id);
+    const order = (data.orders || []).find(o => o.id === id);
     if (!order) return;
 
     try {
@@ -248,7 +248,7 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
   const handleItemChange = (index: number, field: keyof OrderItem, value: any) => {
     const newItems = [...orderItems];
     if (field === 'productId') {
-      const product = data.products.find(p => p.id === value);
+      const product = (data.products || []).find(p => p.id === value);
       if (product) {
         newItems[index] = { 
           ...newItems[index], 
@@ -297,8 +297,8 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
       setIsSubmittingCustomer(true);
       
       // Robust ID generation
-      const maxId = data.customers.reduce((max, c) => {
-        const idNum = parseInt(c.id.replace('KH', ''));
+      const maxId = (data.customers || []).reduce((max, c) => {
+        const idNum = parseInt((c.id || '').replace('KH', ''));
         return isNaN(idNum) ? max : Math.max(max, idNum);
       }, 0);
       const newId = `KH${String(maxId + 1).padStart(3, '0')}`;
@@ -347,8 +347,8 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
       setIsSubmittingProduct(true);
       
       // Robust ID generation
-      const maxId = data.products.reduce((max, p) => {
-        const idNum = parseInt(p.id.replace('SP', ''));
+      const maxId = (data.products || []).reduce((max, p) => {
+        const idNum = parseInt((p.id || '').replace('SP', ''));
         return isNaN(idNum) ? max : Math.max(max, idNum);
       }, 0);
       const newId = `SP${String(maxId + 1).padStart(3, '0')}`;
@@ -401,8 +401,8 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
       setIsSubmittingSupplier(true);
       
       // Robust ID generation
-      const maxId = data.suppliers.reduce((max, s) => {
-        const idNum = parseInt(s.id.replace('NCC', ''));
+      const maxId = (data.suppliers || []).reduce((max, s) => {
+        const idNum = parseInt((s.id || '').replace('NCC', ''));
         return isNaN(idNum) ? max : Math.max(max, idNum);
       }, 0);
       const newId = `NCC${String(maxId + 1).padStart(3, '0')}`;
@@ -469,7 +469,7 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
       paymentStatus: order.paymentStatus,
       notes: order.notes || ''
     });
-    setOrderItems(order.products.map(p => ({ ...p, discountType: p.discountType || 'percent' })));
+    setOrderItems((order.products || []).map(p => ({ ...p, discountType: p.discountType || 'percent' })));
     setIsAddModalOpen(true);
   };
 
@@ -480,7 +480,7 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
     const validItems = orderItems.filter(item => item.productId);
     if (validItems.length === 0) return showToast('Vui lòng chọn ít nhất 1 sản phẩm', 'warning');
 
-    const customer = data.customers.find(c => c.id === formData.customerId);
+    const customer = (data.customers || []).find(c => c.id === formData.customerId);
     if (!customer) return;
 
     try {
@@ -497,49 +497,49 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
       });
 
       if (editingId) {
-        const oldOrder = data.orders.find(o => o.id === editingId);
+        const oldOrder = (data.orders || []).find(o => o.id === editingId);
         if (!oldOrder) return;
 
         // 1. Revert old order stock
-        for (const item of oldOrder.products) {
-          const product = data.products.find(p => p.id === item.productId);
+        for (const item of (oldOrder.products || [])) {
+          const product = (data.products || []).find(p => p.id === item.productId);
           if (product) {
             await updateItem('products', product.id, {
               ...product,
-              stock: product.stock + item.quantity
+              stock: (product.stock || 0) + (item.quantity || 0)
             });
           }
         }
 
         // 2. Revert old order debt
         if (oldOrder.paymentStatus === 'Công nợ') {
-          const oldCustomer = data.customers.find(c => c.id === oldOrder.customerId);
+          const oldCustomer = (data.customers || []).find(c => c.id === oldOrder.customerId);
           if (oldCustomer) {
             await updateItem('customers', oldCustomer.id, {
               ...oldCustomer,
-              debt: oldCustomer.debt - oldOrder.total
+              debt: (oldCustomer.debt || 0) - (oldOrder.total || 0)
             });
           }
         }
 
         // 3. Apply new order stock
         for (const item of finalItems) {
-          const product = data.products.find(p => p.id === item.productId);
+          const product = (data.products || []).find(p => p.id === item.productId);
           if (product) {
             await updateItem('products', product.id, {
               ...product,
-              stock: product.stock - item.quantity
+              stock: (product.stock || 0) - (item.quantity || 0)
             });
           }
         }
 
         // 4. Apply new order debt
         if (formData.paymentStatus === 'Công nợ') {
-          const currentCustomer = data.customers.find(c => c.id === customer.id);
+          const currentCustomer = (data.customers || []).find(c => c.id === customer.id);
           if (currentCustomer) {
             await updateItem('customers', currentCustomer.id, {
               ...currentCustomer,
-              debt: currentCustomer.debt + total
+              debt: (currentCustomer.debt || 0) + total
             });
           }
         }
@@ -562,8 +562,8 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
       } else {
         const now = new Date();
         // Robust ID generation for order
-        const maxId = data.orders.reduce((max, o) => {
-          const idNum = parseInt(o.id.replace('DH', ''));
+        const maxId = (data.orders || []).reduce((max, o) => {
+          const idNum = parseInt((o.id || '').replace('DH', ''));
           return isNaN(idNum) ? max : Math.max(max, idNum);
         }, 0);
         const newOrderId = `DH${String(maxId + 1).padStart(3, '0')}`;
@@ -587,22 +587,22 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
 
         // Apply new order stock
         for (const item of finalItems) {
-          const product = data.products.find(p => p.id === item.productId);
+          const product = (data.products || []).find(p => p.id === item.productId);
           if (product) {
             await updateItem('products', product.id, {
               ...product,
-              stock: product.stock - item.quantity
+              stock: (product.stock || 0) - (item.quantity || 0)
             });
           }
         }
 
         // Apply new order debt
         if (formData.paymentStatus === 'Công nợ') {
-          const currentCustomer = data.customers.find(c => c.id === customer.id);
+          const currentCustomer = (data.customers || []).find(c => c.id === customer.id);
           if (currentCustomer) {
             await updateItem('customers', currentCustomer.id, {
               ...currentCustomer,
-              debt: currentCustomer.debt + total
+              debt: (currentCustomer.debt || 0) + total
             });
           }
         }
@@ -710,10 +710,10 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
             >
               {status}
               <span className="ml-2 px-1.5 py-0.5 bg-black/10 rounded text-[10px]">
-                {status === 'Tất cả' ? data.orders.length : 
-                 status === 'Đang xử lý' ? data.orders.filter(o => o.status === 'Mới' || o.status === 'Đang xử lý').length :
-                 status === 'Hoàn thành' ? data.orders.filter(o => o.status === 'Hoàn thành' || o.status === 'Đã giao').length :
-                 data.orders.filter(o => o.status === status).length}
+                {status === 'Tất cả' ? (data.orders || []).length : 
+                 status === 'Đang xử lý' ? (data.orders || []).filter(o => o.status === 'Mới' || o.status === 'Đang xử lý').length :
+                 status === 'Hoàn thành' ? (data.orders || []).filter(o => o.status === 'Hoàn thành' || o.status === 'Đã giao').length :
+                 (data.orders || []).filter(o => o.status === status).length}
               </span>
             </button>
           ))}
@@ -993,7 +993,7 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
-                    {viewOrder.products.map((item, idx) => (
+                    {(viewOrder.products || []).map((item, idx) => (
                       <tr key={idx} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}>
                         <td className="p-4">
                           <div className="font-bold text-gray-900">{item.name}</div>
@@ -1099,7 +1099,7 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
-                    {viewOrder.products.map((item, idx) => (
+                    {(viewOrder.products || []).map((item, idx) => (
                       <tr key={idx}>
                         <td className="p-3 text-sm text-gray-900">
                           <div className="font-medium">{item.name}</div>
@@ -1173,11 +1173,11 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
                       className="flex-1 px-3 sm:px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm sm:text-base"
                     >
                       <option value="">Chọn khách hàng</option>
-                      {data.customers.map(c => (
+                      {(data.customers || []).map(c => (
                         <option key={c.id} value={c.id}>{c.name} - {c.phone}</option>
                       ))}
                       {/* Show newly created customer if not yet in data.customers */}
-                      {newlyCreatedCustomer && !data.customers.find(c => c.id === newlyCreatedCustomer.id) && (
+                      {newlyCreatedCustomer && !(data.customers || []).find(c => c.id === newlyCreatedCustomer.id) && (
                         <option key={newlyCreatedCustomer.id} value={newlyCreatedCustomer.id}>
                           {newlyCreatedCustomer.name} - {newlyCreatedCustomer.phone} (Vừa thêm)
                         </option>
@@ -1259,12 +1259,12 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
                               className="flex-1 min-w-0 px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm"
                             >
                               <option value="">Chọn sản phẩm</option>
-                              {data.products.map(p => (
+                              {(data.products || []).map(p => (
                                 <option key={p.id} value={p.id} disabled={p.stock <= 0}>
                                   {p.name} - {formatCurrency(p.price)} (Còn: {p.stock})
                                 </option>
                               ))}
-                              {newlyCreatedProduct && !data.products.find(p => p.id === newlyCreatedProduct.id) && (
+                              {newlyCreatedProduct && !(data.products || []).find(p => p.id === newlyCreatedProduct.id) && (
                                 <option key={newlyCreatedProduct.id} value={newlyCreatedProduct.id}>
                                   {newlyCreatedProduct.name} - {formatCurrency(newlyCreatedProduct.price)} (Vừa thêm)
                                 </option>
@@ -1646,10 +1646,10 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
                       className="flex-1 px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                     >
                       <option value="">Chọn nhà cung cấp</option>
-                      {data.suppliers.map(s => (
+                      {(data.suppliers || []).map(s => (
                         <option key={s.id} value={s.name}>{s.name}</option>
                       ))}
-                      {newlyCreatedSupplier && !data.suppliers.find(s => s.name === newlyCreatedSupplier.name) && (
+                      {newlyCreatedSupplier && !(data.suppliers || []).find(s => s.name === newlyCreatedSupplier.name) && (
                         <option key={newlyCreatedSupplier.id} value={newlyCreatedSupplier.name}>
                           {newlyCreatedSupplier.name} (Vừa thêm)
                         </option>
