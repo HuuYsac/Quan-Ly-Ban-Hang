@@ -101,6 +101,7 @@ export interface Order {
   id: string;
   customerId: string;
   customerName: string;
+  customerPhone?: string;
   date: string;
   time: string;
   products: OrderItem[];

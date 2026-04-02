@@ -9,7 +9,7 @@ import {
 import { doc, setDoc } from 'firebase/firestore';
 import { LogIn, UserPlus, Mail, Lock, Phone, AlertCircle, CheckCircle2 } from 'lucide-react';
 
-export function Auth() {
+export function Auth({ onShowWarrantyCheck }: { onShowWarrantyCheck: () => void }) {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -225,6 +225,26 @@ export function Auth() {
                   <UserPlus size={18} />
                 )}
                 {isLogin ? 'Đăng nhập' : 'Đăng ký'}
+              </button>
+            </div>
+
+            <div className="relative my-6">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-200"></div>
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-2 bg-white text-gray-500">Hoặc</span>
+              </div>
+            </div>
+
+            <div>
+              <button
+                type="button"
+                onClick={onShowWarrantyCheck}
+                className="w-full flex justify-center items-center gap-2 py-2.5 px-4 border border-blue-200 rounded-xl shadow-sm text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+              >
+                <CheckCircle2 size={18} />
+                Tra cứu bảo hành (Không cần đăng nhập)
               </button>
             </div>
           </form>

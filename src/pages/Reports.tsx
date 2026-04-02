@@ -29,21 +29,61 @@ export function Reports({ data, updateData }: ReportsProps) {
   // Helper to get import price for profit calculation
   const getImportPrice = (productId: string, itemImportPrice?: number) => {
     if (itemImportPrice !== undefined) return itemImportPrice;
-    const product = data.products.find(p => p.id === productId);
+    const product = (data.products || []).find(p => p.id === productId);
     return product?.importPrice || 0;
   };
 
   const stats = useMemo(() => {
-    const paidOrders = data.orders.filter(o => o.paymentStatus === 'Đã thanh toán');
+    const paidOrders = (data.orders || []).filter(o => o.paymentStatus === 'Đã thanh toán');
     
     const totalRevenue = paidOrders.reduce((sum, o) => sum + o.total, 0);
     
     const totalCost = paidOrders.reduce((sum, o) => {
-      return sum + o.products.reduce((s, p) => s + (getImportPrice(p.productId, p.importPrice) * p.quantity), 0);
+      return sum + (o.products || []).reduce((s, p) => s + (getImportPrice(p.productId, p.importPrice) * p.quantity), 0);
     }, 0);
 
     const totalProfit = totalRevenue - totalCost;
     const profitMargin = totalRevenue > 0 ? (totalProfit / totalRevenue) * 100 : 0;
+
+    // Category profitability
+    const categoryProfitData = (data.categories || []).map(cat => {
+      const catProducts = (data.products || []).filter(p => p.category === cat.name);
+      const catOrders = paidOrders.filter(o => 
+        (o.products || []).some(op => catProducts.some(cp => cp.id === op.productId))
+      );
+
+      const revenue = catOrders.reduce((sum, o) => {
+        const catItems = (o.products || []).filter(op => catProducts.some(cp => cp.id === op.productId));
+        return sum + catItems.reduce((s, i) => s + i.subtotal, 0);
+      }, 0);
+
+      const cost = catOrders.reduce((sum, o) => {
+        const catItems = (o.products || []).filter(op => catProducts.some(cp => cp.id === op.productId));
+        return sum + catItems.reduce((s, i) => s + (getImportPrice(i.productId, i.importPrice) * i.quantity), 0);
+      }, 0);
+
+      const profit = revenue - cost;
+      return { name: cat.name, revenue, profit, margin: revenue > 0 ? (profit / revenue) * 100 : 0 };
+    }).filter(c => c.revenue > 0).sort((a, b) => b.profit - a.profit);
+
+    // Most profitable products
+    const profitableProducts = (data.products || []).map(p => {
+      const productOrders = paidOrders.filter(o => (o.products || []).some(op => op.productId === p.id));
+      const revenue = productOrders.reduce((sum, o) => {
+        const items = (o.products || []).filter(op => op.productId === p.id);
+        return sum + items.reduce((s, i) => s + i.subtotal, 0);
+      }, 0);
+      const cost = productOrders.reduce((sum, o) => {
+        const items = (o.products || []).filter(op => op.productId === p.id);
+        return sum + items.reduce((s, i) => s + (getImportPrice(i.productId, i.importPrice) * i.quantity), 0);
+      }, 0);
+      const profit = revenue - cost;
+      const quantitySold = productOrders.reduce((sum, o) => {
+        const items = (o.products || []).filter(op => op.productId === p.id);
+        return sum + items.reduce((s, i) => s + i.quantity, 0);
+      }, 0);
+      return { ...p, revenue, profit, quantitySold };
+    }).filter(p => p.revenue > 0).sort((a, b) => b.profit - a.profit).slice(0, 5);
 
     // Monthly data for the last 12 months for better comparison
     const monthlyData = Array.from({ length: 12 }).map((_, i) => {
@@ -59,7 +99,7 @@ export function Reports({ data, updateData }: ReportsProps) {
 
       const revenue = monthOrders.reduce((sum, o) => sum + o.total, 0);
       const cost = monthOrders.reduce((sum, o) => {
-        return sum + o.products.reduce((s, p) => s + (getImportPrice(p.productId, p.importPrice) * p.quantity), 0);
+        return sum + (o.products || []).reduce((s, p) => s + (getImportPrice(p.productId, p.importPrice) * p.quantity), 0);
       }, 0);
       const profit = revenue - cost;
 
@@ -67,6 +107,8 @@ export function Reports({ data, updateData }: ReportsProps) {
         name: monthLabel,
         revenue,
         profit,
+        cost,
+        margin: revenue > 0 ? (profit / revenue) * 100 : 0,
         orders: monthOrders.length
       };
     });
@@ -83,21 +125,21 @@ export function Reports({ data, updateData }: ReportsProps) {
       : 0;
 
     // Best selling products
-    const productSales = data.products.map(p => {
-      const quantitySold = data.orders.reduce((sum, o) => {
-        const item = o.products.find(item => item.productId === p.id);
+    const productSales = (data.products || []).map(p => {
+      const quantitySold = (data.orders || []).reduce((sum, o) => {
+        const item = (o.products || []).find(item => item.productId === p.id);
         return sum + (item?.quantity || 0);
       }, 0);
       return { ...p, quantitySold };
     }).sort((a, b) => b.quantitySold - a.quantitySold).slice(0, 5);
 
     // Category distribution
-    const categoryData = data.categories.map(cat => {
-      const value = data.products
+    const categoryData = (data.categories || []).map(cat => {
+      const value = (data.products || [])
         .filter(p => p.category === cat.name)
         .reduce((sum, p) => {
-          const sold = data.orders.reduce((s, o) => {
-            const item = o.products.find(item => item.productId === p.id);
+          const sold = (data.orders || []).reduce((s, o) => {
+            const item = (o.products || []).find(item => item.productId === p.id);
             return s + (item?.quantity || 0);
           }, 0);
           return sum + sold;
@@ -109,15 +151,17 @@ export function Reports({ data, updateData }: ReportsProps) {
       totalRevenue,
       totalProfit,
       profitMargin,
-      totalOrders: data.orders.length,
-      totalProductsSold: data.orders.reduce((sum, o) => sum + o.products.reduce((s, p) => s + p.quantity, 0), 0),
+      totalOrders: (data.orders || []).length,
+      totalProductsSold: (data.orders || []).reduce((sum, o) => sum + (o.products || []).reduce((s, p) => s + p.quantity, 0), 0),
       monthlyData,
       currentMonth,
       lastMonth,
       revenueGrowth,
       profitGrowth,
       productSales,
-      categoryData
+      profitableProducts,
+      categoryData,
+      categoryProfitData
     };
   }, [data]);
 
@@ -159,33 +203,18 @@ export function Reports({ data, updateData }: ReportsProps) {
           </div>
         </div>
 
-        <div className="bg-white rounded-xl p-4 sm:p-5 shadow-sm border border-gray-100 border-l-4 border-l-amber-500">
-          <div className="flex justify-between items-start">
-            <div>
-              <p className="text-xs sm:text-sm font-medium text-gray-500 mb-1">Đơn hàng</p>
-              <h3 className="text-lg sm:text-2xl font-bold text-gray-900">{stats.totalOrders}</h3>
-            </div>
-            <div className="p-1.5 sm:p-2 bg-amber-50 rounded-lg text-amber-600">
-              <BarChart3 size={18} />
-            </div>
-          </div>
-          <div className="mt-3 sm:mt-4 text-[10px] sm:text-xs text-gray-500 truncate">
-            TB: {formatCurrency(stats.totalRevenue / (stats.totalOrders || 1))}
-          </div>
-        </div>
-
         <div className="bg-white rounded-xl p-4 sm:p-5 shadow-sm border border-gray-100 border-l-4 border-l-indigo-500">
           <div className="flex justify-between items-start">
             <div>
-              <p className="text-xs sm:text-sm font-medium text-gray-500 mb-1">Đã bán</p>
-              <h3 className="text-lg sm:text-2xl font-bold text-gray-900">{stats.totalProductsSold}</h3>
+              <p className="text-xs sm:text-sm font-medium text-gray-500 mb-1">Tỷ suất LN</p>
+              <h3 className="text-lg sm:text-2xl font-bold text-gray-900">{stats.profitMargin.toFixed(1)}%</h3>
             </div>
             <div className="p-1.5 sm:p-2 bg-indigo-50 rounded-lg text-indigo-600">
-              <Package size={18} />
+              <PieChartIcon size={18} />
             </div>
           </div>
           <div className="mt-3 sm:mt-4 text-[10px] sm:text-xs text-gray-500">
-            {data.products.length} SP kho
+            Trung bình mỗi đơn
           </div>
         </div>
       </div>
@@ -196,7 +225,7 @@ export function Reports({ data, updateData }: ReportsProps) {
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-2">
               <Calendar className="text-blue-600" size={20} />
-              <h3 className="text-base sm:text-lg font-bold text-gray-900">Doanh thu & Lợi nhuận</h3>
+              <h3 className="text-base sm:text-lg font-bold text-gray-900">Biểu đồ Doanh thu & Lợi nhuận</h3>
             </div>
           </div>
           <div className="h-64 sm:h-80 w-full">
@@ -213,7 +242,7 @@ export function Reports({ data, updateData }: ReportsProps) {
                   axisLine={false} 
                   tickLine={false} 
                   tick={{ fill: '#64748b', fontSize: 10 }}
-                  tickFormatter={(value) => `${value / 1000000}M`}
+                  tickFormatter={(value) => `${(value / 1000000).toFixed(0)}M`}
                   width={35}
                 />
                 <Tooltip 
@@ -231,39 +260,77 @@ export function Reports({ data, updateData }: ReportsProps) {
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-6">
           <div className="flex items-center gap-2 mb-6">
             <PieChartIcon className="text-indigo-600" size={20} />
-            <h3 className="text-base sm:text-lg font-bold text-gray-900">Cơ cấu danh mục</h3>
+            <h3 className="text-base sm:text-lg font-bold text-gray-900">Lợi nhuận theo danh mục</h3>
           </div>
           <div className="h-56 sm:h-64 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
-                  data={stats.categoryData}
+                  data={stats.categoryProfitData}
                   cx="50%"
                   cy="50%"
                   innerRadius={50}
                   outerRadius={70}
                   paddingAngle={5}
-                  dataKey="value"
+                  dataKey="profit"
                 >
-                  {stats.categoryData.map((entry, index) => (
+                  {stats.categoryProfitData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
-                <Tooltip />
+                <Tooltip formatter={(value: number) => formatCurrency(value)} />
               </PieChart>
             </ResponsiveContainer>
           </div>
           <div className="mt-4 space-y-2">
-            {stats.categoryData.slice(0, 4).map((cat, i) => (
+            {stats.categoryProfitData.slice(0, 4).map((cat, i) => (
               <div key={cat.name} className="flex items-center justify-between text-xs sm:text-sm">
                 <div className="flex items-center gap-2">
                   <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }}></div>
                   <span className="text-gray-600 truncate max-w-[100px]">{cat.name}</span>
                 </div>
-                <span className="font-semibold text-gray-900">{cat.value} SP</span>
+                <span className="font-semibold text-emerald-600">{formatCurrency(cat.profit)}</span>
               </div>
             ))}
           </div>
+        </div>
+      </div>
+
+      {/* Monthly Breakdown Table */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="p-4 sm:p-6 border-b border-gray-100 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <BarChart3 className="text-blue-600" size={20} />
+            <h3 className="text-base sm:text-lg font-bold text-gray-900">Bảng chi tiết hàng tháng</h3>
+          </div>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left">
+            <thead>
+              <tr className="bg-gray-50 text-[10px] sm:text-xs font-bold text-gray-500 uppercase tracking-wider">
+                <th className="px-4 sm:px-6 py-3">Tháng</th>
+                <th className="px-4 sm:px-6 py-3 text-right">Doanh thu</th>
+                <th className="px-4 sm:px-6 py-3 text-right text-rose-500">Giá vốn</th>
+                <th className="px-4 sm:px-6 py-3 text-right text-emerald-600">Lợi nhuận</th>
+                <th className="px-4 sm:px-6 py-3 text-right">Tỷ suất</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {stats.monthlyData.slice().reverse().filter(m => m.revenue > 0).map((month) => (
+                <tr key={month.name} className="hover:bg-gray-50 transition-colors">
+                  <td className="px-4 sm:px-6 py-4 text-xs sm:text-sm font-medium text-gray-900">{month.name}</td>
+                  <td className="px-4 sm:px-6 py-4 text-xs sm:text-sm text-right font-bold">{formatCurrency(month.revenue)}</td>
+                  <td className="px-4 sm:px-6 py-4 text-xs sm:text-sm text-right text-gray-500">{formatCurrency(month.cost)}</td>
+                  <td className="px-4 sm:px-6 py-4 text-xs sm:text-sm text-right font-bold text-emerald-600">{formatCurrency(month.profit)}</td>
+                  <td className="px-4 sm:px-6 py-4 text-xs sm:text-sm text-right">
+                    <span className="px-2 py-1 bg-emerald-50 text-emerald-700 rounded-md font-bold">
+                      {month.margin.toFixed(1)}%
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
 
@@ -271,24 +338,24 @@ export function Reports({ data, updateData }: ReportsProps) {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-6">
           <div className="flex items-center gap-2 mb-6">
-            <Package className="text-blue-600" size={20} />
-            <h3 className="text-base sm:text-lg font-bold text-gray-900">Sản phẩm bán chạy</h3>
+            <TrendingUp className="text-emerald-600" size={20} />
+            <h3 className="text-base sm:text-lg font-bold text-gray-900">Sản phẩm lợi nhuận cao</h3>
           </div>
           <div className="space-y-3 sm:space-y-4">
-            {stats.productSales.map((product, i) => (
+            {stats.profitableProducts.map((product, i) => (
               <div key={product.id} className="flex items-center justify-between p-2 sm:p-3 rounded-lg hover:bg-gray-50 transition-colors">
                 <div className="flex items-center gap-2 sm:gap-3">
-                  <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 font-bold text-xs sm:text-sm">
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold text-xs sm:text-sm">
                     {i + 1}
                   </div>
                   <div className="max-w-[120px] sm:max-w-none">
                     <p className="text-xs sm:text-sm font-bold text-gray-900 truncate">{product.name}</p>
-                    <p className="text-[10px] sm:text-xs text-gray-500 truncate">{product.category}</p>
+                    <p className="text-[10px] sm:text-xs text-gray-500 truncate">Bán: {product.quantitySold} cái</p>
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="text-xs sm:text-sm font-bold text-gray-900">{product.quantitySold} cái</p>
-                  <p className="text-[10px] sm:text-xs text-emerald-600 font-medium">{formatCurrency(product.price)}</p>
+                  <p className="text-xs sm:text-sm font-bold text-emerald-600">+{formatCurrency(product.profit)}</p>
+                  <p className="text-[10px] sm:text-xs text-gray-400 font-medium">DT: {formatCurrency(product.revenue)}</p>
                 </div>
               </div>
             ))}

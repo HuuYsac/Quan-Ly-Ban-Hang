@@ -26,6 +26,7 @@ import Warranty from './pages/Warranty';
 import Repairs from './pages/Repairs';
 import { useAppStore } from './hooks/useAppStore';
 import { Auth } from './pages/Auth';
+import { PublicWarrantyCheck } from './pages/PublicWarrantyCheck';
 import { auth } from './firebase';
 import { onAuthStateChanged, User, sendEmailVerification } from 'firebase/auth';
 import { doc, getDoc, getDocFromServer } from 'firebase/firestore';
@@ -57,6 +58,7 @@ export default function App() {
   const [authLoading, setAuthLoading] = useState(true);
   const [resending, setResending] = useState(false);
   const [resendMessage, setResendMessage] = useState('');
+  const [showPublicWarranty, setShowPublicWarranty] = useState(false);
 
   useEffect(() => {
     const testConnection = async () => {
@@ -133,7 +135,10 @@ export default function App() {
   }
 
   if (!user) {
-    return <Auth />;
+    if (showPublicWarranty) {
+      return <PublicWarrantyCheck onBack={() => setShowPublicWarranty(false)} />;
+    }
+    return <Auth onShowWarrantyCheck={() => setShowPublicWarranty(true)} />;
   }
 
   if (!user.emailVerified) {

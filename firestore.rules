@@ -72,6 +72,14 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    // Specific rule for orders to allow public warranty check
+    match /orders/{orderId} {
+      // Allow unauthenticated list for public warranty check
+      // We limit the query to 50 results to prevent massive scraping
+      allow list: if request.auth == null && request.query.limit <= 50;
+      allow read, write: if isApproved();
+    }
+
     // Default rule for other collections
     match /{allPaths=**} {
       allow read, write: if isApproved();

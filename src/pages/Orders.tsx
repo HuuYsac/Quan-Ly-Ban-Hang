@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { AppData, Order, OrderItem } from '../types';
 import { formatCurrency, numberToVietnameseWords } from '../lib/utils';
 import { ShoppingCart, Plus, Search, Eye, Printer, Trash2, X, PlusCircle, Edit } from 'lucide-react';
@@ -16,6 +16,7 @@ interface OrdersProps {
 export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAdmin }: OrdersProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('Tất cả');
+  const [monthFilter, setMonthFilter] = useState<string>('Tất cả');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isAddCustomerModalOpen, setIsAddCustomerModalOpen] = useState(false);
   const [isAddProductModalOpen, setIsAddProductModalOpen] = useState(false);
@@ -74,11 +75,26 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
     const matchesSearch = o.id.toLowerCase().includes(searchTerm.toLowerCase()) || 
       o.customerName.toLowerCase().includes(searchTerm.toLowerCase());
     
+    const matchesMonth = monthFilter === 'Tất cả' || o.date.startsWith(monthFilter);
+    
+    if (!matchesMonth) return false;
+
     if (statusFilter === 'Tất cả') return matchesSearch;
     if (statusFilter === 'Đang xử lý') return matchesSearch && (o.status === 'Mới' || o.status === 'Đang xử lý');
     if (statusFilter === 'Hoàn thành') return matchesSearch && (o.status === 'Hoàn thành' || o.status === 'Đã giao');
     return matchesSearch && o.status === statusFilter;
   });
+
+  // Get unique months from orders for the filter
+  const availableMonths = useMemo(() => {
+    const months = new Set<string>();
+    data.orders.forEach(o => {
+      if (o.date) {
+        months.add(o.date.substring(0, 7)); // YYYY-MM
+      }
+    });
+    return Array.from(months).sort().reverse();
+  }, [data.orders]);
 
   const handleDelete = async (id: string) => {
     const orderToDelete = data.orders.find(o => o.id === id);
@@ -533,6 +549,7 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
           ...oldOrder,
           customerId: customer.id,
           customerName: customer.name,
+          customerPhone: customer.phone,
           products: finalItems,
           total,
           status: formData.paymentStatus === 'Đã thanh toán' ? 'Chờ đóng gói' : 'Đang xử lý',
@@ -555,6 +572,7 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
           id: newOrderId,
           customerId: customer.id,
           customerName: customer.name,
+          customerPhone: customer.phone,
           date: now.toISOString().split('T')[0],
           time: now.toTimeString().split(' ')[0].substring(0, 5),
           products: finalItems,
@@ -622,17 +640,36 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
       <div className="animate-in fade-in duration-500 print:hidden">
         {/* Actions & Search */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-6">
-        <div className="p-5 border-b border-gray-100 flex flex-col sm:flex-row justify-between items-center gap-4">
-          <div className="relative w-full sm:w-96">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-            <input 
-              type="text" 
-              placeholder="Tìm kiếm theo mã đơn, khách hàng..." 
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
-            />
+        <div className="p-5 border-b border-gray-100 flex flex-col lg:flex-row justify-between items-center gap-4">
+          <div className="flex flex-col sm:flex-row items-center gap-4 w-full lg:w-auto">
+            <div className="relative w-full sm:w-64">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+              <input 
+                type="text" 
+                placeholder="Tìm kiếm..." 
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm"
+              />
+            </div>
+            
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <span className="text-xs font-bold text-gray-500 uppercase whitespace-nowrap">Tháng:</span>
+              <select
+                value={monthFilter}
+                onChange={(e) => setMonthFilter(e.target.value)}
+                className="flex-1 sm:flex-none px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm bg-white"
+              >
+                <option value="Tất cả">Tất cả tháng</option>
+                {availableMonths.map(m => (
+                  <option key={m} value={m}>
+                    {m.split('-').reverse().join('/')}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
+
           <button 
             onClick={() => {
               setEditingId(null);
