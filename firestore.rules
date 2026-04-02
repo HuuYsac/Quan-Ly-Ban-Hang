@@ -72,11 +72,17 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    // Specific rule for customers to allow public warranty search by phone
+    match /customers/{customerId} {
+      // Allow list for public warranty search (limit 10)
+      allow list: if request.query.limit <= 10;
+      allow read, write: if isApproved();
+    }
+
     // Specific rule for orders to allow public warranty check
     match /orders/{orderId} {
-      // Allow unauthenticated list for public warranty check
-      // We limit the query to 50 results to prevent massive scraping
-      allow list: if request.auth == null && request.query.limit <= 50;
+      // Allow list for public warranty check (limit 50)
+      allow list: if request.query.limit <= 50;
       allow read, write: if isApproved();
     }
 

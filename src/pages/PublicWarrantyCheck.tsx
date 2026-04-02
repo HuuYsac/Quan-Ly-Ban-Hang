@@ -26,36 +26,98 @@ export function PublicWarrantyCheck({ onBack }: { onBack?: () => void }) {
     setResults([]);
 
     try {
+      const customersRef = collection(db, 'customers');
       const ordersRef = collection(db, 'orders');
       
-      // Query by phone
-      let q = query(
+      const rawPhone = formData.phone.trim();
+      const normalizedPhone = rawPhone.replace(/[\s.-]/g, '');
+      
+      // Create variations of the phone number to increase match chance
+      const phoneVariations = [rawPhone];
+      if (normalizedPhone !== rawPhone) phoneVariations.push(normalizedPhone);
+      
+      // If starts with 0, try without 0
+      if (normalizedPhone.startsWith('0')) {
+        phoneVariations.push(normalizedPhone.substring(1));
+        phoneVariations.push('+84' + normalizedPhone.substring(1));
+      }
+      // If starts with +84, try with 0
+      if (normalizedPhone.startsWith('+84')) {
+        phoneVariations.push('0' + normalizedPhone.substring(3));
+      }
+      
+      const uniquePhones = Array.from(new Set(phoneVariations)).filter(p => p.length >= 8);
+
+      // 1. Find the customer(s) by phone number variations
+      const customerQuery = query(
+        customersRef,
+        where('phone', 'in', uniquePhones),
+        limit(10)
+      );
+      const customerSnapshot = await getDocs(customerQuery);
+      
+      let customerIds: string[] = [];
+      customerSnapshot.forEach(doc => {
+        customerIds.push(doc.id);
+      });
+
+      // 2. Query orders by customer IDs AND by phone variations
+      const allOrders: any[] = [];
+      const orderDocIds = new Set<string>();
+
+      // Query by customer IDs if found
+      if (customerIds.length > 0) {
+        const ordersByCustomerQuery = query(
+          ordersRef,
+          where('customerId', 'in', customerIds),
+          limit(50)
+        );
+        const ordersSnapshot = await getDocs(ordersByCustomerQuery);
+        ordersSnapshot.forEach(doc => {
+          if (!orderDocIds.has(doc.id)) {
+            allOrders.push({ id: doc.id, ...doc.data() });
+            orderDocIds.add(doc.id);
+          }
+        });
+      }
+
+      // Also query by customerPhone field (fallback/newer orders)
+      const ordersByPhoneQuery = query(
         ordersRef,
-        where('customerPhone', '==', formData.phone.trim()),
+        where('customerPhone', 'in', uniquePhones),
         limit(50)
       );
-
-      let querySnapshot = await getDocs(q);
+      const phoneOrdersSnapshot = await getDocs(ordersByPhoneQuery);
+      phoneOrdersSnapshot.forEach(doc => {
+        if (!orderDocIds.has(doc.id)) {
+          allOrders.push({ id: doc.id, ...doc.data() });
+          orderDocIds.add(doc.id);
+        }
+      });
       
-      // If no results by phone (maybe old order), try by name if provided
-      if (querySnapshot.empty && formData.customerName) {
-        q = query(
+      // If still no results and name is provided, try by name
+      if (allOrders.length === 0 && formData.customerName) {
+        const nameQuery = query(
           ordersRef,
           where('customerName', '==', formData.customerName.trim()),
           limit(50)
         );
-        querySnapshot = await getDocs(q);
+        const nameSnapshot = await getDocs(nameQuery);
+        nameSnapshot.forEach(doc => {
+          if (!orderDocIds.has(doc.id)) {
+            allOrders.push({ id: doc.id, ...doc.data() });
+            orderDocIds.add(doc.id);
+          }
+        });
       }
 
       const foundItems: any[] = [];
       const today = new Date();
 
-      querySnapshot.forEach((doc) => {
-        const orderData = doc.data();
-        
+      allOrders.forEach((orderData) => {
         // Filter products in this order
         const products = (orderData.products || []).filter((p: any) => {
-          // If service tag is provided, it must match
+          // If service tag is provided, it must match (partial match)
           if (formData.serviceTag && p.serviceTag) {
             return p.serviceTag.toLowerCase().includes(formData.serviceTag.trim().toLowerCase());
           }
@@ -87,7 +149,7 @@ export function PublicWarrantyCheck({ onBack }: { onBack?: () => void }) {
         foundItems.sort((a, b) => new Date(b.product.purchaseDate).getTime() - new Date(a.product.purchaseDate).getTime());
         setResults(foundItems);
       } else {
-        setError('Không tìm thấy thông tin bảo hành. Vui lòng kiểm tra lại thông tin nhập vào.');
+        setError('Không tìm thấy thông tin bảo hành. Vui lòng kiểm tra lại số điện thoại hoặc thông tin nhập vào.');
       }
     } catch (err: any) {
       console.error('Error searching warranty:', err);
