@@ -270,16 +270,46 @@ export function PublicWarrantyCheck({ onBack }: { onBack?: () => void }) {
                 <ShieldCheck className="text-emerald-500" size={18} />
                 Tìm thấy {results.length} sản phẩm
               </h3>
-              
               <div className="space-y-6">
                 {results.map((res, idx) => (
                   <div key={idx} className="space-y-4 pb-6 border-b border-slate-200 last:border-0 last:pb-0">
+                    {/* Customer Info Section */}
+                    <div className="bg-blue-50/50 p-4 rounded-xl border border-blue-100 space-y-2">
+                      <div className="flex items-center gap-2 text-blue-800 mb-1">
+                        <User size={14} className="text-blue-600" />
+                        <span className="text-[10px] font-bold uppercase tracking-wider">Thông tin khách hàng</span>
+                      </div>
+                      <div className="grid grid-cols-1 gap-1">
+                        <p className="text-sm font-bold text-gray-900 flex justify-between">
+                          <span className="text-gray-500 font-medium">Họ tên:</span>
+                          {res.order.customerName}
+                        </p>
+                        <p className="text-sm font-bold text-gray-900 flex justify-between">
+                          <span className="text-gray-500 font-medium">SĐT:</span>
+                          {res.order.customerPhone}
+                        </p>
+                        {res.order.customerEmail && (
+                          <p className="text-sm font-bold text-gray-900 flex justify-between">
+                            <span className="text-gray-500 font-medium">Email:</span>
+                            {res.order.customerEmail}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Product Info Section */}
                     <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-                      <p className="text-xs text-gray-500 mb-1">Sản phẩm</p>
-                      <p className="font-bold text-gray-900">{res.product.name}</p>
+                      <div className="flex items-center gap-2 text-gray-500 mb-2">
+                        <Laptop size={14} />
+                        <span className="text-[10px] font-bold uppercase tracking-wider">Thông tin sản phẩm</span>
+                      </div>
+                      <p className="font-bold text-gray-900 text-base">{res.product.name}</p>
                       <div className="mt-2 flex items-center gap-2">
-                        <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded uppercase">
-                          SN: {res.product.serviceTag}
+                        <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded uppercase border border-blue-100">
+                          SN: {res.product.serviceTag || 'N/A'}
+                        </span>
+                        <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded uppercase border border-emerald-100">
+                          BH: {res.product.warrantyMonths || 12} tháng
                         </span>
                       </div>
                     </div>
