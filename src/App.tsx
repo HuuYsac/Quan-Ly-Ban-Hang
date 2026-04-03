@@ -32,6 +32,7 @@ import { onAuthStateChanged, User, sendEmailVerification } from 'firebase/auth';
 import { doc, getDoc, getDocFromServer } from 'firebase/firestore';
 import { db } from './firebase';
 import { Mail, LogOut, RefreshCw, ShieldAlert, Sparkles } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 
 function AccessDenied() {
   return (
@@ -305,7 +306,7 @@ export default function App() {
   const { title, subtitle } = getPageTitle();
 
   return (
-    <div className="flex min-h-screen bg-slate-50 font-sans text-gray-900 overflow-x-hidden">
+    <div className="flex min-h-screen bg-slate-50 text-gray-900 overflow-x-hidden">
       <Sidebar 
         activePage={activePage} 
         setActivePage={(page) => {
@@ -326,10 +327,22 @@ export default function App() {
           subtitle={subtitle} 
           onNavigate={setActivePage} 
           onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
+          data={data}
         />
         
         <main className="flex-1 p-4 md:p-8 max-w-7xl mx-auto w-full print:p-0">
-          {renderPage()}
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activePage}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
+              className="w-full"
+            >
+              {renderPage()}
+            </motion.div>
+          </AnimatePresence>
         </main>
       </div>
     </div>

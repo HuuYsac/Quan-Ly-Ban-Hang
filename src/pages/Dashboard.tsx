@@ -27,7 +27,8 @@ import {
   Phone,
   Mail,
   MapPin,
-  Calendar
+  Calendar,
+  Sparkles
 } from 'lucide-react';
 import { 
   BarChart, 
@@ -40,6 +41,8 @@ import {
   Cell
 } from 'recharts';
 import { subDays, format, isSameDay, parseISO } from 'date-fns';
+
+import { motion, AnimatePresence } from 'motion/react';
 
 interface DashboardProps {
   data: AppData;
@@ -138,21 +141,40 @@ export function Dashboard({ data, onNavigate, isAdmin }: DashboardProps) {
   }, [data]);
 
   return (
-    <div className="animate-in fade-in duration-500 space-y-8 pb-8">
+    <div className="space-y-8 pb-8">
       {/* Welcome Section */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <motion.div 
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex flex-col md:flex-row md:items-center justify-between gap-4"
+      >
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Chào buổi sáng, Hữu!</h1>
-          <p className="text-gray-500 text-sm">Đây là những gì đang diễn ra tại cửa hàng của bạn hôm nay.</p>
+          <h1 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight">
+            Chào buổi sáng, <span className="text-indigo-600">Hữu!</span>
+          </h1>
+          <p className="text-slate-500 text-sm font-medium">Đây là những gì đang diễn ra tại cửa hàng của bạn hôm nay.</p>
         </div>
-        <div className="flex items-center gap-2 text-sm font-medium text-gray-500 bg-white px-4 py-2 rounded-xl border border-gray-100 shadow-sm">
-          <Clock size={16} className="text-blue-500" />
-          {format(new Date(), 'eeee, dd/MM/yyyy')}
+        <div className="flex items-center gap-3 text-xs font-bold text-slate-500 bg-white/50 backdrop-blur-sm px-4 py-2.5 rounded-2xl border border-slate-100 shadow-sm">
+          <Calendar size={16} className="text-indigo-500" />
+          <span className="uppercase tracking-wider">{format(new Date(), 'eeee, dd/MM/yyyy')}</span>
         </div>
-      </div>
+      </motion.div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+      <motion.div 
+        initial="hidden"
+        animate="visible"
+        variants={{
+          hidden: { opacity: 0 },
+          visible: {
+            opacity: 1,
+            transition: {
+              staggerChildren: 0.1
+            }
+          }
+        }}
+        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6"
+      >
         {isAdmin && stats.pendingUsersCount > 0 ? (
           <StatCard 
             title="Thành viên mới" 
@@ -165,7 +187,7 @@ export function Dashboard({ data, onNavigate, isAdmin }: DashboardProps) {
           />
         ) : (
           <StatCard 
-            title="Doanh thu" 
+            title="Doanh thu ngày" 
             value={formatCurrency(stats.todayRevenue)} 
             icon={DollarSign} 
             trend="+12.5%" 
@@ -175,7 +197,7 @@ export function Dashboard({ data, onNavigate, isAdmin }: DashboardProps) {
           />
         )}
         <StatCard 
-          title="Đơn hàng" 
+          title="Đơn hàng mới" 
           value={stats.todayOrdersCount.toString()} 
           icon={ClipboardList} 
           trend="+2 đơn" 
@@ -201,24 +223,35 @@ export function Dashboard({ data, onNavigate, isAdmin }: DashboardProps) {
           color="amber"
           onClick={() => onNavigate('products')}
         />
-      </div>
+      </motion.div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Performance Chart */}
-        <div className="lg:col-span-2 bg-white rounded-2xl p-4 sm:p-6 shadow-sm border border-gray-100">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-2">
-              <TrendingUp className="text-blue-600" size={20} />
-              <h3 className="text-lg font-bold text-gray-900">Hiệu suất 7 ngày</h3>
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.2 }}
+          className="lg:col-span-2 glass-card p-6"
+        >
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                <TrendingUp size={20} />
+              </div>
+              <div>
+                <h3 className="text-lg font-black text-slate-900 tracking-tight">Hiệu suất doanh thu</h3>
+                <p className="text-xs text-slate-400 font-medium uppercase tracking-widest">Thống kê 7 ngày gần nhất</p>
+              </div>
             </div>
-            <button 
+            <motion.button 
+              whileHover={{ x: 3 }}
               onClick={() => onNavigate('reports')}
-              className="text-sm text-blue-600 font-bold hover:underline flex items-center gap-1"
+              className="text-xs text-indigo-600 font-bold hover:underline flex items-center gap-1 uppercase tracking-wider"
             >
-              Chi tiết <ChevronRight size={16} />
-            </button>
+              Chi tiết báo cáo <ChevronRight size={14} />
+            </motion.button>
           </div>
-          <div className="h-64 w-full">
+          <div className="h-72 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={stats.chartData}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
@@ -226,213 +259,246 @@ export function Dashboard({ data, onNavigate, isAdmin }: DashboardProps) {
                   dataKey="name" 
                   axisLine={false} 
                   tickLine={false} 
-                  tick={{ fill: '#64748b', fontSize: 10 }} 
+                  tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 600 }} 
                 />
-                <YAxis 
-                  hide
-                />
+                <YAxis hide />
                 <Tooltip 
-                  cursor={{ fill: '#f8fafc' }}
-                  contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
-                  formatter={(value: number) => formatCurrency(value)}
+                  cursor={{ fill: '#f8fafc', radius: 8 }}
+                  contentStyle={{ 
+                    borderRadius: '16px', 
+                    border: 'none', 
+                    boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)',
+                    padding: '12px'
+                  }}
+                  itemStyle={{ fontWeight: 800, color: '#1e293b' }}
+                  formatter={(value: number) => [formatCurrency(value), 'Doanh thu']}
                 />
-                <Bar dataKey="revenue" radius={[6, 6, 0, 0]}>
+                <Bar dataKey="revenue" radius={[6, 6, 0, 0]} barSize={32}>
                   {stats.chartData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={index === 6 ? '#3b82f6' : '#cbd5e1'} />
+                    <Cell 
+                      key={`cell-${index}`} 
+                      fill={index === 6 ? '#4f46e5' : '#e2e8f0'} 
+                      className="transition-all duration-300 hover:fill-indigo-400"
+                    />
                   ))}
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
           </div>
-        </div>
+        </motion.div>
 
         {/* Quick Actions */}
-        <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm border border-gray-100">
-          <h3 className="text-lg font-bold text-gray-900 mb-6">Thao tác nhanh</h3>
-          <div className="grid grid-cols-3 gap-3 sm:gap-4">
-            <QuickAction 
-              icon={FileText} 
-              title="Tạo đơn" 
-              color="blue"
-              onClick={() => onNavigate('orders')} 
-            />
-            <QuickAction 
-              icon={UserPlus} 
-              title="+ Khách" 
-              color="emerald"
-              onClick={() => onNavigate('customers')} 
-            />
-            <QuickAction 
-              icon={PlusCircle} 
-              title="+ SP" 
-              color="amber"
-              onClick={() => onNavigate('products')} 
-            />
-            <QuickAction 
-              icon={Wrench} 
-              title="Sửa chữa" 
-              color="rose"
-              onClick={() => onNavigate('repairs')} 
-            />
-            <QuickAction 
-              icon={HeartHandshake} 
-              title="CRM" 
-              color="indigo"
-              onClick={() => onNavigate('crm')} 
-            />
-            <QuickAction 
-              icon={ShieldCheck} 
-              title="Bảo hành" 
-              color="emerald"
-              onClick={() => onNavigate('warranty')} 
-            />
+        <motion.div 
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.3 }}
+          className="glass-card p-6"
+        >
+          <div className="flex items-center gap-3 mb-8">
+            <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
+              <Sparkles size={20} />
+            </div>
+            <h3 className="text-lg font-black text-slate-900 tracking-tight">Thao tác nhanh</h3>
           </div>
-          <div 
+          
+          <div className="grid grid-cols-3 gap-3">
+            <QuickAction icon={FileText} title="Tạo đơn" color="blue" onClick={() => onNavigate('orders')} />
+            <QuickAction icon={UserPlus} title="+ Khách" color="emerald" onClick={() => onNavigate('customers')} />
+            <QuickAction icon={PlusCircle} title="+ SP" color="amber" onClick={() => onNavigate('products')} />
+            <QuickAction icon={Wrench} title="Sửa chữa" color="rose" onClick={() => onNavigate('repairs')} />
+            <QuickAction icon={HeartHandshake} title="CRM" color="indigo" onClick={() => onNavigate('crm')} />
+            <QuickAction icon={ShieldCheck} title="Bảo hành" color="emerald" onClick={() => onNavigate('warranty')} />
+          </div>
+
+          <motion.div 
+            whileHover={{ scale: 1.02 }}
             onClick={() => onNavigate('orders')}
-            className="mt-6 p-4 bg-slate-50 rounded-xl border border-slate-100 hover:shadow-md transition-all cursor-pointer group"
+            className="mt-8 p-5 bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl shadow-xl shadow-slate-900/20 cursor-pointer group overflow-hidden relative"
           >
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 group-hover:scale-110 transition-transform">
+            <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-white/5 rounded-full blur-2xl group-hover:bg-white/10 transition-colors"></div>
+            <div className="flex items-center gap-3 mb-3 relative z-10">
+              <div className="w-8 h-8 rounded-xl bg-white/10 flex items-center justify-center text-white group-hover:scale-110 transition-transform">
                 <BarChart2 size={16} />
               </div>
-              <span className="text-sm font-bold text-slate-900 group-hover:text-blue-600 transition-colors">Tổng doanh thu</span>
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Tổng doanh thu hệ thống</span>
             </div>
-            <p className="text-xl font-black text-slate-900">{formatCurrency(stats.totalRevenue)}</p>
-            <p className="text-xs text-slate-500 mt-1">Dữ liệu từ các đơn đã thanh toán</p>
-          </div>
-        </div>
+            <p className="text-2xl font-black text-white tracking-tight relative z-10">{formatCurrency(stats.totalRevenue)}</p>
+            <div className="flex items-center gap-1 mt-2 relative z-10">
+              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
+              <p className="text-[10px] text-slate-400 font-medium">Dữ liệu thời gian thực từ các đơn đã thanh toán</p>
+            </div>
+          </motion.div>
+        </motion.div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Critical Alerts */}
         <div className="lg:col-span-1 space-y-6">
           {/* Low Stock */}
-          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+            className="glass-card p-6"
+          >
             <div 
-              className="flex items-center justify-between mb-4 cursor-pointer group"
+              className="flex items-center justify-between mb-6 cursor-pointer group"
               onClick={() => onNavigate('products')}
             >
-              <div className="flex items-center gap-2">
-                <AlertTriangle className="text-amber-500 group-hover:scale-110 transition-transform" size={20} />
-                <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider group-hover:text-blue-600 transition-colors">Sắp hết hàng</h3>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-500 flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <AlertTriangle size={20} />
+                </div>
+                <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest group-hover:text-indigo-600 transition-colors">Sắp hết hàng</h3>
               </div>
-              <span className="bg-amber-100 text-amber-700 text-xs font-bold px-2 py-0.5 rounded-full">
+              <span className="bg-amber-100 text-amber-700 text-[10px] font-black px-2 py-1 rounded-lg">
                 {stats.lowStockCount}
               </span>
             </div>
-            <div className="space-y-3">
+            <div className="space-y-2">
               {stats.lowStockProducts.length > 0 ? stats.lowStockProducts.map(p => (
-                <div 
+                <motion.div 
+                  whileHover={{ x: 4 }}
                   key={p.id} 
                   onClick={() => setViewProduct(p)}
-                  className="flex items-center justify-between p-2 hover:bg-slate-50 rounded-lg transition-colors cursor-pointer group"
+                  className="flex items-center justify-between p-3 hover:bg-slate-50 rounded-xl transition-all cursor-pointer group border border-transparent hover:border-slate-100"
                 >
-                  <span className="text-sm text-gray-700 font-medium truncate max-w-[150px] group-hover:text-blue-600">{p.name}</span>
-                  <span className="text-xs font-bold text-rose-600 bg-rose-50 px-2 py-1 rounded-md">Còn {p.stock}</span>
-                </div>
+                  <span className="text-xs text-slate-600 font-bold truncate max-w-[150px] group-hover:text-indigo-600">{p.name}</span>
+                  <span className="text-[10px] font-black text-rose-600 bg-rose-50 px-2 py-1 rounded-lg">Còn {p.stock}</span>
+                </motion.div>
               )) : (
-                <p className="text-xs text-gray-400 italic">Không có cảnh báo tồn kho.</p>
+                <p className="text-xs text-slate-400 italic text-center py-4">Tồn kho đang ở mức an toàn ✨</p>
               )}
             </div>
-          </div>
+          </motion.div>
 
           {/* Pending Repairs */}
-          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5 }}
+            className="glass-card p-6"
+          >
             <div 
-              className="flex items-center justify-between mb-4 cursor-pointer group"
+              className="flex items-center justify-between mb-6 cursor-pointer group"
               onClick={() => onNavigate('repairs')}
             >
-              <div className="flex items-center gap-2">
-                <Wrench className="text-blue-500 group-hover:scale-110 transition-transform" size={20} />
-                <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider group-hover:text-blue-600 transition-colors">Đang sửa chữa</h3>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-500 flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <Wrench size={20} />
+                </div>
+                <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest group-hover:text-indigo-600 transition-colors">Đang sửa chữa</h3>
               </div>
-              <span className="bg-blue-100 text-blue-700 text-xs font-bold px-2 py-0.5 rounded-full">
+              <span className="bg-indigo-100 text-indigo-700 text-[10px] font-black px-2 py-1 rounded-lg">
                 {stats.pendingRepairsCount}
               </span>
             </div>
-            <div className="space-y-3">
+            <div className="space-y-2">
               {stats.pendingRepairs.length > 0 ? stats.pendingRepairs.map(r => (
-                <div 
+                <motion.div 
+                  whileHover={{ x: 4 }}
                   key={r.id} 
                   onClick={() => setViewRepair(r)}
-                  className="flex items-center justify-between p-2 hover:bg-slate-50 rounded-lg transition-colors cursor-pointer group"
+                  className="flex items-center justify-between p-3 hover:bg-slate-50 rounded-xl transition-all cursor-pointer group border border-transparent hover:border-slate-100"
                 >
                   <div className="flex flex-col">
-                    <span className="text-sm text-gray-700 font-medium truncate max-w-[150px] group-hover:text-blue-600">{r.customerName}</span>
-                    <span className="text-[10px] text-gray-400">{r.productName}</span>
+                    <span className="text-xs text-slate-600 font-bold truncate max-w-[150px] group-hover:text-indigo-600">{r.customerName}</span>
+                    <span className="text-[10px] text-slate-400 font-medium">{r.productName}</span>
                   </div>
-                  <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded-md">Đang sửa</span>
-                </div>
+                  <span className="text-[10px] font-black text-indigo-600 bg-indigo-50 px-2 py-1 rounded-lg">ĐANG XỬ LÝ</span>
+                </motion.div>
               )) : (
-                <p className="text-xs text-gray-400 italic">Không có máy đang sửa.</p>
+                <p className="text-xs text-slate-400 italic text-center py-4">Không có máy đang sửa chữa.</p>
               )}
             </div>
-          </div>
+          </motion.div>
 
           {/* Expiring Warranties */}
-          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.6 }}
+            className="glass-card p-6"
+          >
             <div 
-              className="flex items-center justify-between mb-4 cursor-pointer group"
+              className="flex items-center justify-between mb-6 cursor-pointer group"
               onClick={() => onNavigate('customers')}
             >
-              <div className="flex items-center gap-2">
-                <ShieldAlert className="text-rose-500 group-hover:scale-110 transition-transform" size={20} />
-                <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider group-hover:text-blue-600 transition-colors">Bảo hành sắp hết</h3>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-rose-50 text-rose-500 flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <ShieldAlert size={20} />
+                </div>
+                <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest group-hover:text-indigo-600 transition-colors">Bảo hành sắp hết</h3>
               </div>
-              <span className="bg-rose-100 text-rose-700 text-xs font-bold px-2 py-0.5 rounded-full">
+              <span className="bg-rose-100 text-rose-700 text-[10px] font-black px-2 py-1 rounded-lg">
                 {stats.expiringWarrantiesCount}
               </span>
             </div>
-            <div className="space-y-3">
+            <div className="space-y-2">
               {stats.expiringWarranties.length > 0 ? stats.expiringWarranties.map((w, i) => (
-                <div 
+                <motion.div 
+                  whileHover={{ x: 4 }}
                   key={i} 
                   onClick={() => {
                     const customer = data.customers?.find(c => c.id === w.customerId);
                     if (customer) setViewCustomer(customer);
                   }}
-                  className="flex items-center justify-between p-2 hover:bg-slate-50 rounded-lg transition-colors cursor-pointer group"
+                  className="flex items-center justify-between p-3 hover:bg-slate-50 rounded-xl transition-all cursor-pointer group border border-transparent hover:border-slate-100"
                 >
                   <div className="flex flex-col">
-                    <span className="text-sm text-gray-700 font-medium truncate max-w-[150px] group-hover:text-blue-600">{w.customerName}</span>
-                    <span className="text-[10px] text-gray-400">{w.productName}</span>
+                    <span className="text-xs text-slate-600 font-bold truncate max-w-[150px] group-hover:text-indigo-600">{w.customerName}</span>
+                    <span className="text-[10px] text-slate-400 font-medium">{w.productName}</span>
                   </div>
-                  <span className="text-[10px] font-bold text-rose-600 bg-rose-50 px-2 py-1 rounded-md">Còn {w.daysRemaining} ngày</span>
-                </div>
+                  <span className="text-[10px] font-black text-rose-600 bg-rose-50 px-2 py-1 rounded-lg">CÒN {w.daysRemaining} NGÀY</span>
+                </motion.div>
               )) : (
-                <p className="text-xs text-gray-400 italic">Không có bảo hành sắp hết.</p>
+                <p className="text-xs text-slate-400 italic text-center py-4">Không có bảo hành sắp hết hạn.</p>
               )}
             </div>
-          </div>
+          </motion.div>
         </div>
 
         {/* Recent Activity */}
-        <div className="lg:col-span-2 bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-lg font-bold text-gray-900">Hoạt động gần đây</h2>
-            <button 
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.98 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.4 }}
+          className="lg:col-span-2 glass-card p-6"
+        >
+          <div className="flex justify-between items-center mb-8">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-slate-100 text-slate-600 flex items-center justify-center">
+                <Clock size={20} />
+              </div>
+              <h2 className="text-lg font-black text-slate-900 tracking-tight">Hoạt động gần đây</h2>
+            </div>
+            <motion.button 
+              whileHover={{ x: 3 }}
               onClick={() => onNavigate('orders')}
-              className="text-sm text-blue-600 font-bold hover:underline"
+              className="text-xs text-indigo-600 font-bold hover:underline uppercase tracking-wider"
             >
               Xem tất cả
-            </button>
+            </motion.button>
           </div>
-          <div className="space-y-1">
+          <div className="space-y-2">
             {(data.orders || []).slice(0, 6).map((order, idx) => (
-              <div 
+              <motion.div 
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.5 + (idx * 0.05) }}
                 key={order.id} 
                 onClick={() => setViewOrder(order)}
-                className="flex items-center gap-4 p-4 hover:bg-slate-50 rounded-xl transition-all group cursor-pointer"
+                className="flex items-center gap-4 p-4 hover:bg-slate-50/80 rounded-2xl transition-all group cursor-pointer border border-transparent hover:border-slate-100"
               >
-                <div className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 transition-transform group-hover:scale-110 ${
-                  order.paymentStatus === 'Đã thanh toán' ? 'bg-emerald-50 text-emerald-600' : 'bg-blue-50 text-blue-600'
+                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 transition-all group-hover:scale-110 group-hover:rotate-3 shadow-sm ${
+                  order.paymentStatus === 'Đã thanh toán' ? 'bg-emerald-50 text-emerald-600' : 'bg-indigo-50 text-indigo-600'
                 }`}>
                   <ClipboardList size={20} />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between mb-1">
                     <h4 
-                      className="text-sm font-bold text-gray-900 truncate hover:text-blue-600 transition-colors"
+                      className="text-sm font-bold text-slate-900 truncate group-hover:text-indigo-600 transition-colors"
                       onClick={(e) => {
                         e.stopPropagation();
                         const customer = data.customers?.find(c => c.id === order.customerId);
@@ -441,21 +507,21 @@ export function Dashboard({ data, onNavigate, isAdmin }: DashboardProps) {
                     >
                       {order.customerName}
                     </h4>
-                    <span className="text-sm font-black text-gray-900">{formatCurrency(order.total)}</span>
+                    <span className="text-sm font-black text-slate-900 tracking-tight">{formatCurrency(order.total)}</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <p className="text-xs text-gray-500 truncate">
-                      {order.paymentStatus === 'Đã thanh toán' ? 'Đã thanh toán đơn hàng' : 'Đặt hàng mới'} #{order.id}
+                    <p className="text-[11px] text-slate-400 font-medium truncate">
+                      {order.paymentStatus === 'Đã thanh toán' ? 'Đã thanh toán đơn hàng' : 'Đặt hàng mới'} <span className="text-slate-500 font-bold">#{order.id}</span>
                     </p>
-                    <span className="text-[10px] text-gray-400 font-medium">
-                      {order.date} {order.time}
+                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
+                      {order.date} • {order.time}
                     </span>
                   </div>
                 </div>
-              </div>
+              </motion.div>
             ))}
           </div>
-        </div>
+        </motion.div>
       </div>
 
       {/* Modals */}
@@ -876,50 +942,67 @@ export function Dashboard({ data, onNavigate, isAdmin }: DashboardProps) {
 
 function StatCard({ title, value, icon: Icon, trend, trendUp, color, onClick }: any) {
   const colorMap: Record<string, string> = {
-    blue: 'bg-blue-500 shadow-blue-200',
-    indigo: 'bg-indigo-500 shadow-indigo-200',
-    emerald: 'bg-emerald-500 shadow-emerald-200',
-    amber: 'bg-amber-500 shadow-amber-200',
+    blue: 'bg-blue-500 shadow-blue-200 text-white',
+    indigo: 'bg-indigo-500 shadow-indigo-200 text-white',
+    emerald: 'bg-emerald-500 shadow-emerald-200 text-white',
+    amber: 'bg-amber-500 shadow-amber-200 text-white',
+    rose: 'bg-rose-500 shadow-rose-200 text-white',
+  };
+
+  const lightColorMap: Record<string, string> = {
+    blue: 'bg-blue-50 text-blue-600',
+    indigo: 'bg-indigo-50 text-indigo-600',
+    emerald: 'bg-emerald-50 text-emerald-600',
+    amber: 'bg-amber-50 text-amber-600',
+    rose: 'bg-rose-50 text-rose-600',
   };
 
   return (
-    <div 
+    <motion.div 
+      whileHover={{ y: -5, transition: { duration: 0.2 } }}
       onClick={onClick}
-      className={`bg-white rounded-2xl p-6 shadow-sm border border-gray-100 transition-all hover:-translate-y-1 hover:shadow-lg group ${onClick ? 'cursor-pointer' : ''}`}
+      className={`glass-card p-6 group relative overflow-hidden ${onClick ? 'cursor-pointer' : ''}`}
     >
-      <div className="flex items-center justify-between mb-4">
-        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-white shadow-lg transition-transform group-hover:rotate-6 ${colorMap[color]}`}>
-          <Icon size={24} />
+      <div className="absolute -right-4 -top-4 w-24 h-24 bg-slate-50/50 rounded-full blur-2xl group-hover:bg-slate-100/50 transition-colors"></div>
+      
+      <div className="flex items-center justify-between mb-4 relative z-10">
+        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg transition-all group-hover:scale-110 group-hover:rotate-3 ${colorMap[color] || colorMap.blue}`}>
+          <Icon size={22} />
         </div>
-        <div className={`text-xs font-bold px-2 py-1 rounded-lg ${trendUp ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'}`}>
-          {trendUp ? <ArrowUpRight size={14} className="inline mr-1" /> : <AlertTriangle size={14} className="inline mr-1" />}
+        <div className={`flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-full ${trendUp ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'}`}>
+          {trendUp ? <ArrowUpRight size={12} /> : <AlertTriangle size={12} />}
           {trend}
         </div>
       </div>
-      <div>
-        <h3 className="text-sm font-medium text-gray-500 mb-1">{title}</h3>
-        <div className="text-2xl font-black text-gray-900">{value}</div>
+      
+      <div className="relative z-10">
+        <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">{title}</h3>
+        <div className="text-2xl font-black text-slate-900 tracking-tight">{value}</div>
       </div>
-    </div>
+    </motion.div>
   );
 }
 
 function QuickAction({ icon: Icon, title, color, onClick }: any) {
   const colorMap: Record<string, string> = {
-    blue: 'bg-blue-50 text-blue-600 hover:bg-blue-600',
-    emerald: 'bg-emerald-50 text-emerald-600 hover:bg-emerald-600',
-    amber: 'bg-amber-50 text-amber-600 hover:bg-amber-600',
-    rose: 'bg-rose-50 text-rose-600 hover:bg-rose-600',
-    indigo: 'bg-indigo-50 text-indigo-600 hover:bg-indigo-600',
+    blue: 'text-blue-600 bg-blue-50 hover:bg-blue-600',
+    emerald: 'text-emerald-600 bg-emerald-50 hover:bg-emerald-600',
+    amber: 'text-amber-600 bg-amber-50 hover:bg-amber-600',
+    rose: 'text-rose-600 bg-rose-50 hover:bg-rose-600',
+    indigo: 'text-indigo-600 bg-indigo-50 hover:bg-indigo-600',
   };
 
   return (
-    <button 
+    <motion.button 
+      whileHover={{ y: -4, scale: 1.02 }}
+      whileTap={{ scale: 0.95 }}
       onClick={onClick}
-      className={`flex flex-col items-center justify-center p-4 rounded-2xl transition-all hover:text-white hover:shadow-lg hover:-translate-y-1 group ${colorMap[color]}`}
+      className={`flex flex-col items-center justify-center p-4 rounded-2xl transition-all hover:text-white shadow-sm hover:shadow-xl group ${colorMap[color]}`}
     >
-      <Icon size={24} className="mb-2 transition-transform group-hover:scale-110" />
-      <span className="text-xs font-bold uppercase tracking-wider">{title}</span>
-    </button>
+      <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-2 bg-white/50 group-hover:bg-transparent transition-colors">
+        <Icon size={20} className="transition-transform group-hover:scale-110" />
+      </div>
+      <span className="text-[10px] font-bold uppercase tracking-widest">{title}</span>
+    </motion.button>
   );
 }
