@@ -79,6 +79,7 @@ export interface OrderItem {
   screen?: string;
   purchaseDate?: string;
   warrantyMonths?: number;
+  isGift?: boolean;
 }
 
 export interface Repair {
@@ -111,6 +112,11 @@ export interface Order {
   status: 'Mới' | 'Đang xử lý' | 'Chờ đóng gói' | 'Đang đóng gói' | 'Chờ giao hàng' | 'Đang giao hàng' | 'Hoàn thành' | 'Đã giao' | 'Hủy';
   paymentMethod: string;
   paymentStatus: 'Công nợ' | 'Đã thanh toán';
+  commission?: number;
+  packagingFee?: number;
+  shippingFee?: number;
+  collaboratorId?: string;
+  collaboratorName?: string;
   notes?: string;
   createdAt?: string;
   updatedAt?: string;

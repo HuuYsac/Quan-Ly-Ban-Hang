@@ -29,6 +29,8 @@ type TimeFilter = 'week' | 'month' | 'year';
 
 export function Reports({ data, updateData }: ReportsProps) {
   const [timeFilter, setTimeFilter] = useState<TimeFilter>('month');
+  const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth());
+  const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
 
   // Helper to get import price for profit calculation
   const getImportPrice = (productId: string, itemImportPrice?: number) => {
@@ -39,6 +41,8 @@ export function Reports({ data, updateData }: ReportsProps) {
 
   const stats = useMemo(() => {
     const now = new Date();
+    const referenceDate = new Date(selectedYear, selectedMonth, 1);
+    
     let startDate: Date;
     let endDate: Date;
     let prevStartDate: Date;
@@ -50,37 +54,46 @@ export function Reports({ data, updateData }: ReportsProps) {
       prevStartDate = startOfWeek(subWeeks(now, 1), { weekStartsOn: 1 });
       prevEndDate = endOfWeek(subWeeks(now, 1), { weekStartsOn: 1 });
     } else if (timeFilter === 'month') {
-      startDate = startOfMonth(now);
-      endDate = endOfMonth(now);
-      prevStartDate = startOfMonth(subMonths(now, 1));
-      prevEndDate = endOfMonth(subMonths(now, 1));
+      startDate = startOfMonth(referenceDate);
+      endDate = endOfMonth(referenceDate);
+      prevStartDate = startOfMonth(subMonths(referenceDate, 1));
+      prevEndDate = endOfMonth(subMonths(referenceDate, 1));
     } else {
-      startDate = startOfYear(now);
-      endDate = endOfYear(now);
-      prevStartDate = startOfYear(subYears(now, 1));
-      prevEndDate = endOfYear(subYears(now, 1));
+      startDate = startOfYear(referenceDate);
+      endDate = endOfYear(referenceDate);
+      prevStartDate = startOfYear(subYears(referenceDate, 1));
+      prevEndDate = endOfYear(subYears(referenceDate, 1));
     }
 
     const paidOrders = (data.orders || []).filter(o => o.paymentStatus === 'Đã thanh toán');
     
-    const currentPeriodOrders = paidOrders.filter(o => {
-      const orderDate = parseISO(o.date);
-      return isWithinInterval(orderDate, { start: startDate, end: endDate });
+    // Flatten items from paid orders to calculate by purchaseDate
+    const allPaidItems = paidOrders.flatMap(o => (o.products || []).map(p => ({
+      ...p,
+      orderId: o.id,
+      orderDate: o.date,
+      // Use item purchaseDate, fallback to order date
+      businessDate: p.purchaseDate || o.date
+    })));
+
+    const currentPeriodItems = allPaidItems.filter(item => {
+      const pDate = parseISO(item.businessDate);
+      return isWithinInterval(pDate, { start: startDate, end: endDate });
     });
 
-    const prevPeriodOrders = paidOrders.filter(o => {
-      const orderDate = parseISO(o.date);
-      return isWithinInterval(orderDate, { start: prevStartDate, end: prevEndDate });
+    const prevPeriodItems = allPaidItems.filter(item => {
+      const pDate = parseISO(item.businessDate);
+      return isWithinInterval(pDate, { start: prevStartDate, end: prevEndDate });
     });
 
-    const totalRevenue = currentPeriodOrders.reduce((sum, o) => sum + o.total, 0);
-    const prevRevenue = prevPeriodOrders.reduce((sum, o) => sum + o.total, 0);
+    const totalRevenue = currentPeriodItems.reduce((sum, item) => sum + (item.subtotal || 0), 0);
+    const prevRevenue = prevPeriodItems.reduce((sum, item) => sum + (item.subtotal || 0), 0);
     
-    const totalCost = currentPeriodOrders.reduce((sum, o) => {
-      return sum + (o.products || []).reduce((s, p) => s + (getImportPrice(p.productId, p.importPrice) * p.quantity), 0);
+    const totalCost = currentPeriodItems.reduce((sum, item) => {
+      return sum + (getImportPrice(item.productId, item.importPrice) * item.quantity);
     }, 0);
-    const prevCost = prevPeriodOrders.reduce((sum, o) => {
-      return sum + (o.products || []).reduce((s, p) => s + (getImportPrice(p.productId, p.importPrice) * p.quantity), 0);
+    const prevCost = prevPeriodItems.reduce((sum, item) => {
+      return sum + (getImportPrice(item.productId, item.importPrice) * item.quantity);
     }, 0);
 
     const totalProfit = totalRevenue - totalCost;
@@ -94,19 +107,10 @@ export function Reports({ data, updateData }: ReportsProps) {
     // Category profitability
     const categoryProfitData = (data.categories || []).map(cat => {
       const catProducts = (data.products || []).filter(p => p.category === cat.name);
-      const catOrders = currentPeriodOrders.filter(o => 
-        (o.products || []).some(op => catProducts.some(cp => cp.id === op.productId))
-      );
+      const catItems = currentPeriodItems.filter(item => catProducts.some(cp => cp.id === item.productId));
 
-      const revenue = catOrders.reduce((sum, o) => {
-        const catItems = (o.products || []).filter(op => catProducts.some(cp => cp.id === op.productId));
-        return sum + catItems.reduce((s, i) => s + i.subtotal, 0);
-      }, 0);
-
-      const cost = catOrders.reduce((sum, o) => {
-        const catItems = (o.products || []).filter(op => catProducts.some(cp => cp.id === op.productId));
-        return sum + catItems.reduce((s, i) => s + (getImportPrice(i.productId, i.importPrice) * i.quantity), 0);
-      }, 0);
+      const revenue = catItems.reduce((sum, item) => sum + (item.subtotal || 0), 0);
+      const cost = catItems.reduce((sum, item) => sum + (getImportPrice(item.productId, item.importPrice) * item.quantity), 0);
 
       const profit = revenue - cost;
       return { name: cat.name, revenue, profit, margin: revenue > 0 ? (profit / revenue) * 100 : 0 };
@@ -114,20 +118,11 @@ export function Reports({ data, updateData }: ReportsProps) {
 
     // Most profitable products
     const profitableProducts = (data.products || []).map(p => {
-      const productOrders = currentPeriodOrders.filter(o => (o.products || []).some(op => op.productId === p.id));
-      const revenue = productOrders.reduce((sum, o) => {
-        const items = (o.products || []).filter(op => op.productId === p.id);
-        return sum + items.reduce((s, i) => s + i.subtotal, 0);
-      }, 0);
-      const cost = productOrders.reduce((sum, o) => {
-        const items = (o.products || []).filter(op => op.productId === p.id);
-        return sum + items.reduce((s, i) => s + (getImportPrice(i.productId, i.importPrice) * i.quantity), 0);
-      }, 0);
+      const pItems = currentPeriodItems.filter(item => item.productId === p.id);
+      const revenue = pItems.reduce((sum, item) => sum + (item.subtotal || 0), 0);
+      const cost = pItems.reduce((sum, item) => sum + (getImportPrice(item.productId, item.importPrice) * item.quantity), 0);
       const profit = revenue - cost;
-      const quantitySold = productOrders.reduce((sum, o) => {
-        const items = (o.products || []).filter(op => op.productId === p.id);
-        return sum + items.reduce((s, i) => s + i.quantity, 0);
-      }, 0);
+      const quantitySold = pItems.reduce((sum, item) => sum + item.quantity, 0);
       return { ...p, revenue, profit, quantitySold };
     }).filter(p => p.revenue > 0).sort((a, b) => b.profit - a.profit).slice(0, 5);
 
@@ -140,48 +135,48 @@ export function Reports({ data, updateData }: ReportsProps) {
         const currentDay = new Date(day);
         currentDay.setDate(day.getDate() + i);
         const dayLabel = format(currentDay, 'eeee', { locale: vi });
+        const dayStr = format(currentDay, 'yyyy-MM-dd');
 
-        const dayOrders = currentPeriodOrders.filter(o => o.date === format(currentDay, 'yyyy-MM-dd'));
-        const revenue = dayOrders.reduce((sum, o) => sum + o.total, 0);
-        const cost = dayOrders.reduce((sum, o) => {
-          return sum + (o.products || []).reduce((s, p) => s + (getImportPrice(p.productId, p.importPrice) * p.quantity), 0);
-        }, 0);
+        const dayItems = currentPeriodItems.filter(item => item.businessDate === dayStr);
+        const revenue = dayItems.reduce((sum, item) => sum + (item.subtotal || 0), 0);
+        const cost = dayItems.reduce((sum, item) => sum + (getImportPrice(item.productId, item.importPrice) * item.quantity), 0);
         return { name: dayLabel, revenue, profit: revenue - cost };
       });
     } else if (timeFilter === 'month') {
       chartData = Array.from({ length: 4 }).map((_, i) => {
-        const weekStart = startOfWeek(subWeeks(now, 3 - i), { weekStartsOn: 1 });
-        const weekEnd = endOfWeek(subWeeks(now, 3 - i), { weekStartsOn: 1 });
+        const weekStart = startOfWeek(subWeeks(endOfMonth(referenceDate), 3 - i), { weekStartsOn: 1 });
+        const weekEnd = endOfWeek(subWeeks(endOfMonth(referenceDate), 3 - i), { weekStartsOn: 1 });
         const weekLabel = `Tuần ${i + 1}`;
 
-        const weekOrders = paidOrders.filter(o => {
-          const orderDate = parseISO(o.date);
-          return isWithinInterval(orderDate, { start: weekStart, end: weekEnd });
+        const weekItems = allPaidItems.filter(item => {
+          const pDate = parseISO(item.businessDate);
+          return isWithinInterval(pDate, { start: weekStart, end: weekEnd });
         });
 
-        const revenue = weekOrders.reduce((sum, o) => sum + o.total, 0);
-        const cost = weekOrders.reduce((sum, o) => {
-          return sum + (o.products || []).reduce((s, p) => s + (getImportPrice(p.productId, p.importPrice) * p.quantity), 0);
-        }, 0);
+        const revenue = weekItems.reduce((sum, item) => sum + (item.subtotal || 0), 0);
+        const cost = weekItems.reduce((sum, item) => sum + (getImportPrice(item.productId, item.importPrice) * item.quantity), 0);
         return { name: weekLabel, revenue, profit: revenue - cost };
       });
     } else {
       chartData = Array.from({ length: 12 }).map((_, i) => {
-        const monthDate = startOfMonth(new Date(now.getFullYear(), i, 1));
+        const monthDate = startOfMonth(new Date(selectedYear, i, 1));
         const monthLabel = format(monthDate, 'MM/yyyy');
+        const mStart = startOfMonth(monthDate);
+        const mEnd = endOfMonth(monthDate);
 
-        const monthOrders = paidOrders.filter(o => {
-          const orderDate = parseISO(o.date);
-          return isWithinInterval(orderDate, { start: startOfMonth(monthDate), end: endOfMonth(monthDate) });
+        const monthItems = allPaidItems.filter(item => {
+          const pDate = parseISO(item.businessDate);
+          return isWithinInterval(pDate, { start: mStart, end: mEnd });
         });
 
-        const revenue = monthOrders.reduce((sum, o) => sum + o.total, 0);
-        const cost = monthOrders.reduce((sum, o) => {
-          return sum + (o.products || []).reduce((s, p) => s + (getImportPrice(p.productId, p.importPrice) * p.quantity), 0);
-        }, 0);
+        const revenue = monthItems.reduce((sum, item) => sum + (item.subtotal || 0), 0);
+        const cost = monthItems.reduce((sum, item) => sum + (getImportPrice(item.productId, item.importPrice) * item.quantity), 0);
         return { name: monthLabel, revenue, profit: revenue - cost };
       });
     }
+
+    // Unique orders count in current period
+    const uniqueOrdersInPeriod = new Set(currentPeriodItems.map(item => item.orderId)).size;
 
     return {
       totalRevenue,
@@ -192,10 +187,10 @@ export function Reports({ data, updateData }: ReportsProps) {
       categoryProfitData,
       profitableProducts,
       chartData,
-      totalOrders: currentPeriodOrders.length,
-      totalProductsSold: currentPeriodOrders.reduce((sum, o) => sum + (o.products || []).reduce((s, p) => s + p.quantity, 0), 0),
+      totalOrders: uniqueOrdersInPeriod,
+      totalProductsSold: currentPeriodItems.reduce((sum, item) => sum + item.quantity, 0),
     };
-  }, [data, timeFilter]);
+  }, [data, timeFilter, selectedMonth, selectedYear]);
 
   const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
 
@@ -258,20 +253,48 @@ export function Reports({ data, updateData }: ReportsProps) {
           </div>
         </div>
         
-        <div className="flex bg-slate-100 p-1 rounded-xl w-full sm:w-auto">
-          {(['week', 'month', 'year'] as TimeFilter[]).map((f) => (
-            <button
-              key={f}
-              onClick={() => setTimeFilter(f)}
-              className={`flex-1 sm:flex-none px-6 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
-                timeFilter === f 
-                  ? 'bg-white text-indigo-600 shadow-sm' 
-                  : 'text-slate-500 hover:text-slate-700'
-              }`}
-            >
-              {f === 'week' ? 'Tuần' : f === 'month' ? 'Tháng' : 'Năm'}
-            </button>
-          ))}
+        <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+          {timeFilter !== 'week' && (
+            <div className="flex items-center gap-2">
+              {timeFilter === 'month' && (
+                <select
+                  value={selectedMonth}
+                  onChange={(e) => setSelectedMonth(Number(e.target.value))}
+                  className="bg-slate-100 border-none rounded-xl px-3 py-2 text-[10px] font-black uppercase tracking-widest text-slate-700 focus:ring-2 focus:ring-indigo-500/20"
+                >
+                  {Array.from({ length: 12 }).map((_, i) => (
+                    <option key={i} value={i}>Tháng {i + 1}</option>
+                  ))}
+                </select>
+              )}
+              <select
+                value={selectedYear}
+                onChange={(e) => setSelectedYear(Number(e.target.value))}
+                className="bg-slate-100 border-none rounded-xl px-3 py-2 text-[10px] font-black uppercase tracking-widest text-slate-700 focus:ring-2 focus:ring-indigo-500/20"
+              >
+                {Array.from({ length: 5 }).map((_, i) => {
+                  const year = new Date().getFullYear() - 2 + i;
+                  return <option key={year} value={year}>Năm {year}</option>;
+                })}
+              </select>
+            </div>
+          )}
+
+          <div className="flex bg-slate-100 p-1 rounded-xl flex-1 sm:flex-none">
+            {(['week', 'month', 'year'] as TimeFilter[]).map((f) => (
+              <button
+                key={f}
+                onClick={() => setTimeFilter(f)}
+                className={`flex-1 sm:flex-none px-6 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
+                  timeFilter === f 
+                    ? 'bg-white text-indigo-600 shadow-sm' 
+                    : 'text-slate-500 hover:text-slate-700'
+                }`}
+              >
+                {f === 'week' ? 'Tuần' : f === 'month' ? 'Tháng' : 'Năm'}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 

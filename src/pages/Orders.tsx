@@ -33,8 +33,14 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
   const [viewOrder, setViewOrder] = useState<Order | null>(null);
   const [formData, setFormData] = useState({
     customerId: '',
+    date: new Date().toISOString().split('T')[0],
     paymentMethod: 'Tiền mặt',
     paymentStatus: 'Đã thanh toán' as 'Công nợ' | 'Đã thanh toán',
+    commission: 0,
+    packagingFee: 0,
+    shippingFee: 0,
+    collaboratorId: '',
+    collaboratorName: '',
     notes: ''
   });
   const [productFormData, setProductFormData] = useState({
@@ -88,6 +94,17 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
     if (statusFilter === 'Đang xử lý') return matchesSearch && (o.status === 'Mới' || o.status === 'Đang xử lý');
     if (statusFilter === 'Hoàn thành') return matchesSearch && (o.status === 'Hoàn thành' || o.status === 'Đã giao');
     return matchesSearch && o.status === statusFilter;
+  }).sort((a, b) => {
+    // Sort by date descending (newest first)
+    const dateCompare = (b.date || '').localeCompare(a.date || '');
+    if (dateCompare !== 0) return dateCompare;
+    
+    // If same date, sort by time descending
+    const timeCompare = (b.time || '').localeCompare(a.time || '');
+    if (timeCompare !== 0) return timeCompare;
+    
+    // Fallback to createdAt
+    return (b.createdAt || '').localeCompare(a.createdAt || '');
   });
 
   // Get unique months from orders for the filter
@@ -244,8 +261,9 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
     ram: '',
     ssd: '',
     screen: '',
-    purchaseDate: new Date().toISOString().split('T')[0],
-    warrantyMonths: 12
+    purchaseDate: formData.date,
+    warrantyMonths: 12,
+    isGift: false
   }]);
   
   const handleRemoveItem = (index: number) => setOrderItems(orderItems.filter((_, i) => i !== index));
@@ -268,7 +286,7 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
           ram: '',
           ssd: '',
           screen: '',
-          purchaseDate: new Date().toISOString().split('T')[0],
+          purchaseDate: formData.date,
           warrantyMonths: 12
         };
       } else {
@@ -284,9 +302,15 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
           ram: '',
           ssd: '',
           screen: '',
-          purchaseDate: new Date().toISOString().split('T')[0],
+          purchaseDate: formData.date,
           warrantyMonths: 12
         };
+      }
+    } else if (field === 'purchaseDate') {
+      // Sync global date and all items
+      setFormData(prev => ({ ...prev, date: value }));
+      for (let i = 0; i < newItems.length; i++) {
+        newItems[i] = { ...newItems[i], purchaseDate: value };
       }
     } else {
       newItems[index] = { ...newItems[index], [field]: value };
@@ -455,7 +479,8 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
   };
 
   const calculateTotal = () => {
-    return orderItems.reduce((sum, item) => {
+    const itemsTotal = orderItems.reduce((sum, item) => {
+      if (item.isGift) return sum;
       let subtotal = item.quantity * item.price;
       if (item.discountType === 'percent') {
         subtotal = subtotal * (1 - (item.discount || 0) / 100);
@@ -464,17 +489,24 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
       }
       return sum + subtotal;
     }, 0);
+    return itemsTotal + (Number(formData.packagingFee) || 0) + (Number(formData.shippingFee) || 0);
   };
 
   const handleEdit = (order: Order) => {
     setEditingId(order.id);
     setFormData({
       customerId: order.customerId,
+      date: order.date,
       paymentMethod: order.paymentMethod,
       paymentStatus: order.paymentStatus,
+      commission: order.commission || 0,
+      packagingFee: order.packagingFee || 0,
+      shippingFee: order.shippingFee || 0,
+      collaboratorId: order.collaboratorId || '',
+      collaboratorName: order.collaboratorName || '',
       notes: order.notes || ''
     });
-    setOrderItems((order.products || []).map(p => ({ ...p, discountType: p.discountType || 'percent' })));
+    setOrderItems((order.products || []).map(p => ({ ...p, discountType: p.discountType || 'percent', isGift: p.isGift || false })));
     setIsAddModalOpen(true);
   };
 
@@ -491,15 +523,20 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
     try {
       let total = 0;
       const finalItems = validItems.map(item => {
-        let subtotal = item.quantity * item.price;
-        if (item.discountType === 'percent') {
-          subtotal = subtotal * (1 - (item.discount || 0) / 100);
-        } else {
-          subtotal = Math.max(0, subtotal - (item.discount || 0));
+        let subtotal = 0;
+        if (!item.isGift) {
+          subtotal = item.quantity * item.price;
+          if (item.discountType === 'percent') {
+            subtotal = subtotal * (1 - (item.discount || 0) / 100);
+          } else {
+            subtotal = Math.max(0, subtotal - (item.discount || 0));
+          }
         }
         total += subtotal;
         return { ...item, subtotal };
       });
+
+      total += (Number(formData.packagingFee) || 0) + (Number(formData.shippingFee) || 0);
 
       if (editingId) {
         const oldOrder = (data.orders || []).find(o => o.id === editingId);
@@ -555,11 +592,17 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
           customerId: customer.id,
           customerName: customer.name,
           customerPhone: customer.phone,
+          date: formData.date,
           products: finalItems,
           total,
           status: formData.paymentStatus === 'Đã thanh toán' ? 'Chờ đóng gói' : 'Đang xử lý',
           paymentMethod: formData.paymentMethod,
           paymentStatus: formData.paymentStatus,
+          commission: Number(formData.commission) || 0,
+          packagingFee: Number(formData.packagingFee) || 0,
+          shippingFee: Number(formData.shippingFee) || 0,
+          collaboratorId: formData.collaboratorId,
+          collaboratorName: formData.collaboratorName,
           notes: formData.notes,
           updatedAt: new Date().toISOString()
         });
@@ -580,13 +623,18 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
           customerPhone: customer.phone,
           customerEmail: customer.email,
           customerAddress: customer.address,
-          date: now.toISOString().split('T')[0],
+          date: formData.date,
           time: now.toTimeString().split(' ')[0].substring(0, 5),
           products: finalItems,
           total,
           status: formData.paymentStatus === 'Đã thanh toán' ? 'Chờ đóng gói' : 'Đang xử lý',
           paymentMethod: formData.paymentMethod,
           paymentStatus: formData.paymentStatus,
+          commission: Number(formData.commission) || 0,
+          packagingFee: Number(formData.packagingFee) || 0,
+          shippingFee: Number(formData.shippingFee) || 0,
+          collaboratorId: formData.collaboratorId,
+          collaboratorName: formData.collaboratorName,
           notes: formData.notes,
           createdAt: now.toISOString(),
           updatedAt: now.toISOString()
@@ -620,7 +668,18 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
       setIsAddModalOpen(false);
       setEditingId(null);
       showToast(editingId ? 'Đã cập nhật đơn hàng thành công' : 'Đã tạo đơn hàng thành công');
-      setFormData({ customerId: '', paymentMethod: 'Tiền mặt', paymentStatus: 'Đã thanh toán', notes: '' });
+      setFormData({ 
+        customerId: '', 
+        date: new Date().toISOString().split('T')[0],
+        paymentMethod: 'Tiền mặt', 
+        paymentStatus: 'Đã thanh toán', 
+        commission: 0,
+        packagingFee: 0,
+        shippingFee: 0,
+        collaboratorId: '',
+        collaboratorName: '',
+        notes: '' 
+      });
       setOrderItems([{ 
         productId: '', 
         name: '', 
@@ -634,7 +693,8 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
         ssd: '',
         screen: '',
         purchaseDate: new Date().toISOString().split('T')[0],
-        warrantyMonths: 12
+        warrantyMonths: 12,
+        isGift: false
       }]);
     } catch (error) {
       console.error('Error submitting order:', error);
@@ -661,7 +721,18 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
             whileTap={{ scale: 0.98 }}
             onClick={() => {
               setEditingId(null);
-              setFormData({ customerId: '', paymentMethod: 'Tiền mặt', paymentStatus: 'Đã thanh toán', notes: '' });
+              setFormData({ 
+                customerId: '', 
+                date: new Date().toISOString().split('T')[0],
+                paymentMethod: 'Tiền mặt', 
+                paymentStatus: 'Đã thanh toán', 
+                commission: 0,
+                packagingFee: 0,
+                shippingFee: 0,
+                collaboratorId: '',
+                collaboratorName: '',
+                notes: '' 
+              });
               setOrderItems([{ 
                 productId: '', 
                 name: '', 
@@ -675,7 +746,8 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
                 ssd: '',
                 screen: '',
                 purchaseDate: new Date().toISOString().split('T')[0],
-                warrantyMonths: 12
+                warrantyMonths: 12,
+                isGift: false
               }]);
               setIsAddModalOpen(true);
             }}
@@ -947,6 +1019,9 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
                     <p className={`text-sm font-bold ${viewOrder.paymentStatus === 'Đã thanh toán' ? 'text-emerald-600' : 'text-rose-600'}`}>
                       {viewOrder.paymentStatus}
                     </p>
+                    {viewOrder.collaboratorName && (
+                      <p className="text-xs text-indigo-600 font-bold mt-2 italic">CTV: {viewOrder.collaboratorName}</p>
+                    )}
                   </div>
                 </div>
 
@@ -965,7 +1040,12 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
                     {(viewOrder.products || []).map((item, idx) => (
                       <tr key={idx} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}>
                         <td className="p-4">
-                          <div className="font-bold text-gray-900">{item.name}</div>
+                          <div className="font-bold text-gray-900 flex items-center gap-2">
+                            {item.name}
+                            {item.isGift && (
+                              <span className="px-1.5 py-0.5 bg-rose-100 text-rose-600 text-[8px] uppercase font-black rounded">Quà tặng</span>
+                            )}
+                          </div>
                           {item.serviceTag && <div className="text-[10px] text-blue-600 font-bold mt-1">S/N: {item.serviceTag}</div>}
                           {(item.cpu || item.ram || item.ssd || item.screen) && (
                             <div className="text-[10px] text-gray-500 mt-0.5 flex flex-wrap gap-x-2">
@@ -991,6 +1071,18 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
                     ))}
                   </tbody>
                   <tfoot>
+                    {viewOrder.packagingFee > 0 && (
+                      <tr className="border-t border-gray-100">
+                        <td colSpan={4} className="p-2 text-right text-xs font-bold text-gray-500 uppercase">Phí đóng gói:</td>
+                        <td className="p-2 text-right font-bold text-gray-900">{formatCurrency(viewOrder.packagingFee).replace('₫', '').trim()}</td>
+                      </tr>
+                    )}
+                    {viewOrder.shippingFee > 0 && (
+                      <tr className="border-t border-gray-100">
+                        <td colSpan={4} className="p-2 text-right text-xs font-bold text-gray-500 uppercase">Phí vận chuyển:</td>
+                        <td className="p-2 text-right font-bold text-gray-900">{formatCurrency(viewOrder.shippingFee).replace('₫', '').trim()}</td>
+                      </tr>
+                    )}
                     <tr className="bg-gray-50 border-t-2 border-gray-200">
                       <td colSpan={4} className="p-4 text-right font-bold text-gray-600 uppercase">Tổng cộng:</td>
                       <td className="p-4 text-right font-black text-xl text-blue-700">{formatCurrency(viewOrder.total)}</td>
@@ -1081,7 +1173,12 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
                     {(viewOrder.products || []).map((item, idx) => (
                       <tr key={idx}>
                         <td className="p-3 text-sm text-gray-900">
-                          <div className="font-medium">{item.name}</div>
+                          <div className="font-medium flex items-center gap-2">
+                            {item.name}
+                            {item.isGift && (
+                              <span className="px-1.5 py-0.5 bg-rose-100 text-rose-600 text-[8px] uppercase font-black rounded">Quà tặng</span>
+                            )}
+                          </div>
                           {(item.serviceTag || item.cpu || item.ram || item.ssd || item.screen) && (
                             <div className="text-[10px] text-gray-500 mt-1 flex flex-wrap gap-x-2">
                               {item.serviceTag && <span className="text-blue-600 font-bold">S/N: {item.serviceTag}</span>}
@@ -1107,6 +1204,18 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
                     ))}
                   </tbody>
                   <tfoot>
+                    {viewOrder.packagingFee > 0 && (
+                      <tr>
+                        <td colSpan={4} className="p-2 text-right text-sm text-gray-500">Phí đóng gói:</td>
+                        <td className="p-2 text-right text-sm font-medium text-gray-900">{formatCurrency(viewOrder.packagingFee)}</td>
+                      </tr>
+                    )}
+                    {viewOrder.shippingFee > 0 && (
+                      <tr>
+                        <td colSpan={4} className="p-2 text-right text-sm text-gray-500">Phí vận chuyển:</td>
+                        <td className="p-2 text-right text-sm font-medium text-gray-900">{formatCurrency(viewOrder.shippingFee)}</td>
+                      </tr>
+                    )}
                     <tr>
                       <td colSpan={4} className="p-3 text-right font-medium text-gray-900">Tổng cộng:</td>
                       <td className="p-3 text-right font-bold text-blue-600 text-lg">{formatCurrency(viewOrder.total)}</td>
@@ -1214,6 +1323,50 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
                 </div>
               </div>
 
+              {/* Fees and Commission */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 bg-slate-50 rounded-xl border border-slate-100">
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Phí đóng gói</label>
+                  <input 
+                    type="number" min="0"
+                    value={formData.packagingFee}
+                    onChange={e => setFormData({...formData, packagingFee: Number(e.target.value)})}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-sm"
+                    placeholder="0"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Phí vận chuyển</label>
+                  <input 
+                    type="number" min="0"
+                    value={formData.shippingFee}
+                    onChange={e => setFormData({...formData, shippingFee: Number(e.target.value)})}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-sm"
+                    placeholder="0"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Hoa hồng CTV</label>
+                  <input 
+                    type="number" min="0"
+                    value={formData.commission}
+                    onChange={e => setFormData({...formData, commission: Number(e.target.value)})}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-sm"
+                    placeholder="0"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Cộng tác viên</label>
+                  <input 
+                    type="text"
+                    value={formData.collaboratorName}
+                    onChange={e => setFormData({...formData, collaboratorName: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-sm"
+                    placeholder="Tên CTV..."
+                  />
+                </div>
+              </div>
+
               {/* Products List */}
               <div>
                 <div className="flex items-center justify-between mb-3">
@@ -1282,17 +1435,19 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
                               <label className="block text-xs text-gray-500 mb-1 font-bold uppercase">Giảm giá</label>
                               <input 
                                 type="number" min="0"
+                                disabled={item.isGift}
                                 value={item.discount}
                                 onChange={e => handleItemChange(index, 'discount', Number(e.target.value))}
-                                className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm"
+                                className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm disabled:bg-gray-100"
                               />
                             </div>
                             <div className="w-12">
                               <label className="block text-xs text-gray-500 mb-1 font-bold uppercase">Loại</label>
                               <select
+                                disabled={item.isGift}
                                 value={item.discountType || 'percent'}
                                 onChange={e => handleItemChange(index, 'discountType', e.target.value)}
-                                className="w-full px-1 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-xs h-[38px]"
+                                className="w-full px-1 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-xs h-[38px] disabled:bg-gray-100"
                               >
                                 <option value="percent">%</option>
                                 <option value="amount">đ</option>
@@ -1301,7 +1456,16 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
                           </div>
                         </div>
 
-                        <div className="sm:col-span-1 flex justify-end">
+                        <div className="sm:col-span-1 flex flex-col items-center justify-end gap-2">
+                          <label className="flex flex-col items-center gap-1 cursor-pointer group">
+                            <span className="text-[10px] font-bold text-gray-400 uppercase group-hover:text-indigo-600 transition-colors">Quà tặng</span>
+                            <input 
+                              type="checkbox"
+                              checked={item.isGift}
+                              onChange={e => handleItemChange(index, 'isGift', e.target.checked)}
+                              className="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                            />
+                          </label>
                           <button 
                             type="button"
                             onClick={() => handleRemoveItem(index)}
