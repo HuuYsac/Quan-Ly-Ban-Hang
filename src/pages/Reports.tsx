@@ -76,9 +76,21 @@ export function Reports({ data, updateData }: ReportsProps) {
       businessDate: p.purchaseDate || o.date
     })));
 
+    // Get repairs that have financial data and are completed or returned
+    const completedRepairs = (data.repairs || []).filter(r => 
+      (r.status === 'Đã xong' || r.status === 'Đã trả khách') && 
+      (r.customerPrice || 0) > 0
+    );
+
     const currentPeriodItems = allPaidItems.filter(item => {
       const pDate = parseISO(item.businessDate);
       return isWithinInterval(pDate, { start: startDate, end: endDate });
+    });
+
+    const currentPeriodRepairs = completedRepairs.filter(repair => {
+      // Use returnDate if available, otherwise receivedDate
+      const rDate = parseISO(repair.returnDate || repair.receivedDate);
+      return isWithinInterval(rDate, { start: startDate, end: endDate });
     });
 
     const prevPeriodItems = allPaidItems.filter(item => {
@@ -86,15 +98,30 @@ export function Reports({ data, updateData }: ReportsProps) {
       return isWithinInterval(pDate, { start: prevStartDate, end: prevEndDate });
     });
 
-    const totalRevenue = currentPeriodItems.reduce((sum, item) => sum + (item.subtotal || 0), 0);
-    const prevRevenue = prevPeriodItems.reduce((sum, item) => sum + (item.subtotal || 0), 0);
+    const prevPeriodRepairs = completedRepairs.filter(repair => {
+      const rDate = parseISO(repair.returnDate || repair.receivedDate);
+      return isWithinInterval(rDate, { start: prevStartDate, end: prevEndDate });
+    });
+
+    const orderRevenue = currentPeriodItems.reduce((sum, item) => sum + (item.subtotal || 0), 0);
+    const repairRevenue = currentPeriodRepairs.reduce((sum, r) => sum + (r.customerPrice || 0), 0);
+    const totalRevenue = orderRevenue + repairRevenue;
+
+    const prevOrderRevenue = prevPeriodItems.reduce((sum, item) => sum + (item.subtotal || 0), 0);
+    const prevRepairRevenue = prevPeriodRepairs.reduce((sum, r) => sum + (r.customerPrice || 0), 0);
+    const prevRevenue = prevOrderRevenue + prevRepairRevenue;
     
-    const totalCost = currentPeriodItems.reduce((sum, item) => {
+    const orderCost = currentPeriodItems.reduce((sum, item) => {
       return sum + (getImportPrice(item.productId, item.importPrice) * item.quantity);
     }, 0);
-    const prevCost = prevPeriodItems.reduce((sum, item) => {
+    const repairCost = currentPeriodRepairs.reduce((sum, r) => sum + (r.partnerCost || 0), 0);
+    const totalCost = orderCost + repairCost;
+
+    const prevOrderCost = prevPeriodItems.reduce((sum, item) => {
       return sum + (getImportPrice(item.productId, item.importPrice) * item.quantity);
     }, 0);
+    const prevRepairCost = prevPeriodRepairs.reduce((sum, r) => sum + (r.partnerCost || 0), 0);
+    const prevCost = prevOrderCost + prevRepairCost;
 
     const totalProfit = totalRevenue - totalCost;
     const prevProfit = prevRevenue - prevCost;
@@ -104,7 +131,7 @@ export function Reports({ data, updateData }: ReportsProps) {
     const revenueGrowth = prevRevenue > 0 ? ((totalRevenue - prevRevenue) / prevRevenue) * 100 : 0;
     const profitGrowth = prevProfit > 0 ? ((totalProfit - prevProfit) / prevProfit) * 100 : 0;
 
-    // Category profitability
+    // Category profitability (including a "Sửa chữa" category)
     const categoryProfitData = (data.categories || []).map(cat => {
       const catProducts = (data.products || []).filter(p => p.category === cat.name);
       const catItems = currentPeriodItems.filter(item => catProducts.some(cp => cp.id === item.productId));
@@ -114,7 +141,19 @@ export function Reports({ data, updateData }: ReportsProps) {
 
       const profit = revenue - cost;
       return { name: cat.name, revenue, profit, margin: revenue > 0 ? (profit / revenue) * 100 : 0 };
-    }).filter(c => c.revenue > 0).sort((a, b) => b.profit - a.profit);
+    }).filter(c => c.revenue > 0);
+
+    // Add Repairs as a category
+    if (repairRevenue > 0) {
+      categoryProfitData.push({
+        name: 'Sửa chữa',
+        revenue: repairRevenue,
+        profit: repairRevenue - repairCost,
+        margin: repairRevenue > 0 ? ((repairRevenue - repairCost) / repairRevenue) * 100 : 0
+      });
+    }
+
+    categoryProfitData.sort((a, b) => b.profit - a.profit);
 
     // Most profitable products
     const profitableProducts = (data.products || []).map(p => {
@@ -138,8 +177,12 @@ export function Reports({ data, updateData }: ReportsProps) {
         const dayStr = format(currentDay, 'yyyy-MM-dd');
 
         const dayItems = currentPeriodItems.filter(item => item.businessDate === dayStr);
-        const revenue = dayItems.reduce((sum, item) => sum + (item.subtotal || 0), 0);
-        const cost = dayItems.reduce((sum, item) => sum + (getImportPrice(item.productId, item.importPrice) * item.quantity), 0);
+        const dayRepairs = currentPeriodRepairs.filter(r => (r.returnDate || r.receivedDate) === dayStr);
+
+        const revenue = dayItems.reduce((sum, item) => sum + (item.subtotal || 0), 0) + 
+                        dayRepairs.reduce((sum, r) => sum + (r.customerPrice || 0), 0);
+        const cost = dayItems.reduce((sum, item) => sum + (getImportPrice(item.productId, item.importPrice) * item.quantity), 0) +
+                     dayRepairs.reduce((sum, r) => sum + (r.partnerCost || 0), 0);
         return { name: dayLabel, revenue, profit: revenue - cost };
       });
     } else if (timeFilter === 'month') {
@@ -152,9 +195,15 @@ export function Reports({ data, updateData }: ReportsProps) {
           const pDate = parseISO(item.businessDate);
           return isWithinInterval(pDate, { start: weekStart, end: weekEnd });
         });
+        const weekRepairs = completedRepairs.filter(r => {
+          const rDate = parseISO(r.returnDate || r.receivedDate);
+          return isWithinInterval(rDate, { start: weekStart, end: weekEnd });
+        });
 
-        const revenue = weekItems.reduce((sum, item) => sum + (item.subtotal || 0), 0);
-        const cost = weekItems.reduce((sum, item) => sum + (getImportPrice(item.productId, item.importPrice) * item.quantity), 0);
+        const revenue = weekItems.reduce((sum, item) => sum + (item.subtotal || 0), 0) +
+                        weekRepairs.reduce((sum, r) => sum + (r.customerPrice || 0), 0);
+        const cost = weekItems.reduce((sum, item) => sum + (getImportPrice(item.productId, item.importPrice) * item.quantity), 0) +
+                     weekRepairs.reduce((sum, r) => sum + (r.partnerCost || 0), 0);
         return { name: weekLabel, revenue, profit: revenue - cost };
       });
     } else {
@@ -168,15 +217,21 @@ export function Reports({ data, updateData }: ReportsProps) {
           const pDate = parseISO(item.businessDate);
           return isWithinInterval(pDate, { start: mStart, end: mEnd });
         });
+        const monthRepairs = completedRepairs.filter(r => {
+          const rDate = parseISO(r.returnDate || r.receivedDate);
+          return isWithinInterval(rDate, { start: mStart, end: mEnd });
+        });
 
-        const revenue = monthItems.reduce((sum, item) => sum + (item.subtotal || 0), 0);
-        const cost = monthItems.reduce((sum, item) => sum + (getImportPrice(item.productId, item.importPrice) * item.quantity), 0);
+        const revenue = monthItems.reduce((sum, item) => sum + (item.subtotal || 0), 0) +
+                        monthRepairs.reduce((sum, r) => sum + (r.customerPrice || 0), 0);
+        const cost = monthItems.reduce((sum, item) => sum + (getImportPrice(item.productId, item.importPrice) * item.quantity), 0) +
+                     monthRepairs.reduce((sum, r) => sum + (r.partnerCost || 0), 0);
         return { name: monthLabel, revenue, profit: revenue - cost };
       });
     }
 
     // Unique orders count in current period
-    const uniqueOrdersInPeriod = new Set(currentPeriodItems.map(item => item.orderId)).size;
+    const uniqueOrdersInPeriod = new Set(currentPeriodItems.map(item => item.orderId)).size + currentPeriodRepairs.length;
 
     return {
       totalRevenue,
@@ -188,7 +243,7 @@ export function Reports({ data, updateData }: ReportsProps) {
       profitableProducts,
       chartData,
       totalOrders: uniqueOrdersInPeriod,
-      totalProductsSold: currentPeriodItems.reduce((sum, item) => sum + item.quantity, 0),
+      totalProductsSold: currentPeriodItems.reduce((sum, item) => sum + item.quantity, 0) + currentPeriodRepairs.length,
     };
   }, [data, timeFilter, selectedMonth, selectedYear]);
 

@@ -26,7 +26,17 @@ export function CompanyInfo({ data, updateData }: CompanyInfoProps) {
 
   useEffect(() => {
     if (data.shopInfo) {
-      setFormData(data.shopInfo);
+      setFormData({
+        name: data.shopInfo.name || '',
+        address: data.shopInfo.address || '',
+        phone: data.shopInfo.phone || '',
+        email: data.shopInfo.email || '',
+        taxCode: data.shopInfo.taxCode || '',
+        website: data.shopInfo.website || '',
+        bankAccount: data.shopInfo.bankAccount || '',
+        bankName: data.shopInfo.bankName || '',
+        logo: data.shopInfo.logo || ''
+      });
     }
   }, [data.shopInfo]);
 

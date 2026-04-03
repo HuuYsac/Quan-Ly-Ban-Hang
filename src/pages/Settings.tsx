@@ -197,7 +197,14 @@ export function Settings({ data, updateData, resetDatabase, isAdmin }: SettingsP
 
   useEffect(() => {
     if (data.settings) {
-      setFormData(data.settings);
+      setFormData({
+        currency: data.settings.currency || 'VND',
+        dateFormat: data.settings.dateFormat || 'DD/MM/YYYY',
+        theme: data.settings.theme || 'light',
+        notifications: data.settings.notifications ?? true,
+        autoBackup: data.settings.autoBackup ?? true,
+        invoiceTemplate: data.settings.invoiceTemplate || 'standard'
+      });
     }
   }, [data.settings]);
 

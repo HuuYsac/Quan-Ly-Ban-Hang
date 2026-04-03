@@ -16,9 +16,12 @@ import {
   X,
   Edit2,
   Trash2,
-  ExternalLink
+  ExternalLink,
+  DollarSign,
+  TrendingUp as TrendingUpIcon
 } from 'lucide-react';
 import { Repair } from '../types';
+import { formatCurrency } from '../lib/utils';
 
 const Repairs: React.FC = () => {
   const { data, addItem, updateItem, deleteItem } = useAppStore();
@@ -37,7 +40,10 @@ const Repairs: React.FC = () => {
     status: 'Đang sửa',
     notes: '',
     receivedDate: new Date().toISOString().split('T')[0],
-    returnDate: ''
+    returnDate: '',
+    partnerCost: 0,
+    customerPrice: 0,
+    profit: 0
   });
 
   const filteredRepairs = useMemo(() => {
@@ -59,19 +65,25 @@ const Repairs: React.FC = () => {
       total: data.repairs.length,
       inProgress: data.repairs.filter(r => r.status === 'Đang sửa').length,
       completed: data.repairs.filter(r => r.status === 'Đã xong').length,
-      returned: data.repairs.filter(r => r.status === 'Đã trả khách').length
+      returned: data.repairs.filter(r => r.status === 'Đã trả khách').length,
+      totalProfit: data.repairs.reduce((sum, r) => sum + (r.profit || 0), 0)
     };
   }, [data.repairs]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    const partnerCost = Number(formData.partnerCost) || 0;
+    const customerPrice = Number(formData.customerPrice) || 0;
+    const profit = customerPrice - partnerCost;
+
     try {
       if (editingRepair) {
-        await updateItem('repairs', editingRepair.id, formData);
+        await updateItem('repairs', editingRepair.id, { ...formData, profit });
       } else {
         const newRepair: Repair = {
           ...formData as Repair,
+          profit,
           id: `RP${Date.now()}`,
           createdAt: new Date().toISOString()
         };
@@ -99,13 +111,30 @@ const Repairs: React.FC = () => {
       status: 'Đang sửa',
       notes: '',
       receivedDate: new Date().toISOString().split('T')[0],
-      returnDate: ''
+      returnDate: '',
+      partnerCost: 0,
+      customerPrice: 0,
+      profit: 0
     });
   };
 
   const handleEdit = (repair: Repair) => {
     setEditingRepair(repair);
-    setFormData(repair);
+    setFormData({
+      customerName: repair.customerName || '',
+      customerPhone: repair.customerPhone || '',
+      productName: repair.productName || '',
+      serviceTag: repair.serviceTag || '',
+      issue: repair.issue || '',
+      technician: repair.technician || '',
+      status: repair.status || 'Đang sửa',
+      notes: repair.notes || '',
+      receivedDate: repair.receivedDate || new Date().toISOString().split('T')[0],
+      returnDate: repair.returnDate || '',
+      partnerCost: repair.partnerCost || 0,
+      customerPrice: repair.customerPrice || 0,
+      profit: repair.profit || 0
+    });
     setIsModalOpen(true);
   };
 
@@ -147,7 +176,7 @@ const Repairs: React.FC = () => {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm">
           <div className="flex items-center gap-3 mb-2">
             <div className="p-2 bg-blue-50 text-blue-600 rounded-lg">
@@ -180,9 +209,18 @@ const Repairs: React.FC = () => {
             <div className="p-2 bg-gray-50 text-gray-600 rounded-lg">
               <ExternalLink size={20} />
             </div>
-            <span className="text-sm font-medium text-gray-500">Đã trả khách</span>
+            <span className="text-sm font-medium text-gray-500">Đã trả</span>
           </div>
           <p className="text-2xl font-bold text-gray-600">{stats.returned}</p>
+        </div>
+        <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg">
+              <TrendingUpIcon size={20} />
+            </div>
+            <span className="text-sm font-medium text-gray-500">Lợi nhuận</span>
+          </div>
+          <p className="text-2xl font-bold text-indigo-600">{formatCurrency(stats.totalProfit)}</p>
         </div>
       </div>
 
@@ -219,8 +257,8 @@ const Repairs: React.FC = () => {
               <tr className="bg-gray-50 text-gray-500 text-xs uppercase tracking-wider">
                 <th className="p-4 font-bold">Khách hàng & Thiết bị</th>
                 <th className="p-4 font-bold">Tình trạng & Thợ</th>
-                <th className="p-4 font-bold">Thời gian</th>
-                <th className="p-4 font-bold">Trạng thái</th>
+                <th className="p-4 font-bold">Chi phí & Lợi nhuận</th>
+                <th className="p-4 font-bold text-center">Trạng thái</th>
                 <th className="p-4 font-bold text-right">Thao tác</th>
               </tr>
             </thead>
@@ -260,22 +298,30 @@ const Repairs: React.FC = () => {
                   </td>
                   <td className="p-4">
                     <div className="flex flex-col text-xs space-y-1">
-                      <div className="flex items-center gap-2 text-gray-500">
-                        <Calendar size={12} />
-                        <span>Nhận: {new Date(repair.receivedDate).toLocaleDateString('vi-VN')}</span>
+                      <div className="flex justify-between gap-4">
+                        <span className="text-gray-500">Đối tác:</span>
+                        <span className="font-medium text-gray-900">{formatCurrency(repair.partnerCost || 0)}</span>
                       </div>
-                      {repair.returnDate && (
-                        <div className="flex items-center gap-2 text-emerald-600 font-bold">
-                          <CheckCircle2 size={12} />
-                          <span>Trả: {new Date(repair.returnDate).toLocaleDateString('vi-VN')}</span>
-                        </div>
-                      )}
+                      <div className="flex justify-between gap-4">
+                        <span className="text-gray-500">Khách:</span>
+                        <span className="font-medium text-blue-600">{formatCurrency(repair.customerPrice || 0)}</span>
+                      </div>
+                      <div className="flex justify-between gap-4 pt-1 border-t border-gray-100">
+                        <span className="text-gray-500">Lợi nhuận:</span>
+                        <span className="font-bold text-emerald-600">{formatCurrency(repair.profit || 0)}</span>
+                      </div>
                     </div>
                   </td>
-                  <td className="p-4">
+                  <td className="p-4 text-center">
                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold ${getStatusColor(repair.status)}`}>
                       {repair.status}
                     </span>
+                    <div className="mt-2 flex flex-col text-[10px] text-gray-400">
+                      <span>Nhận: {new Date(repair.receivedDate).toLocaleDateString('vi-VN')}</span>
+                      {repair.returnDate && (
+                        <span className="text-emerald-600 font-bold">Trả: {new Date(repair.returnDate).toLocaleDateString('vi-VN')}</span>
+                      )}
+                    </div>
                   </td>
                   <td className="p-4 text-right">
                     <div className="flex items-center justify-end gap-1">
@@ -338,6 +384,17 @@ const Repairs: React.FC = () => {
                 <span className="line-clamp-2">{repair.issue}</span>
               </div>
 
+              <div className="grid grid-cols-2 gap-4 py-2 border-y border-gray-100">
+                <div className="space-y-1">
+                  <p className="text-[10px] text-gray-500 uppercase font-bold">Chi phí đối tác</p>
+                  <p className="text-sm font-bold text-gray-900">{formatCurrency(repair.partnerCost || 0)}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-[10px] text-gray-500 uppercase font-bold">Báo khách</p>
+                  <p className="text-sm font-bold text-blue-600">{formatCurrency(repair.customerPrice || 0)}</p>
+                </div>
+              </div>
+
               <div className="flex items-center justify-between pt-2">
                 <div className="flex flex-col text-[10px] text-gray-500 gap-1">
                   <div className="flex items-center gap-1">
@@ -350,6 +407,9 @@ const Repairs: React.FC = () => {
                       <span>Trả: {new Date(repair.returnDate).toLocaleDateString('vi-VN')}</span>
                     </div>
                   )}
+                  <div className="mt-1 font-black text-emerald-600 uppercase">
+                    Lợi nhuận: {formatCurrency(repair.profit || 0)}
+                  </div>
                 </div>
                 <div className="flex gap-1">
                   <button 
@@ -497,6 +557,34 @@ const Repairs: React.FC = () => {
                     />
                   </div>
                 </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-blue-50/50 rounded-2xl border border-blue-100">
+                  <div>
+                    <label className="block text-xs font-bold text-blue-600 uppercase mb-1">Chi phí đối tác (VND)</label>
+                    <input 
+                      type="number"
+                      value={formData.partnerCost}
+                      onChange={e => setFormData({...formData, partnerCost: Number(e.target.value)})}
+                      className="w-full px-4 py-2 border border-blue-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm font-bold"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-blue-600 uppercase mb-1">Giá báo khách (VND)</label>
+                    <input 
+                      type="number"
+                      value={formData.customerPrice}
+                      onChange={e => setFormData({...formData, customerPrice: Number(e.target.value)})}
+                      className="w-full px-4 py-2 border border-blue-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm font-bold"
+                    />
+                  </div>
+                  <div className="md:col-span-2 pt-2 flex justify-between items-center">
+                    <span className="text-xs font-bold text-gray-500 uppercase">Lợi nhuận dự kiến:</span>
+                    <span className="text-lg font-black text-emerald-600">
+                      {formatCurrency((Number(formData.customerPrice) || 0) - (Number(formData.partnerCost) || 0))}
+                    </span>
+                  </div>
+                </div>
+
                 <div>
                   <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Ghi chú / Diễn giải</label>
                   <textarea 

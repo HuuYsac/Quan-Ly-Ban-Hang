@@ -95,6 +95,9 @@ export interface Repair {
   technician?: string;
   status: 'Đang sửa' | 'Đã xong' | 'Đã trả khách' | 'Hủy';
   notes?: string;
+  partnerCost?: number;
+  customerPrice?: number;
+  profit?: number;
   createdAt: string;
 }
 
