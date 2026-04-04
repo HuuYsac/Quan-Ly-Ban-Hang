@@ -40,6 +40,17 @@ export function AIAssistant({ data }: AIAssistantProps) {
   const handleSend = async () => {
     if (!input.trim() || isLoading) return;
 
+    // Check for API key selection if missing
+    if (typeof window !== 'undefined' && window.aistudio && !process.env.GEMINI_API_KEY) {
+      const hasKey = await window.aistudio.hasSelectedApiKey();
+      if (!hasKey) {
+        await window.aistudio.openSelectKey();
+        // After opening the dialog, we assume the user will select a key.
+        // The page will likely refresh or the key will become available.
+        return;
+      }
+    }
+
     const userMessage = input.trim();
     setInput('');
     setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
@@ -48,6 +59,14 @@ export function AIAssistant({ data }: AIAssistantProps) {
     try {
       const apiKey = process.env.GEMINI_API_KEY;
       if (!apiKey) {
+        // If still missing, check if we can prompt again
+        if (typeof window !== 'undefined' && window.aistudio) {
+          const hasKey = await window.aistudio.hasSelectedApiKey();
+          if (!hasKey) {
+            await window.aistudio.openSelectKey();
+            throw new Error('API_KEY_MISSING: Vui lòng chọn API Key từ bảng điều khiển.');
+          }
+        }
         throw new Error('API_KEY_MISSING: Vui lòng cấu hình GEMINI_API_KEY trong môi trường.');
       }
       
@@ -129,6 +148,15 @@ export function AIAssistant({ data }: AIAssistantProps) {
     setIsGeneratingPost(true);
     setFbPost(null);
     try {
+      // Check for API key selection if missing
+      if (typeof window !== 'undefined' && window.aistudio && !process.env.GEMINI_API_KEY) {
+        const hasKey = await window.aistudio.hasSelectedApiKey();
+        if (!hasKey) {
+          await window.aistudio.openSelectKey();
+          return;
+        }
+      }
+
       const apiKey = process.env.GEMINI_API_KEY;
       if (!apiKey) {
         throw new Error('API_KEY_MISSING: Vui lòng cấu hình GEMINI_API_KEY trong môi trường.');
