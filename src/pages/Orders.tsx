@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { AppData, Order, OrderItem } from '../types';
 import { formatCurrency, numberToVietnameseWords } from '../lib/utils';
-import { ShoppingCart, Plus, Search, Eye, Printer, Trash2, X, PlusCircle, Edit } from 'lucide-react';
+import { ShoppingCart, Plus, Search, Eye, Printer, Trash2, X, PlusCircle, Edit, FileText, DollarSign, Package, CreditCard } from 'lucide-react';
 import { Toast, ToastType, ConfirmModal } from '../components/Notification';
 
 interface OrdersProps {
@@ -96,27 +96,9 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
     if (statusFilter === 'Hoàn thành') return matchesSearch && (o.status === 'Hoàn thành' || o.status === 'Đã giao');
     return matchesSearch && o.status === statusFilter;
   }).sort((a, b) => {
-    // Get effective date for sorting (earliest purchaseDate of items, or order date)
-    const getEffectiveDate = (order: Order) => {
-      if (!order.products || order.products.length === 0) return order.date || '';
-      
-      const purchaseDates = order.products
-        .map(p => p.purchaseDate)
-        .filter(Boolean) as string[];
-      
-      if (purchaseDates.length === 0) return order.date || '';
-      
-      // Find the earliest purchase date
-      const earliestPurchaseDate = purchaseDates.reduce((earliest, current) => 
-        current < earliest ? current : earliest, purchaseDates[0]);
-      
-      // Use the earliest of purchase date and order date
-      return (order.date && earliestPurchaseDate < order.date) ? earliestPurchaseDate : (order.date || '');
-    };
-
-    const dateA = getEffectiveDate(a);
-    const dateB = getEffectiveDate(b);
-
+    const dateA = a.date || '';
+    const dateB = b.date || '';
+    
     // Sort by date descending (newest first)
     const dateCompare = dateB.localeCompare(dateA);
     if (dateCompare !== 0) return dateCompare;
@@ -283,6 +265,7 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
     name: '', 
     quantity: 1, 
     price: 0, 
+    importPrice: 0,
     discount: 0, 
     discountType: 'percent',
     serviceTag: '',
@@ -334,12 +317,6 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
           purchaseDate: formData.date,
           warrantyMonths: 12
         };
-      }
-    } else if (field === 'purchaseDate') {
-      // Sync global date and all items
-      setFormData(prev => ({ ...prev, date: value }));
-      for (let i = 0; i < newItems.length; i++) {
-        newItems[i] = { ...newItems[i], purchaseDate: value };
       }
     } else if (field === 'isGift') {
       newItems[index] = { 
@@ -569,7 +546,7 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
           }
         }
         total += subtotal;
-        return { ...item, subtotal };
+        return { ...item, subtotal, purchaseDate: formData.date };
       });
 
       total += (Number(formData.packagingFee) || 0) + (Number(formData.shippingFee) || 0);
@@ -785,6 +762,7 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
                 name: '', 
                 quantity: 1, 
                 price: 0, 
+                importPrice: 0,
                 discount: 0,
                 discountType: 'percent',
                 serviceTag: '',
@@ -1103,7 +1081,7 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
                             </div>
                           )}
                           <div className="text-[10px] text-emerald-600 mt-0.5 font-medium">
-                            Ngày mua: {item.purchaseDate || viewOrder.date} | Bảo hành: {item.isGift ? 'Không bảo hành' : `${item.warrantyMonths || 12} tháng`}
+                            Bảo hành: {item.isGift ? 'Không bảo hành' : `${item.warrantyMonths || 12} tháng`}
                           </div>
                         </td>
                         <td className="p-4 text-center font-medium text-gray-900">{item.quantity}</td>
@@ -1236,7 +1214,7 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
                             </div>
                           )}
                           <div className="text-[10px] text-emerald-600 mt-0.5 font-medium">
-                            Ngày mua: {item.purchaseDate || viewOrder.date} | Bảo hành: {item.isGift ? 'Không bảo hành' : `${item.warrantyMonths || 12} tháng`}
+                            Bảo hành: {item.isGift ? 'Không bảo hành' : `${item.warrantyMonths || 12} tháng`}
                           </div>
                         </td>
                         <td className="p-3 text-sm text-gray-900 text-center">{item.quantity}</td>
@@ -1285,9 +1263,12 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
       {/* Add Order Modal */}
       {isAddModalOpen && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-[100] sm:p-4">
-          <div className="bg-white sm:rounded-2xl shadow-xl w-full max-w-4xl h-full sm:h-auto sm:max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-200">
+          <div className="bg-white sm:rounded-2xl shadow-xl w-full max-w-5xl h-full sm:h-auto sm:max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-200">
             <div className="sticky top-0 bg-white border-b border-gray-100 px-4 sm:px-6 py-4 flex items-center justify-between z-10">
-              <h3 className="text-lg font-bold text-gray-900">{editingId ? 'Chỉnh sửa đơn hàng' : 'Tạo đơn hàng mới'}</h3>
+              <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                <ShoppingCart className="text-blue-600" size={22} />
+                {editingId ? 'Chỉnh sửa đơn hàng' : 'Tạo đơn hàng mới'}
+              </h3>
               <button 
                 onClick={() => {
                   setIsAddModalOpen(false);
@@ -1299,166 +1280,212 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
               </button>
             </div>
             
-            <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Mã đơn hàng</label>
-                  <input 
-                    type="text"
-                    value={formData.id}
-                    onChange={e => setFormData({...formData, id: e.target.value})}
-                    placeholder="Tự động (DH001...)"
-                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Ngày mua hàng *</label>
-                  <input 
-                    required
-                    type="date"
-                    value={formData.date}
-                    onChange={e => setFormData({...formData, date: e.target.value})}
-                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-                  />
-                </div>
-                <div className="md:col-span-1">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Khách hàng *</label>
-                  <div className="flex gap-2">
-                    <select 
-                      required
-                      value={formData.customerId}
-                      onChange={e => setFormData({...formData, customerId: e.target.value})}
-                      className="flex-1 px-3 sm:px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm sm:text-base"
-                    >
-                      <option value="">Chọn khách hàng</option>
-                      {(data.customers || []).map(c => (
-                        <option key={c.id} value={c.id}>{c.name} - {c.phone}</option>
-                      ))}
-                      {/* Show newly created customer if not yet in data.customers */}
-                      {newlyCreatedCustomer && !(data.customers || []).find(c => c.id === newlyCreatedCustomer.id) && (
-                        <option key={newlyCreatedCustomer.id} value={newlyCreatedCustomer.id}>
-                          {newlyCreatedCustomer.name} - {newlyCreatedCustomer.phone} (Vừa thêm)
-                        </option>
-                      )}
-                    </select>
-                    <button 
-                      type="button"
-                      onClick={() => setIsAddCustomerModalOpen(true)}
-                      className="px-2 sm:px-3 py-2 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 rounded-lg border border-emerald-200 transition-colors flex items-center gap-1 whitespace-nowrap text-xs sm:text-sm font-medium"
-                      title="Thêm khách hàng mới"
-                    >
-                      <Plus size={16} />
-                      <span className="hidden sm:inline">Khách mới</span>
-                    </button>
-                  </div>
+            <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-8">
+              {/* General Information Section */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 pb-2 border-b border-gray-100">
+                  <FileText size={18} className="text-blue-500" />
+                  <h4 className="font-bold text-gray-800 uppercase text-xs tracking-wider">Thông tin đơn hàng</h4>
                 </div>
                 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Phương thức thanh toán</label>
-                  <select 
-                    value={formData.paymentMethod}
-                    onChange={e => setFormData({...formData, paymentMethod: e.target.value})}
-                    className="w-full px-3 sm:px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm sm:text-base"
-                  >
-                    <option value="Tiền mặt">Tiền mặt</option>
-                    <option value="Chuyển khoản">Chuyển khoản</option>
-                    <option value="Thẻ tín dụng">Thẻ tín dụng</option>
-                  </select>
-                </div>
+                <div className="grid grid-cols-1 md:grid-cols-6 gap-4 sm:gap-6 bg-gray-50/50 p-4 rounded-2xl border border-gray-100">
+                  <div className="md:col-span-1">
+                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1 ml-1">Mã đơn hàng</label>
+                    <input 
+                      type="text"
+                      value={formData.id}
+                      onChange={e => setFormData({...formData, id: e.target.value})}
+                      placeholder="Tự động (DH001...)"
+                      className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white shadow-sm transition-all"
+                    />
+                  </div>
+                  <div className="md:col-span-4">
+                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1 ml-1">Khách hàng *</label>
+                    <div className="flex gap-2">
+                      <select 
+                        required
+                        value={formData.customerId}
+                        onChange={e => {
+                          if (e.target.value === 'add-new-customer') {
+                            setIsAddCustomerModalOpen(true);
+                          } else {
+                            setFormData({...formData, customerId: e.target.value});
+                          }
+                        }}
+                        className="flex-1 px-3 sm:px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm sm:text-base bg-white shadow-sm transition-all"
+                      >
+                        <option value="">Chọn khách hàng</option>
+                        {(data.customers || []).map(c => (
+                          <option key={c.id} value={c.id}>{c.name} - {c.phone}</option>
+                        ))}
+                        <option value="add-new-customer" className="text-blue-600 font-bold">+ Thêm khách hàng mới</option>
+                        {/* Show newly created customer if not yet in data.customers */}
+                        {newlyCreatedCustomer && !(data.customers || []).find(c => c.id === newlyCreatedCustomer.id) && (
+                          <option key={newlyCreatedCustomer.id} value={newlyCreatedCustomer.id}>
+                            {newlyCreatedCustomer.name} - {newlyCreatedCustomer.phone} (Vừa thêm)
+                          </option>
+                        )}
+                      </select>
+                      <button 
+                        type="button"
+                        onClick={() => setIsAddCustomerModalOpen(true)}
+                        className="p-2.5 text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-xl transition-colors border border-blue-100 flex-shrink-0 flex items-center gap-1 shadow-sm"
+                        title="Thêm khách hàng mới"
+                      >
+                        <PlusCircle size={20} />
+                        <span className="hidden sm:inline text-xs font-bold uppercase">Khách mới</span>
+                      </button>
+                    </div>
+                  </div>
+                  <div className="md:col-span-1">
+                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1 ml-1">Ngày mua hàng *</label>
+                    <input 
+                      required
+                      type="date"
+                      value={formData.date}
+                      onChange={e => setFormData({...formData, date: e.target.value})}
+                      className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white shadow-sm transition-all"
+                    />
+                  </div>
+                  
+                  <div className="md:col-span-2">
+                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1 ml-1">Thanh toán</label>
+                    <div className="relative">
+                      <CreditCard size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                      <select 
+                        value={formData.paymentMethod}
+                        onChange={e => setFormData({...formData, paymentMethod: e.target.value})}
+                        className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm sm:text-base bg-white shadow-sm transition-all"
+                      >
+                        <option value="Tiền mặt">Tiền mặt</option>
+                        <option value="Chuyển khoản">Chuyển khoản</option>
+                        <option value="Thẻ tín dụng">Thẻ tín dụng</option>
+                      </select>
+                    </div>
+                  </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Trạng thái thanh toán</label>
-                  <select 
-                    value={formData.paymentStatus}
-                    onChange={e => setFormData({...formData, paymentStatus: e.target.value as any})}
-                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-                  >
-                    <option value="Đã thanh toán">Đã thanh toán</option>
-                    <option value="Công nợ">Công nợ</option>
-                  </select>
-                </div>
+                  <div className="md:col-span-1">
+                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1 ml-1">Trạng thái</label>
+                    <select 
+                      value={formData.paymentStatus}
+                      onChange={e => setFormData({...formData, paymentStatus: e.target.value as any})}
+                      className={`w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-medium shadow-sm transition-all ${
+                        formData.paymentStatus === 'Đã thanh toán' 
+                          ? 'bg-emerald-50 border-emerald-100 text-emerald-700' 
+                          : 'bg-amber-50 border-amber-100 text-amber-700'
+                      }`}
+                    >
+                      <option value="Đã thanh toán">Đã thanh toán</option>
+                      <option value="Công nợ">Công nợ</option>
+                    </select>
+                  </div>
 
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Ghi chú</label>
-                  <input 
-                    type="text"
-                    value={formData.notes}
-                    onChange={e => setFormData({...formData, notes: e.target.value})}
-                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-                    placeholder="Ghi chú đơn hàng..."
-                  />
+                  <div className="md:col-span-3">
+                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1 ml-1">Ghi chú</label>
+                    <input 
+                      type="text"
+                      value={formData.notes}
+                      onChange={e => setFormData({...formData, notes: e.target.value})}
+                      className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white shadow-sm transition-all"
+                      placeholder="Ghi chú đơn hàng..."
+                    />
+                  </div>
                 </div>
               </div>
 
-              {/* Fees and Commission */}
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 bg-slate-50 rounded-xl border border-slate-100">
-                <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Phí đóng gói</label>
-                  <input 
-                    type="number" min="0"
-                    value={formData.packagingFee}
-                    onChange={e => setFormData({...formData, packagingFee: Number(e.target.value)})}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-sm"
-                    placeholder="0"
-                  />
+              {/* Fees and Commission Section */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 pb-2 border-b border-gray-100">
+                  <DollarSign size={18} className="text-emerald-500" />
+                  <h4 className="font-bold text-gray-800 uppercase text-xs tracking-wider">Phí & Hoa hồng</h4>
                 </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Phí vận chuyển</label>
-                  <input 
-                    type="number" min="0"
-                    value={formData.shippingFee}
-                    onChange={e => setFormData({...formData, shippingFee: Number(e.target.value)})}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-sm"
-                    placeholder="0"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Hoa hồng CTV</label>
-                  <input 
-                    type="number" min="0"
-                    value={formData.commission}
-                    onChange={e => setFormData({...formData, commission: Number(e.target.value)})}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-sm"
-                    placeholder="0"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Cộng tác viên</label>
-                  <input 
-                    type="text"
-                    value={formData.collaboratorName}
-                    onChange={e => setFormData({...formData, collaboratorName: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-sm"
-                    placeholder="Tên CTV..."
-                  />
+                
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-5 bg-emerald-50/30 rounded-2xl border border-emerald-100/50">
+                  <div>
+                    <label className="block text-[10px] font-bold text-emerald-600 uppercase mb-1 ml-1">Phí đóng gói</label>
+                    <div className="relative">
+                      <input 
+                        type="number" min="0"
+                        value={formData.packagingFee}
+                        onChange={e => setFormData({...formData, packagingFee: Number(e.target.value)})}
+                        className="w-full px-3 py-2 border border-emerald-100 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-sm bg-white shadow-sm"
+                        placeholder="0"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-emerald-600 uppercase mb-1 ml-1">Phí vận chuyển</label>
+                    <input 
+                      type="number" min="0"
+                      value={formData.shippingFee}
+                      onChange={e => setFormData({...formData, shippingFee: Number(e.target.value)})}
+                      className="w-full px-3 py-2 border border-emerald-100 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-sm bg-white shadow-sm"
+                      placeholder="0"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-indigo-600 uppercase mb-1 ml-1">Hoa hồng CTV</label>
+                    <input 
+                      type="number" min="0"
+                      value={formData.commission}
+                      onChange={e => setFormData({...formData, commission: Number(e.target.value)})}
+                      className="w-full px-3 py-2 border border-indigo-100 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-sm bg-white shadow-sm"
+                      placeholder="0"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-indigo-600 uppercase mb-1 ml-1">Cộng tác viên</label>
+                    <input 
+                      type="text"
+                      value={formData.collaboratorName}
+                      onChange={e => setFormData({...formData, collaboratorName: e.target.value})}
+                      className="w-full px-3 py-2 border border-indigo-100 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-sm bg-white shadow-sm"
+                      placeholder="Tên CTV..."
+                    />
+                  </div>
                 </div>
               </div>
 
-              {/* Products List */}
-              <div>
-                <div className="flex items-center justify-between mb-3">
-                  <label className="block text-sm font-medium text-gray-700">Sản phẩm *</label>
+              {/* Products List Section */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between pb-2 border-b border-gray-100">
+                  <div className="flex items-center gap-2">
+                    <Package size={18} className="text-amber-500" />
+                    <h4 className="font-bold text-gray-800 uppercase text-xs tracking-wider">Danh sách sản phẩm</h4>
+                  </div>
                   <button 
                     type="button"
                     onClick={handleAddItem}
-                    className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
+                    className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-bold uppercase flex items-center gap-1.5 hover:bg-blue-700 transition-colors shadow-sm shadow-blue-200"
                   >
-                    <PlusCircle size={16} /> Thêm dòng
+                    <Plus size={14} strokeWidth={3} /> Thêm sản phẩm
                   </button>
                 </div>
                 
-                <div className="space-y-3">
+                <div className="space-y-4">
                   {orderItems.map((item, index) => (
-                    <div key={index} className="bg-gray-50 p-3 sm:p-4 rounded-xl border border-gray-100 space-y-4">
-                      <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
-                        <div className="sm:col-span-6">
-                          <label className="block text-xs text-gray-500 mb-1 font-bold uppercase">Sản phẩm *</label>
+                    <div key={index} className="bg-white p-4 sm:p-5 rounded-2xl border border-gray-200 shadow-sm hover:border-blue-200 transition-colors space-y-4 relative overflow-hidden group">
+                      {/* Item Number Badge */}
+                      <div className="absolute top-0 left-0 bg-gray-100 text-gray-400 text-[10px] font-bold px-2 py-1 rounded-br-lg group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                        #{index + 1}
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-12 gap-4 items-start pt-2">
+                        <div className="sm:col-span-5">
+                          <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1 ml-1">Sản phẩm *</label>
                           <div className="flex gap-2">
                             <select 
                               required
                               value={item.productId}
-                              onChange={e => handleItemChange(index, 'productId', e.target.value)}
-                              className="flex-1 min-w-0 px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm"
+                              onChange={e => {
+                                if (e.target.value === 'add-new-product') {
+                                  setCurrentOrderItemIndex(index);
+                                  setIsAddProductModalOpen(true);
+                                } else {
+                                  handleItemChange(index, 'productId', e.target.value);
+                                }
+                              }}
+                              className="flex-1 min-w-0 px-3 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm bg-gray-50/30"
                             >
                               <option value="">Chọn sản phẩm</option>
                               {(data.products || []).map(p => (
@@ -1466,6 +1493,7 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
                                   {p.name} - {formatCurrency(p.price)} (Còn: {p.stock})
                                 </option>
                               ))}
+                              <option value="add-new-product" className="text-blue-600 font-bold">+ Thêm sản phẩm mới</option>
                               {newlyCreatedProduct && !(data.products || []).find(p => p.id === newlyCreatedProduct.id) && (
                                 <option key={newlyCreatedProduct.id} value={newlyCreatedProduct.id}>
                                   {newlyCreatedProduct.name} - {formatCurrency(newlyCreatedProduct.price)} (Vừa thêm)
@@ -1478,43 +1506,52 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
                                 setCurrentOrderItemIndex(index);
                                 setIsAddProductModalOpen(true);
                               }}
-                              className="p-2 text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors border border-blue-100 flex-shrink-0"
+                              className="p-2.5 text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-xl transition-colors border border-blue-100 flex-shrink-0 shadow-sm"
                               title="Thêm sản phẩm mới"
                             >
-                              <PlusCircle size={18} />
+                              <PlusCircle size={20} />
                             </button>
                           </div>
                         </div>
+
+                        <div className="sm:col-span-3">
+                          <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1 ml-1">Đơn giá</label>
+                          <div className="relative">
+                            <input 
+                              type="number" required min="0"
+                              value={item.price}
+                              onChange={e => handleItemChange(index, 'price', Number(e.target.value))}
+                              className="w-full px-3 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm font-bold text-blue-600"
+                            />
+                          </div>
+                        </div>
                         
-                        <div className="grid grid-cols-5 sm:col-span-5 gap-2">
+                        <div className="grid grid-cols-4 sm:col-span-3 gap-2">
                           <div className="col-span-1">
-                            <label className="block text-xs text-gray-500 mb-1 font-bold uppercase">SL</label>
+                            <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1 ml-1">SL</label>
                             <input 
                               type="number" required min="1"
                               value={item.quantity}
                               onChange={e => handleItemChange(index, 'quantity', Number(e.target.value))}
-                              className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm"
+                              className="w-full px-2 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm text-center font-bold"
                             />
                           </div>
 
-                          <div className="col-span-4 flex gap-1">
-                            <div className="flex-1">
-                              <label className="block text-xs text-gray-500 mb-1 font-bold uppercase">Giảm giá</label>
+                          <div className="col-span-3">
+                            <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1 ml-1">Giảm giá</label>
+                            <div className="flex gap-1">
                               <input 
                                 type="number" min="0"
                                 disabled={item.isGift}
                                 value={item.discount}
                                 onChange={e => handleItemChange(index, 'discount', Number(e.target.value))}
-                                className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm disabled:bg-gray-100"
+                                className="flex-1 min-w-0 px-3 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm disabled:bg-gray-100"
                               />
-                            </div>
-                            <div className="w-12">
-                              <label className="block text-xs text-gray-500 mb-1 font-bold uppercase">Loại</label>
                               <select
                                 disabled={item.isGift}
                                 value={item.discountType || 'percent'}
                                 onChange={e => handleItemChange(index, 'discountType', e.target.value)}
-                                className="w-full px-1 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-xs h-[38px] disabled:bg-gray-100"
+                                className="w-12 px-1 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-xs font-bold disabled:bg-gray-100"
                               >
                                 <option value="percent">%</option>
                                 <option value="amount">đ</option>
@@ -1523,128 +1560,144 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
                           </div>
                         </div>
 
-                        <div className="sm:col-span-1 flex flex-col items-center justify-end gap-2">
-                          <label className="flex flex-col items-center gap-1 cursor-pointer group">
-                            <span className="text-[10px] font-bold text-gray-400 uppercase group-hover:text-indigo-600 transition-colors">Quà tặng</span>
-                            <input 
-                              type="checkbox"
-                              checked={item.isGift}
-                              onChange={e => handleItemChange(index, 'isGift', e.target.checked)}
-                              className="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                            />
+                        <div className="sm:col-span-1 flex sm:flex-col items-center justify-center gap-3 sm:gap-4 h-full pt-4 sm:pt-0">
+                          <label className="flex flex-col items-center gap-1 cursor-pointer group/gift">
+                            <span className={`text-[9px] font-bold uppercase transition-colors ${item.isGift ? 'text-amber-600' : 'text-gray-400 group-hover/gift:text-amber-500'}`}>Quà</span>
+                            <div className="relative inline-flex items-center cursor-pointer">
+                              <input 
+                                type="checkbox"
+                                checked={item.isGift}
+                                onChange={e => handleItemChange(index, 'isGift', e.target.checked)}
+                                className="sr-only peer"
+                              />
+                              <div className="w-8 h-4 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-amber-500"></div>
+                            </div>
                           </label>
                           <button 
                             type="button"
                             onClick={() => handleRemoveItem(index)}
                             disabled={orderItems.length === 1}
-                            className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
+                            className="p-2.5 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all disabled:opacity-30"
+                            title="Xóa sản phẩm"
                           >
-                            <Trash2 size={18} />
+                            <Trash2 size={20} />
                           </button>
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 pt-3 border-t border-gray-200/50">
+                      {/* Specs Row */}
+                      <div className="grid grid-cols-2 sm:grid-cols-6 gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100">
                         <div className="col-span-2 sm:col-span-1">
-                          <label className="block text-[10px] font-bold text-blue-600 uppercase mb-1">Service Tag *</label>
+                          <label className="block text-[9px] font-bold text-blue-600 uppercase mb-1">S/N</label>
                           <input 
                             type="text" required={!item.isGift}
-                            placeholder={item.isGift ? "Không bắt buộc" : "Bắt buộc"}
+                            placeholder={item.isGift ? "S/N" : "S/N *"}
                             value={item.serviceTag}
                             onChange={e => handleItemChange(index, 'serviceTag', e.target.value)}
-                            className={`w-full px-3 py-1.5 border rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-xs ${item.isGift ? 'border-gray-200 bg-gray-50' : 'border-blue-200 bg-blue-50/30'}`}
+                            className={`w-full px-2 py-1.5 border rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-xs font-medium ${item.isGift ? 'border-gray-200 bg-white' : 'border-blue-200 bg-blue-50/50'}`}
                           />
                         </div>
                         <div>
-                          <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">CPU</label>
+                          <label className="block text-[9px] font-bold text-gray-500 uppercase mb-1">CPU</label>
                           <input 
                             type="text"
-                            placeholder="Core i5..."
+                            placeholder="CPU"
                             value={item.cpu}
                             onChange={e => handleItemChange(index, 'cpu', e.target.value)}
-                            className="w-full px-3 py-1.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-xs"
+                            className="w-full px-2 py-1.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-xs bg-white"
                           />
                         </div>
                         <div>
-                          <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">RAM</label>
+                          <label className="block text-[9px] font-bold text-gray-500 uppercase mb-1">RAM</label>
                           <input 
                             type="text"
-                            placeholder="8GB..."
+                            placeholder="RAM"
                             value={item.ram}
                             onChange={e => handleItemChange(index, 'ram', e.target.value)}
-                            className="w-full px-3 py-1.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-xs"
+                            className="w-full px-2 py-1.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-xs bg-white"
                           />
                         </div>
                         <div>
-                          <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">SSD</label>
+                          <label className="block text-[9px] font-bold text-gray-500 uppercase mb-1">SSD</label>
                           <input 
                             type="text"
-                            placeholder="256GB..."
+                            placeholder="SSD"
                             value={item.ssd}
                             onChange={e => handleItemChange(index, 'ssd', e.target.value)}
-                            className="w-full px-3 py-1.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-xs"
+                            className="w-full px-2 py-1.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-xs bg-white"
                           />
                         </div>
                         <div>
-                          <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Màn hình</label>
+                          <label className="block text-[9px] font-bold text-gray-500 uppercase mb-1">Màn</label>
                           <input 
                             type="text"
-                            placeholder="14 inch..."
+                            placeholder="Màn"
                             value={item.screen}
                             onChange={e => handleItemChange(index, 'screen', e.target.value)}
-                            className="w-full px-3 py-1.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-xs"
-                          />
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-3 pt-3 border-t border-gray-200/50">
-                        <div>
-                          <label className="block text-[10px] font-bold text-emerald-600 uppercase mb-1">Ngày mua hàng</label>
-                          <input 
-                            type="date"
-                            value={item.purchaseDate}
-                            onChange={e => handleItemChange(index, 'purchaseDate', e.target.value)}
-                            className="w-full px-3 py-1.5 border border-emerald-200 rounded-lg focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-xs bg-emerald-50/30"
+                            className="w-full px-2 py-1.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-xs bg-white"
                           />
                         </div>
                         <div>
-                          <label className={`block text-[10px] font-bold uppercase mb-1 ${item.isGift ? 'text-gray-400' : 'text-emerald-600'}`}>Bảo hành</label>
+                          <label className={`block text-[9px] font-bold uppercase mb-1 ${item.isGift ? 'text-gray-400' : 'text-emerald-600'}`}>Bảo hành</label>
                           <select
                             disabled={item.isGift}
                             value={item.isGift ? 0 : item.warrantyMonths}
                             onChange={e => handleItemChange(index, 'warrantyMonths', Number(e.target.value))}
-                            className={`w-full px-3 py-1.5 border rounded-lg focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-xs ${item.isGift ? 'border-gray-200 bg-gray-100 text-gray-400' : 'border-emerald-200 bg-emerald-50/30'}`}
+                            className={`w-full px-1 py-1.5 border rounded-lg focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-[10px] font-bold ${item.isGift ? 'border-gray-200 bg-gray-100 text-gray-400' : 'border-emerald-200 bg-white text-emerald-700'}`}
                           >
-                            {item.isGift && <option value={0}>Không bảo hành</option>}
-                            <option value={1}>1 tháng</option>
-                            <option value={3}>3 tháng</option>
-                            <option value={6}>6 tháng</option>
-                            <option value={12}>12 tháng</option>
-                            <option value={24}>24 tháng</option>
-                            <option value={36}>36 tháng</option>
+                            {item.isGift && <option value={0}>Không BH</option>}
+                            <option value={1}>1T</option>
+                            <option value={3}>3T</option>
+                            <option value={6}>6T</option>
+                            <option value={12}>12T</option>
+                            <option value={24}>24T</option>
+                            <option value={36}>36T</option>
                           </select>
                         </div>
                       </div>
                       
-                      <div className="pt-2 flex justify-between items-center text-sm">
-                        <span className="text-gray-500">Thành tiền:</span>
-                        <span className="font-bold text-gray-900">
-                          {formatCurrency(
-                            item.discountType === 'percent' 
-                              ? item.quantity * item.price * (1 - (item.discount || 0) / 100)
-                              : Math.max(0, (item.quantity * item.price) - (item.discount || 0))
+                      <div className="pt-2 flex justify-between items-center border-t border-gray-100 mt-2">
+                        <div>
+                          {isAdmin && (
+                            <div className="flex items-center gap-2">
+                              <span className="text-[9px] font-bold text-rose-500 uppercase tracking-wider">Giá vốn:</span>
+                              <input 
+                                type="number" min="0"
+                                value={item.importPrice || 0}
+                                onChange={e => handleItemChange(index, 'importPrice', Number(e.target.value))}
+                                className="w-24 px-2 py-1 border border-rose-100 bg-rose-50/50 rounded-lg text-xs font-bold text-rose-600 focus:ring-1 focus:ring-rose-500/20 focus:border-rose-500"
+                              />
+                            </div>
                           )}
-                        </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-gray-400 font-medium uppercase tracking-wider">Thành tiền:</span>
+                          <span className="text-base font-black text-gray-900 bg-gray-100 px-3 py-1 rounded-lg">
+                            {formatCurrency(
+                              item.discountType === 'percent' 
+                                ? item.quantity * item.price * (1 - (item.discount || 0) / 100)
+                                : Math.max(0, (item.quantity * item.price) - (item.discount || 0))
+                            )}
+                          </span>
+                        </div>
                       </div>
                     </div>
                   ))}
                 </div>
               </div>
 
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-gray-100">
-                <div className="text-lg text-gray-900 w-full sm:w-auto text-center sm:text-left">
-                  Tổng cộng: <span className="font-bold text-blue-600 text-xl ml-2">{formatCurrency(calculateTotal())}</span>
+              {/* Footer / Summary Section */}
+              <div className="sticky bottom-0 bg-white pt-6 pb-2 border-t border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-6 z-10">
+                <div className="flex items-center gap-4 bg-blue-50 px-6 py-3 rounded-2xl border border-blue-100 w-full sm:w-auto">
+                  <div className="p-2 bg-blue-600 rounded-xl text-white">
+                    <ShoppingCart size={24} />
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-bold text-blue-600 uppercase tracking-widest">Tổng thanh toán</p>
+                    <p className="text-2xl font-black text-blue-700 leading-none">{formatCurrency(calculateTotal())}</p>
+                  </div>
                 </div>
+                
                 <div className="flex gap-3 w-full sm:w-auto">
                   <button 
                     type="button"
@@ -1652,15 +1705,15 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
                       setIsAddModalOpen(false);
                       setEditingId(null);
                     }}
-                    className="flex-1 sm:flex-none px-5 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium transition-colors"
+                    className="flex-1 sm:flex-none px-8 py-3 text-gray-500 bg-gray-100 hover:bg-gray-200 rounded-xl font-bold uppercase text-xs tracking-widest transition-all"
                   >
-                    Hủy
+                    Hủy bỏ
                   </button>
                   <button 
                     type="submit"
-                    className="flex-1 sm:flex-none px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors shadow-sm shadow-blue-600/20"
+                    className="flex-1 sm:flex-none px-10 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold uppercase text-xs tracking-widest transition-all shadow-lg shadow-blue-200 active:scale-95"
                   >
-                    {editingId ? 'Cập nhật' : 'Tạo đơn hàng'}
+                    {editingId ? 'Cập nhật đơn' : 'Xác nhận tạo đơn'}
                   </button>
                 </div>
               </div>
