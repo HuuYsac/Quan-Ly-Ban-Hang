@@ -123,6 +123,7 @@ export function PublicWarrantyCheck({ onBack }: { onBack?: () => void }) {
 
       allOrders.forEach((orderData) => {
         const products = (orderData.products || []).filter((p: any) => {
+          if (p.isGift) return false;
           if (formData.serviceTag && p.serviceTag) {
             return p.serviceTag.toLowerCase().includes(formData.serviceTag.trim().toLowerCase());
           }

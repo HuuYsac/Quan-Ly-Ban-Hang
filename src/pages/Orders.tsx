@@ -32,6 +32,7 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
   const [editingId, setEditingId] = useState<string | null>(null);
   const [viewOrder, setViewOrder] = useState<Order | null>(null);
   const [formData, setFormData] = useState({
+    id: '',
     customerId: '',
     date: new Date().toISOString().split('T')[0],
     paymentMethod: 'Tiền mặt',
@@ -95,8 +96,29 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
     if (statusFilter === 'Hoàn thành') return matchesSearch && (o.status === 'Hoàn thành' || o.status === 'Đã giao');
     return matchesSearch && o.status === statusFilter;
   }).sort((a, b) => {
+    // Get effective date for sorting (earliest purchaseDate of items, or order date)
+    const getEffectiveDate = (order: Order) => {
+      if (!order.products || order.products.length === 0) return order.date || '';
+      
+      const purchaseDates = order.products
+        .map(p => p.purchaseDate)
+        .filter(Boolean) as string[];
+      
+      if (purchaseDates.length === 0) return order.date || '';
+      
+      // Find the earliest purchase date
+      const earliestPurchaseDate = purchaseDates.reduce((earliest, current) => 
+        current < earliest ? current : earliest, purchaseDates[0]);
+      
+      // Use the earliest of purchase date and order date
+      return (order.date && earliestPurchaseDate < order.date) ? earliestPurchaseDate : (order.date || '');
+    };
+
+    const dateA = getEffectiveDate(a);
+    const dateB = getEffectiveDate(b);
+
     // Sort by date descending (newest first)
-    const dateCompare = (b.date || '').localeCompare(a.date || '');
+    const dateCompare = dateB.localeCompare(dateA);
     if (dateCompare !== 0) return dateCompare;
     
     // If same date, sort by time descending
@@ -319,6 +341,12 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
       for (let i = 0; i < newItems.length; i++) {
         newItems[i] = { ...newItems[i], purchaseDate: value };
       }
+    } else if (field === 'isGift') {
+      newItems[index] = { 
+        ...newItems[index], 
+        isGift: value,
+        warrantyMonths: value ? 0 : 12
+      };
     } else {
       newItems[index] = { ...newItems[index], [field]: value };
     }
@@ -502,6 +530,7 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
   const handleEdit = (order: Order) => {
     setEditingId(order.id);
     setFormData({
+      id: order.id,
       customerId: order.customerId,
       date: order.date,
       paymentMethod: order.paymentMethod,
@@ -594,6 +623,7 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
         // 3. Update order
         await updateItem('orders', editingId, {
           ...oldOrder,
+          id: formData.id || editingId,
           customerId: customer.id,
           customerName: customer.name,
           customerPhone: customer.phone,
@@ -614,12 +644,15 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
 
       } else {
         const now = new Date();
-        // Robust ID generation for order
-        const maxId = (data.orders || []).reduce((max, o) => {
-          const idNum = parseInt((o.id || '').replace('DH', ''));
-          return isNaN(idNum) ? max : Math.max(max, idNum);
-        }, 0);
-        const newOrderId = `DH${String(maxId + 1).padStart(3, '0')}`;
+        // Robust ID generation for order if not provided
+        let newOrderId = formData.id;
+        if (!newOrderId) {
+          const maxId = (data.orders || []).reduce((max, o) => {
+            const idNum = parseInt((o.id || '').replace('DH', ''));
+            return isNaN(idNum) ? max : Math.max(max, idNum);
+          }, 0);
+          newOrderId = `DH${String(maxId + 1).padStart(3, '0')}`;
+        }
 
         const newOrder: Order = {
           id: newOrderId,
@@ -681,6 +714,7 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
       setEditingId(null);
       showToast(editingId ? 'Đã cập nhật đơn hàng thành công' : 'Đã tạo đơn hàng thành công');
       setFormData({ 
+        id: '',
         customerId: '', 
         date: new Date().toISOString().split('T')[0],
         paymentMethod: 'Tiền mặt', 
@@ -734,6 +768,7 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
             onClick={() => {
               setEditingId(null);
               setFormData({ 
+                id: '',
                 customerId: '', 
                 date: new Date().toISOString().split('T')[0],
                 paymentMethod: 'Tiền mặt', 
@@ -1068,7 +1103,7 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
                             </div>
                           )}
                           <div className="text-[10px] text-emerald-600 mt-0.5 font-medium">
-                            Ngày mua: {item.purchaseDate || viewOrder.date} | Bảo hành: {item.warrantyMonths || 12} tháng
+                            Ngày mua: {item.purchaseDate || viewOrder.date} | Bảo hành: {item.isGift ? 'Không bảo hành' : `${item.warrantyMonths || 12} tháng`}
                           </div>
                         </td>
                         <td className="p-4 text-center font-medium text-gray-900">{item.quantity}</td>
@@ -1201,7 +1236,7 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
                             </div>
                           )}
                           <div className="text-[10px] text-emerald-600 mt-0.5 font-medium">
-                            Ngày mua: {item.purchaseDate || viewOrder.date} | Bảo hành: {item.warrantyMonths || 12} tháng
+                            Ngày mua: {item.purchaseDate || viewOrder.date} | Bảo hành: {item.isGift ? 'Không bảo hành' : `${item.warrantyMonths || 12} tháng`}
                           </div>
                         </td>
                         <td className="p-3 text-sm text-gray-900 text-center">{item.quantity}</td>
@@ -1266,7 +1301,27 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
             
             <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
-                <div className="md:col-span-2">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Mã đơn hàng</label>
+                  <input 
+                    type="text"
+                    value={formData.id}
+                    onChange={e => setFormData({...formData, id: e.target.value})}
+                    placeholder="Tự động (DH001...)"
+                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Ngày mua hàng *</label>
+                  <input 
+                    required
+                    type="date"
+                    value={formData.date}
+                    onChange={e => setFormData({...formData, date: e.target.value})}
+                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                  />
+                </div>
+                <div className="md:col-span-1">
                   <label className="block text-sm font-medium text-gray-700 mb-1">Khách hàng *</label>
                   <div className="flex gap-2">
                     <select 
@@ -1493,11 +1548,11 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
                         <div className="col-span-2 sm:col-span-1">
                           <label className="block text-[10px] font-bold text-blue-600 uppercase mb-1">Service Tag *</label>
                           <input 
-                            type="text" required
-                            placeholder="Bắt buộc"
+                            type="text" required={!item.isGift}
+                            placeholder={item.isGift ? "Không bắt buộc" : "Bắt buộc"}
                             value={item.serviceTag}
                             onChange={e => handleItemChange(index, 'serviceTag', e.target.value)}
-                            className="w-full px-3 py-1.5 border border-blue-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-xs bg-blue-50/30"
+                            className={`w-full px-3 py-1.5 border rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-xs ${item.isGift ? 'border-gray-200 bg-gray-50' : 'border-blue-200 bg-blue-50/30'}`}
                           />
                         </div>
                         <div>
@@ -1553,12 +1608,14 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
                           />
                         </div>
                         <div>
-                          <label className="block text-[10px] font-bold text-emerald-600 uppercase mb-1">Bảo hành</label>
+                          <label className={`block text-[10px] font-bold uppercase mb-1 ${item.isGift ? 'text-gray-400' : 'text-emerald-600'}`}>Bảo hành</label>
                           <select
-                            value={item.warrantyMonths}
+                            disabled={item.isGift}
+                            value={item.isGift ? 0 : item.warrantyMonths}
                             onChange={e => handleItemChange(index, 'warrantyMonths', Number(e.target.value))}
-                            className="w-full px-3 py-1.5 border border-emerald-200 rounded-lg focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-xs bg-emerald-50/30"
+                            className={`w-full px-3 py-1.5 border rounded-lg focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-xs ${item.isGift ? 'border-gray-200 bg-gray-100 text-gray-400' : 'border-emerald-200 bg-emerald-50/30'}`}
                           >
+                            {item.isGift && <option value={0}>Không bảo hành</option>}
                             <option value={1}>1 tháng</option>
                             <option value={3}>3 tháng</option>
                             <option value={6}>6 tháng</option>

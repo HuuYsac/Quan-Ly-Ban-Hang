@@ -74,7 +74,7 @@ const Warranty: React.FC = () => {
       const customer = (data.customers || []).find(c => c.id === order.customerId);
       
       (order.products || []).forEach(product => {
-        if (product.serviceTag && product.purchaseDate && product.warrantyMonths) {
+        if (!product.isGift && product.serviceTag && product.purchaseDate && product.warrantyMonths) {
           const purchaseDate = new Date(product.purchaseDate);
           const expiryDate = new Date(purchaseDate);
           expiryDate.setMonth(expiryDate.getMonth() + product.warrantyMonths);

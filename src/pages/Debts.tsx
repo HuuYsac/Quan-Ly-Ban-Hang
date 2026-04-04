@@ -16,11 +16,40 @@ export function Debts({ data, updateData, addItem, updateItem, deleteItem, isAdm
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState<'customers' | 'suppliers'>('customers');
   const [isCollectModalOpen, setIsCollectModalOpen] = useState(false);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(null);
   const [collectAmount, setCollectAmount] = useState('');
+  const [editAmount, setEditAmount] = useState('');
+
+  const handleViewDetails = (item: Customer | Supplier, type: 'customers' | 'suppliers') => {
+    if (type === 'customers') {
+      setSelectedCustomer(item as Customer);
+      setSelectedSupplier(null);
+    } else {
+      setSelectedSupplier(item as Supplier);
+      setSelectedCustomer(null);
+    }
+    setIsDetailModalOpen(true);
+  };
+
+  const handleEditDebt = (item: Customer | Supplier, type: 'customers' | 'suppliers') => {
+    if (!isAdmin) return;
+    if (type === 'customers') {
+      setSelectedCustomer(item as Customer);
+      setSelectedSupplier(null);
+      setEditAmount(item.debt.toString());
+    } else {
+      setSelectedSupplier(item as Supplier);
+      setSelectedCustomer(null);
+      setEditAmount(item.debt.toString());
+    }
+    setIsEditModalOpen(true);
+  };
 
   const handleCollect = (customer: Customer) => {
+    if (!isAdmin) return;
     setSelectedCustomer(customer);
     setSelectedSupplier(null);
     setCollectAmount(customer.debt.toString());
@@ -28,10 +57,37 @@ export function Debts({ data, updateData, addItem, updateItem, deleteItem, isAdm
   };
 
   const handlePay = (supplier: Supplier) => {
+    if (!isAdmin) return;
     setSelectedSupplier(supplier);
     setSelectedCustomer(null);
     setCollectAmount(supplier.debt.toString());
     setIsCollectModalOpen(true);
+  };
+
+  const submitEditDebt = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const amount = Number(editAmount);
+
+    try {
+      if (selectedCustomer) {
+        await updateItem('customers', selectedCustomer.id, {
+          ...selectedCustomer,
+          debt: amount
+        });
+      } else if (selectedSupplier) {
+        await updateItem('suppliers', selectedSupplier.id, {
+          ...selectedSupplier,
+          debt: amount
+        });
+      }
+
+      setIsEditModalOpen(false);
+      setSelectedCustomer(null);
+      setSelectedSupplier(null);
+      setEditAmount('');
+    } catch (error) {
+      console.error('Lỗi khi cập nhật công nợ:', error);
+    }
   };
 
   const submitCollect = async (e: React.FormEvent) => {
@@ -158,7 +214,11 @@ export function Debts({ data, updateData, addItem, updateItem, deleteItem, isAdm
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {filteredCustomers.map((customer) => (
-                  <tr key={customer.id} className="hover:bg-gray-50/50 transition-colors">
+                  <tr 
+                    key={customer.id} 
+                    className="hover:bg-gray-50/50 transition-colors cursor-pointer"
+                    onClick={() => handleViewDetails(customer, 'customers')}
+                  >
                     <td className="p-4">
                       <div className="font-medium text-gray-900">{customer.name}</div>
                       <div className="text-xs text-gray-500 mt-1">{customer.id}</div>
@@ -169,13 +229,31 @@ export function Debts({ data, updateData, addItem, updateItem, deleteItem, isAdm
                     <td className="p-4 text-right font-semibold text-rose-600">
                       {formatCurrency(customer.debt)}
                     </td>
-                    <td className="p-4 text-center">
-                      <button 
-                        onClick={() => handleCollect(customer)}
-                        className="px-3 py-1.5 text-sm font-medium text-emerald-700 bg-emerald-100 hover:bg-emerald-200 rounded-lg transition-colors"
-                      >
-                        Thu nợ
-                      </button>
+                    <td className="p-4 text-center" onClick={(e) => e.stopPropagation()}>
+                      <div className="flex items-center justify-center gap-2">
+                        <button 
+                          onClick={() => handleViewDetails(customer, 'customers')}
+                          className="px-3 py-1.5 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                        >
+                          Chi tiết
+                        </button>
+                        {isAdmin && (
+                          <>
+                            <button 
+                              onClick={() => handleCollect(customer)}
+                              className="px-3 py-1.5 text-sm font-medium text-emerald-700 bg-emerald-100 hover:bg-emerald-200 rounded-lg transition-colors"
+                            >
+                              Thu nợ
+                            </button>
+                            <button 
+                              onClick={() => handleEditDebt(customer, 'customers')}
+                              className="px-3 py-1.5 text-sm font-medium text-blue-700 bg-blue-100 hover:bg-blue-200 rounded-lg transition-colors"
+                            >
+                              Sửa
+                            </button>
+                          </>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -200,7 +278,11 @@ export function Debts({ data, updateData, addItem, updateItem, deleteItem, isAdm
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {filteredSuppliers.map((supplier) => (
-                  <tr key={supplier.id} className="hover:bg-gray-50/50 transition-colors">
+                  <tr 
+                    key={supplier.id} 
+                    className="hover:bg-gray-50/50 transition-colors cursor-pointer"
+                    onClick={() => handleViewDetails(supplier, 'suppliers')}
+                  >
                     <td className="p-4">
                       <div className="font-medium text-gray-900">{supplier.name}</div>
                       <div className="text-xs text-gray-500 mt-1">{supplier.id}</div>
@@ -211,13 +293,31 @@ export function Debts({ data, updateData, addItem, updateItem, deleteItem, isAdm
                     <td className="p-4 text-right font-semibold text-rose-600">
                       {formatCurrency(supplier.debt)}
                     </td>
-                    <td className="p-4 text-center">
-                      <button 
-                        onClick={() => handlePay(supplier)}
-                        className="px-3 py-1.5 text-sm font-medium text-blue-700 bg-blue-100 hover:bg-blue-200 rounded-lg transition-colors"
-                      >
-                        Trả nợ
-                      </button>
+                    <td className="p-4 text-center" onClick={(e) => e.stopPropagation()}>
+                      <div className="flex items-center justify-center gap-2">
+                        <button 
+                          onClick={() => handleViewDetails(supplier, 'suppliers')}
+                          className="px-3 py-1.5 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                        >
+                          Chi tiết
+                        </button>
+                        {isAdmin && (
+                          <>
+                            <button 
+                              onClick={() => handlePay(supplier)}
+                              className="px-3 py-1.5 text-sm font-medium text-blue-700 bg-blue-100 hover:bg-blue-200 rounded-lg transition-colors"
+                            >
+                              Trả nợ
+                            </button>
+                            <button 
+                              onClick={() => handleEditDebt(supplier, 'suppliers')}
+                              className="px-3 py-1.5 text-sm font-medium text-blue-700 bg-blue-100 hover:bg-blue-200 rounded-lg transition-colors"
+                            >
+                              Sửa
+                            </button>
+                          </>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -304,6 +404,174 @@ export function Debts({ data, updateData, addItem, updateItem, deleteItem, isAdm
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Debt Modal */}
+      {isEditModalOpen && isAdmin && (selectedCustomer || selectedSupplier) && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-200">
+            <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between z-10">
+              <h3 className="text-lg font-bold text-gray-900">
+                Điều chỉnh công nợ
+              </h3>
+              <button 
+                onClick={() => {
+                  setIsEditModalOpen(false);
+                  setSelectedCustomer(null);
+                  setSelectedSupplier(null);
+                }}
+                className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            
+            <form onSubmit={submitEditDebt} className="p-6 space-y-6">
+              <div className="space-y-4">
+                <div>
+                  <p className="text-sm text-gray-500 mb-1">
+                    {selectedCustomer ? 'Khách hàng' : 'Nhà cung cấp'}
+                  </p>
+                  <p className="font-medium text-gray-900">
+                    {selectedCustomer ? selectedCustomer.name : selectedSupplier?.name}
+                  </p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Số tiền nợ mới (VNĐ) *
+                  </label>
+                  <input 
+                    type="number" required min="0"
+                    value={editAmount}
+                    onChange={e => setEditAmount(e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                  />
+                  <p className="mt-1 text-xs text-gray-500 italic">
+                    * Lưu ý: Thao tác này sẽ thay đổi trực tiếp số dư nợ.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
+                <button 
+                  type="button"
+                  onClick={() => {
+                    setIsEditModalOpen(false);
+                    setSelectedCustomer(null);
+                    setSelectedSupplier(null);
+                  }}
+                  className="px-5 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium transition-colors"
+                >
+                  Hủy
+                </button>
+                <button 
+                  type="submit"
+                  className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors shadow-sm shadow-blue-600/20"
+                >
+                  Lưu thay đổi
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Details Modal */}
+      {isDetailModalOpen && (selectedCustomer || selectedSupplier) && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-200">
+            <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between z-10">
+              <h3 className="text-lg font-bold text-gray-900">
+                Chi tiết {selectedCustomer ? 'khách hàng' : 'nhà cung cấp'}
+              </h3>
+              <button 
+                onClick={() => {
+                  setIsDetailModalOpen(false);
+                  setSelectedCustomer(null);
+                  setSelectedSupplier(null);
+                }}
+                className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            
+            <div className="p-6 space-y-6">
+              <div className="grid grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <div>
+                    <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Tên</p>
+                    <p className="font-semibold text-gray-900">{selectedCustomer ? selectedCustomer.name : selectedSupplier?.name}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Số điện thoại</p>
+                    <p className="text-gray-700">{selectedCustomer ? selectedCustomer.phone : selectedSupplier?.phone}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Email</p>
+                    <p className="text-gray-700">{selectedCustomer ? selectedCustomer.email : selectedSupplier?.email}</p>
+                  </div>
+                </div>
+                <div className="space-y-4">
+                  <div>
+                    <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Mã định danh</p>
+                    <p className="text-gray-700">{selectedCustomer ? selectedCustomer.id : selectedSupplier?.id}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Công nợ hiện tại</p>
+                    <p className="text-lg font-bold text-rose-600">
+                      {formatCurrency(selectedCustomer ? selectedCustomer.debt : (selectedSupplier?.debt || 0))}
+                    </p>
+                  </div>
+                  {selectedCustomer?.type && (
+                    <div>
+                      <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Loại</p>
+                      <p className="text-gray-700 capitalize">{selectedCustomer.type.replace('-', ' ')}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="space-y-4 pt-4 border-t border-gray-100">
+                <div>
+                  <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Địa chỉ</p>
+                  <p className="text-gray-700">{selectedCustomer ? selectedCustomer.address : selectedSupplier?.address}</p>
+                </div>
+                {selectedCustomer?.companyName && (
+                  <div>
+                    <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Công ty</p>
+                    <p className="text-gray-700">{selectedCustomer.companyName}</p>
+                  </div>
+                )}
+                {selectedCustomer?.notes && (
+                  <div>
+                    <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Ghi chú</p>
+                    <p className="text-gray-700 whitespace-pre-wrap">{selectedCustomer.notes}</p>
+                  </div>
+                )}
+                {selectedSupplier?.notes && (
+                  <div>
+                    <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Ghi chú</p>
+                    <p className="text-gray-700 whitespace-pre-wrap">{selectedSupplier.notes}</p>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex justify-end pt-4 border-t border-gray-100">
+                <button 
+                  onClick={() => {
+                    setIsDetailModalOpen(false);
+                    setSelectedCustomer(null);
+                    setSelectedSupplier(null);
+                  }}
+                  className="px-6 py-2 bg-gray-900 text-white rounded-lg font-medium hover:bg-gray-800 transition-colors"
+                >
+                  Đóng
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
