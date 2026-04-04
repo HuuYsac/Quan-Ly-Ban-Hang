@@ -123,18 +123,25 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
     if (!orderToDelete) return;
 
     try {
-      // Revert stock
+      // 1. Consolidate stock updates
+      const stockChanges: Record<string, number> = {};
       for (const item of (orderToDelete.products || [])) {
-        const product = (data.products || []).find(p => p.id === item.productId);
-        if (product) {
-          await updateItem('products', product.id, {
-            ...product,
-            stock: (product.stock || 0) + (item.quantity || 0)
-          });
+        stockChanges[item.productId] = (stockChanges[item.productId] || 0) + (item.quantity || 0);
+      }
+
+      for (const [productId, change] of Object.entries(stockChanges)) {
+        if (change !== 0) {
+          const product = (data.products || []).find(p => p.id === productId);
+          if (product) {
+            await updateItem('products', product.id, {
+              ...product,
+              stock: (product.stock || 0) + change
+            });
+          }
         }
       }
 
-      // Revert debt
+      // 2. Revert debt
       if (orderToDelete.paymentStatus === 'Công nợ') {
         const customer = (data.customers || []).find(c => c.id === orderToDelete.customerId);
         if (customer) {
@@ -542,51 +549,49 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
         const oldOrder = (data.orders || []).find(o => o.id === editingId);
         if (!oldOrder) return;
 
-        // 1. Revert old order stock
+        // 1. Consolidate stock updates
+        const stockChanges: Record<string, number> = {};
         for (const item of (oldOrder.products || [])) {
-          const product = (data.products || []).find(p => p.id === item.productId);
-          if (product) {
-            await updateItem('products', product.id, {
-              ...product,
-              stock: (product.stock || 0) + (item.quantity || 0)
-            });
-          }
+          stockChanges[item.productId] = (stockChanges[item.productId] || 0) + (item.quantity || 0);
         }
-
-        // 2. Revert old order debt
-        if (oldOrder.paymentStatus === 'Công nợ') {
-          const oldCustomer = (data.customers || []).find(c => c.id === oldOrder.customerId);
-          if (oldCustomer) {
-            await updateItem('customers', oldCustomer.id, {
-              ...oldCustomer,
-              debt: (oldCustomer.debt || 0) - (oldOrder.total || 0)
-            });
-          }
-        }
-
-        // 3. Apply new order stock
         for (const item of finalItems) {
-          const product = (data.products || []).find(p => p.id === item.productId);
-          if (product) {
-            await updateItem('products', product.id, {
-              ...product,
-              stock: (product.stock || 0) - (item.quantity || 0)
-            });
+          stockChanges[item.productId] = (stockChanges[item.productId] || 0) - (item.quantity || 0);
+        }
+
+        for (const [productId, change] of Object.entries(stockChanges)) {
+          if (change !== 0) {
+            const product = (data.products || []).find(p => p.id === productId);
+            if (product) {
+              await updateItem('products', product.id, {
+                ...product,
+                stock: (product.stock || 0) + change
+              });
+            }
           }
         }
 
-        // 4. Apply new order debt
+        // 2. Consolidate debt updates
+        const debtChanges: Record<string, number> = {};
+        if (oldOrder.paymentStatus === 'Công nợ') {
+          debtChanges[oldOrder.customerId] = (debtChanges[oldOrder.customerId] || 0) - (oldOrder.total || 0);
+        }
         if (formData.paymentStatus === 'Công nợ') {
-          const currentCustomer = (data.customers || []).find(c => c.id === customer.id);
-          if (currentCustomer) {
-            await updateItem('customers', currentCustomer.id, {
-              ...currentCustomer,
-              debt: (currentCustomer.debt || 0) + total
-            });
+          debtChanges[customer.id] = (debtChanges[customer.id] || 0) + total;
+        }
+
+        for (const [customerId, change] of Object.entries(debtChanges)) {
+          if (change !== 0) {
+            const c = (data.customers || []).find(cust => cust.id === customerId);
+            if (c) {
+              await updateItem('customers', c.id, {
+                ...c,
+                debt: (c.debt || 0) + change
+              });
+            }
           }
         }
 
-        // 5. Update order
+        // 3. Update order
         await updateItem('orders', editingId, {
           ...oldOrder,
           customerId: customer.id,
@@ -640,18 +645,25 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
           updatedAt: now.toISOString()
         };
 
-        // Apply new order stock
+        // 1. Consolidate stock updates
+        const stockChanges: Record<string, number> = {};
         for (const item of finalItems) {
-          const product = (data.products || []).find(p => p.id === item.productId);
-          if (product) {
-            await updateItem('products', product.id, {
-              ...product,
-              stock: (product.stock || 0) - (item.quantity || 0)
-            });
+          stockChanges[item.productId] = (stockChanges[item.productId] || 0) - (item.quantity || 0);
+        }
+
+        for (const [productId, change] of Object.entries(stockChanges)) {
+          if (change !== 0) {
+            const product = (data.products || []).find(p => p.id === productId);
+            if (product) {
+              await updateItem('products', product.id, {
+                ...product,
+                stock: (product.stock || 0) + change
+              });
+            }
           }
         }
 
-        // Apply new order debt
+        // 2. Apply new order debt
         if (formData.paymentStatus === 'Công nợ') {
           const currentCustomer = (data.customers || []).find(c => c.id === customer.id);
           if (currentCustomer) {
