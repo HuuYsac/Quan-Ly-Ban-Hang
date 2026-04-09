@@ -62,7 +62,9 @@ export function PublicWarrantyCheck({ onBack }: { onBack?: () => void }) {
       }
 
       const allOrders: any[] = [];
+      const allRepairs: any[] = [];
       const orderDocIds = new Set<string>();
+      const repairDocIds = new Set<string>();
 
       if (customerIds.size > 0) {
         const ids = Array.from(customerIds);
@@ -72,55 +74,78 @@ export function PublicWarrantyCheck({ onBack }: { onBack?: () => void }) {
         }
 
         for (const chunk of chunkedIds) {
-          const q = query(ordersRef, where('customerId', 'in', chunk), limit(50));
-          const snap = await getDocs(q);
-          snap.forEach(doc => {
+          // Orders
+          const qOrders = query(ordersRef, where('customerId', 'in', chunk), limit(50));
+          const snapOrders = await getDocs(qOrders);
+          snapOrders.forEach(doc => {
             if (!orderDocIds.has(doc.id)) {
               allOrders.push({ id: doc.id, ...doc.data() });
               orderDocIds.add(doc.id);
+            }
+          });
+
+          // Repairs
+          const qRepairs = query(collection(db, 'repairs'), where('customerId', 'in', chunk), limit(50));
+          const snapRepairs = await getDocs(qRepairs);
+          snapRepairs.forEach(doc => {
+            if (!repairDocIds.has(doc.id)) {
+              allRepairs.push({ id: doc.id, ...doc.data() });
+              repairDocIds.add(doc.id);
             }
           });
         }
       }
 
       for (const phone of uniquePhones) {
-        const q = query(ordersRef, where('customerPhone', '==', phone), limit(20));
-        const snap = await getDocs(q);
-        snap.forEach(doc => {
+        // Orders
+        const qOrders = query(ordersRef, where('customerPhone', '==', phone), limit(20));
+        const snapOrders = await getDocs(qOrders);
+        snapOrders.forEach(doc => {
           if (!orderDocIds.has(doc.id)) {
             allOrders.push({ id: doc.id, ...doc.data() });
             orderDocIds.add(doc.id);
+          }
+        });
+
+        // Repairs
+        const qRepairs = query(collection(db, 'repairs'), where('customerPhone', '==', phone), limit(20));
+        const snapRepairs = await getDocs(qRepairs);
+        snapRepairs.forEach(doc => {
+          if (!repairDocIds.has(doc.id)) {
+            allRepairs.push({ id: doc.id, ...doc.data() });
+            repairDocIds.add(doc.id);
           }
         });
       }
       
       if (customerNames.size > 0) {
         for (const name of Array.from(customerNames)) {
-          const q = query(ordersRef, where('customerName', '==', name), limit(20));
-          const snap = await getDocs(q);
-          snap.forEach(doc => {
+          // Orders
+          const qOrders = query(ordersRef, where('customerName', '==', name), limit(20));
+          const snapOrders = await getDocs(qOrders);
+          snapOrders.forEach(doc => {
             if (!orderDocIds.has(doc.id)) {
               allOrders.push({ id: doc.id, ...doc.data() });
               orderDocIds.add(doc.id);
             }
           });
-        }
-      }
 
-      if (allOrders.length === 0 && formData.customerName) {
-        const q = query(ordersRef, where('customerName', '==', formData.customerName.trim()), limit(50));
-        const snap = await getDocs(q);
-        snap.forEach(doc => {
-          if (!orderDocIds.has(doc.id)) {
-            allOrders.push({ id: doc.id, ...doc.data() });
-            orderDocIds.add(doc.id);
-          }
-        });
+          // Repairs
+          const qRepairs = query(collection(db, 'repairs'), where('customerName', '==', name), limit(20));
+          const snapRepairs = await getDocs(qRepairs);
+          snapRepairs.forEach(doc => {
+            if (!repairDocIds.has(doc.id)) {
+              allRepairs.push({ id: doc.id, ...doc.data() });
+              repairDocIds.add(doc.id);
+            }
+          });
+        }
       }
 
       const foundItems: any[] = [];
       const today = new Date();
 
+      // Process Orders
       allOrders.forEach((orderData) => {
         const products = (orderData.products || []).filter((p: any) => {
           if (p.isGift) return false;
@@ -145,6 +170,7 @@ export function PublicWarrantyCheck({ onBack }: { onBack?: () => void }) {
           const daysRemaining = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
           foundItems.push({
+            type: 'order',
             product,
             order: orderData,
             purchaseDate: pDate,
@@ -152,6 +178,45 @@ export function PublicWarrantyCheck({ onBack }: { onBack?: () => void }) {
             isExpired,
             daysRemaining: isExpired ? 0 : daysRemaining
           });
+        });
+      });
+
+      // Process Repairs
+      allRepairs.forEach((repairData) => {
+        if (formData.serviceTag && repairData.serviceTag) {
+          if (!repairData.serviceTag.toLowerCase().includes(formData.serviceTag.trim().toLowerCase())) return;
+        }
+
+        const pDate = repairData.returnDate || repairData.receivedDate || repairData.createdAt?.split('T')[0];
+        const wMonths = repairData.warrantyMonths || 0;
+
+        if (!pDate || wMonths === 0) return;
+
+        const purchaseDate = new Date(pDate);
+        const expiryDate = new Date(purchaseDate);
+        expiryDate.setMonth(expiryDate.getMonth() + wMonths);
+        
+        const isExpired = today > expiryDate;
+        const diffTime = expiryDate.getTime() - today.getTime();
+        const daysRemaining = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+        foundItems.push({
+          type: 'repair',
+          product: {
+            name: repairData.productName,
+            serviceTag: repairData.serviceTag,
+            warrantyMonths: wMonths
+          },
+          order: {
+            customerName: repairData.customerName,
+            customerPhone: repairData.customerPhone,
+            id: repairData.id
+          },
+          purchaseDate: pDate,
+          expiryDate: expiryDate.toLocaleDateString('vi-VN'),
+          isExpired,
+          daysRemaining: isExpired ? 0 : daysRemaining,
+          issue: repairData.issue
         });
       });
 
@@ -323,11 +388,19 @@ export function PublicWarrantyCheck({ onBack }: { onBack?: () => void }) {
 
                       {/* Product Info Section */}
                       <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
-                        <div className="flex items-center gap-2 text-slate-400 mb-3">
-                          <Laptop size={14} />
-                          <span className="text-[10px] font-black uppercase tracking-widest">Thông tin sản phẩm</span>
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-2 text-slate-400">
+                            <Laptop size={14} />
+                            <span className="text-[10px] font-black uppercase tracking-widest">Thông tin sản phẩm</span>
+                          </div>
+                          <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full ${res.type === 'repair' ? 'bg-amber-100 text-amber-700 border border-amber-200' : 'bg-blue-100 text-blue-700 border border-blue-200'}`}>
+                            {res.type === 'repair' ? 'Bảo hành sửa chữa' : 'Bảo hành mua máy'}
+                          </span>
                         </div>
                         <h4 className="font-black text-slate-900 text-lg tracking-tight leading-tight mb-3">{res.product.name}</h4>
+                        {res.type === 'repair' && res.issue && (
+                          <p className="text-xs text-slate-500 mb-3 italic">Lỗi sửa: {res.issue}</p>
+                        )}
                         <div className="flex flex-wrap gap-2">
                           <span className="text-[10px] font-black text-indigo-600 bg-indigo-50 px-3 py-1 rounded-lg uppercase border border-indigo-100">
                             S/N: {res.product.serviceTag || 'N/A'}

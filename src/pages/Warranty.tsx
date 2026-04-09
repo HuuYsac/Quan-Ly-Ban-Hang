@@ -25,6 +25,7 @@ import { Repair, WarrantyNotification, NotificationSettings } from '../types';
 import { Toast, ToastType } from '../components/Notification';
 
 interface WarrantyItem {
+  type: 'order' | 'repair';
   orderId: string;
   customerId: string;
   customerName: string;
@@ -90,6 +91,7 @@ const Warranty: React.FC = () => {
           }
 
           items.push({
+            type: 'order',
             orderId: order.id,
             customerId: order.customerId,
             customerName: order.customerName,
@@ -106,8 +108,43 @@ const Warranty: React.FC = () => {
       });
     });
 
+    // Include Repairs
+    (data.repairs || []).forEach(repair => {
+      if (repair.warrantyMonths && repair.warrantyMonths > 0 && (repair.returnDate || repair.receivedDate)) {
+        const pDate = repair.returnDate || repair.receivedDate;
+        const purchaseDate = new Date(pDate);
+        const expiryDate = new Date(purchaseDate);
+        expiryDate.setMonth(expiryDate.getMonth() + repair.warrantyMonths);
+
+        const diffTime = expiryDate.getTime() - today.getTime();
+        const daysRemaining = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+        let status: 'active' | 'expiring' | 'expired' = 'active';
+        if (daysRemaining < 0) {
+          status = 'expired';
+        } else if (daysRemaining <= 30) {
+          status = 'expiring';
+        }
+
+        items.push({
+          type: 'repair',
+          orderId: repair.id,
+          customerId: repair.customerId,
+          customerName: repair.customerName,
+          customerPhone: repair.customerPhone,
+          productName: repair.productName,
+          serviceTag: repair.serviceTag,
+          purchaseDate: pDate,
+          warrantyMonths: repair.warrantyMonths,
+          expiryDate,
+          daysRemaining,
+          status
+        });
+      }
+    });
+
     return items.sort((a, b) => a.daysRemaining - b.daysRemaining);
-  }, [data.orders, data.customers]);
+  }, [data.orders, data.customers, data.repairs]);
 
   const filteredWarranties = useMemo(() => {
     return warranties.filter(w => {
@@ -429,7 +466,12 @@ const Warranty: React.FC = () => {
                 >
                   <td className="p-4">
                     <div className="flex flex-col">
-                      <span className="font-bold text-gray-900">{warranty.customerName}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-gray-900">{warranty.customerName}</span>
+                        <span className={`text-[9px] font-black uppercase px-1.5 py-0.5 rounded-md ${warranty.type === 'repair' ? 'bg-amber-100 text-amber-700 border border-amber-200' : 'bg-blue-100 text-blue-700 border border-blue-200'}`}>
+                          {warranty.type === 'repair' ? 'Sửa chữa' : 'Mua máy'}
+                        </span>
+                      </div>
                       <span className="text-xs text-gray-500 flex items-center gap-1">
                         <Phone size={10} /> {warranty.customerPhone}
                       </span>

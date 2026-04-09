@@ -1652,6 +1652,8 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
                             <option value={12}>12T</option>
                             <option value={24}>24T</option>
                             <option value={36}>36T</option>
+                            <option value={48}>48T</option>
+                            <option value={60}>60T</option>
                           </select>
                         </div>
                       </div>

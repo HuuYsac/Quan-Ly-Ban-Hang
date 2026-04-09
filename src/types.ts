@@ -101,6 +101,7 @@ export interface Repair {
   issue: string;
   receivedDate: string;
   returnDate?: string;
+  warrantyMonths?: number;
   technician?: string;
   status: 'Đang sửa' | 'Đã xong' | 'Đã trả khách' | 'Hủy';
   notes?: string;

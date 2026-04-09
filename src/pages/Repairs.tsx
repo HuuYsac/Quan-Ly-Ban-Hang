@@ -41,6 +41,7 @@ const Repairs: React.FC = () => {
     notes: '',
     receivedDate: new Date().toISOString().split('T')[0],
     returnDate: '',
+    warrantyMonths: 0,
     partnerCost: 0,
     customerPrice: 0,
     profit: 0
@@ -131,6 +132,7 @@ const Repairs: React.FC = () => {
       notes: repair.notes || '',
       receivedDate: repair.receivedDate || new Date().toISOString().split('T')[0],
       returnDate: repair.returnDate || '',
+      warrantyMonths: repair.warrantyMonths || 0,
       partnerCost: repair.partnerCost || 0,
       customerPrice: repair.customerPrice || 0,
       profit: repair.profit || 0
@@ -555,6 +557,20 @@ const Repairs: React.FC = () => {
                       onChange={e => setFormData({...formData, returnDate: e.target.value})}
                       className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm"
                     />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Bảo hành sửa chữa</label>
+                    <select 
+                      value={formData.warrantyMonths}
+                      onChange={e => setFormData({...formData, warrantyMonths: Number(e.target.value)})}
+                      className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm"
+                    >
+                      <option value={0}>Không bảo hành</option>
+                      <option value={1}>1 tháng</option>
+                      <option value={3}>3 tháng</option>
+                      <option value={6}>6 tháng</option>
+                      <option value={12}>12 tháng</option>
+                    </select>
                   </div>
                 </div>
 
