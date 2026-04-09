@@ -69,10 +69,22 @@ export function Dashboard({ data, onNavigate, isAdmin }: DashboardProps) {
     
     // Revenue & Orders
     const todayOrders = data.orders?.filter(o => o.date === todayStr) || [];
-    const todayRevenue = todayOrders.reduce((sum, o) => sum + o.total, 0);
+    const todayRepairs = data.repairs?.filter(r => 
+      (r.returnDate === todayStr || (!r.returnDate && r.receivedDate === todayStr)) && 
+      (r.status === 'Đã xong' || r.status === 'Đã trả khách')
+    ) || [];
+    
+    const todayRevenue = todayOrders.reduce((sum, o) => sum + o.total, 0) + 
+                         todayRepairs.reduce((sum, r) => sum + (r.customerPrice || 0), 0);
     
     const paidOrders = data.orders?.filter(o => o.paymentStatus === 'Đã thanh toán') || [];
-    const totalRevenue = paidOrders.reduce((sum, o) => sum + o.total, 0);
+    const completedRepairs = data.repairs?.filter(r => 
+      (r.status === 'Đã xong' || r.status === 'Đã trả khách') && 
+      (r.customerPrice || 0) > 0
+    ) || [];
+
+    const totalRevenue = paidOrders.reduce((sum, o) => sum + o.total, 0) + 
+                         completedRepairs.reduce((sum, r) => sum + (r.customerPrice || 0), 0);
 
     // Low Stock
     const lowStockProducts = data.products?.filter(p => p.stock <= p.minStock) || [];
@@ -112,13 +124,18 @@ export function Dashboard({ data, onNavigate, isAdmin }: DashboardProps) {
     const chartData = Array.from({ length: 7 }).map((_, i) => {
       const date = subDays(today, 6 - i);
       const dateStr = format(date, 'yyyy-MM-dd');
-      const dayRevenue = (data.orders || [])
+      const dayOrderRevenue = (data.orders || [])
         .filter(o => o.date === dateStr && o.paymentStatus === 'Đã thanh toán')
         .reduce((sum, o) => sum + o.total, 0);
       
+      const dayRepairRevenue = (data.repairs || [])
+        .filter(r => (r.returnDate === dateStr || (!r.returnDate && r.receivedDate === dateStr)) && 
+                     (r.status === 'Đã xong' || r.status === 'Đã trả khách'))
+        .reduce((sum, r) => sum + (r.customerPrice || 0), 0);
+      
       return {
         name: format(date, 'dd/MM'),
-        revenue: dayRevenue
+        revenue: dayOrderRevenue + dayRepairRevenue
       };
     });
 
