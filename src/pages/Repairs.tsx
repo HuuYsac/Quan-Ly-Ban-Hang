@@ -31,6 +31,7 @@ const Repairs: React.FC = () => {
   const [editingRepair, setEditingRepair] = useState<Repair | null>(null);
 
   const [formData, setFormData] = useState<Partial<Repair>>({
+    customerId: '',
     customerName: '',
     customerPhone: '',
     productName: '',
@@ -103,6 +104,7 @@ const Repairs: React.FC = () => {
 
   const resetForm = () => {
     setFormData({
+      customerId: '',
       customerName: '',
       customerPhone: '',
       productName: '',
@@ -122,6 +124,7 @@ const Repairs: React.FC = () => {
   const handleEdit = (repair: Repair) => {
     setEditingRepair(repair);
     setFormData({
+      customerId: repair.customerId || '',
       customerName: repair.customerName || '',
       customerPhone: repair.customerPhone || '',
       productName: repair.productName || '',
@@ -456,23 +459,47 @@ const Repairs: React.FC = () => {
                 <div className="space-y-4">
                   <h4 className="text-xs font-bold text-blue-600 uppercase tracking-wider">Thông tin khách hàng</h4>
                   <div>
-                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Tên khách hàng *</label>
-                    <input 
+                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Chọn khách hàng *</label>
+                    <select 
                       required
+                      value={formData.customerId}
+                      onChange={e => {
+                        const customer = data.customers.find(c => c.id === e.target.value);
+                        if (customer) {
+                          setFormData({
+                            ...formData, 
+                            customerId: customer.id,
+                            customerName: customer.name,
+                            customerPhone: customer.phone
+                          });
+                        } else {
+                          setFormData({...formData, customerId: e.target.value});
+                        }
+                      }}
+                      className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm"
+                    >
+                      <option value="">-- Chọn khách hàng --</option>
+                      {data.customers.map(c => (
+                        <option key={c.id} value={c.id}>{c.name} - {c.phone}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Tên khách hàng (Tự động)</label>
+                    <input 
+                      readOnly
                       type="text"
                       value={formData.customerName}
-                      onChange={e => setFormData({...formData, customerName: e.target.value})}
-                      className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm"
+                      className="w-full px-4 py-2 border border-gray-100 bg-gray-50 rounded-xl text-sm text-gray-500"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Số điện thoại *</label>
+                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Số điện thoại (Tự động)</label>
                     <input 
-                      required
+                      readOnly
                       type="text"
                       value={formData.customerPhone}
-                      onChange={e => setFormData({...formData, customerPhone: e.target.value})}
-                      className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm"
+                      className="w-full px-4 py-2 border border-gray-100 bg-gray-50 rounded-xl text-sm text-gray-500"
                     />
                   </div>
                 </div>

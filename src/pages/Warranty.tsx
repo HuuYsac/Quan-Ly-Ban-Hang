@@ -129,7 +129,7 @@ const Warranty: React.FC = () => {
         items.push({
           type: 'repair',
           orderId: repair.id,
-          customerId: repair.customerId,
+          customerId: repair.customerId || '',
           customerName: repair.customerName,
           customerPhone: repair.customerPhone,
           productName: repair.productName,
@@ -217,7 +217,7 @@ const Warranty: React.FC = () => {
 
       const newNotification: WarrantyNotification = {
         id: `NOTIF${Date.now()}`,
-        customerId: warranty.customerId,
+        customerId: warranty.customerId || 'UNKNOWN',
         orderId: warranty.orderId,
         serviceTag: warranty.serviceTag,
         sentAt: new Date().toISOString(),
