@@ -436,17 +436,18 @@ export function PublicWarrantyCheck({ onBack }: { onBack?: () => void }) {
               <motion.div 
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
-                className="border-t border-slate-100 bg-slate-50/30 p-6 md:p-8 max-h-[60vh] overflow-y-auto custom-scrollbar"
+                className="border-t border-slate-100 bg-slate-50/30 overflow-hidden"
               >
-                <div className="flex items-center justify-between mb-6 sticky top-0 bg-slate-50/30 backdrop-blur-sm py-2 z-10">
-                  <h3 className="text-sm font-black text-slate-900 flex items-center gap-2 uppercase tracking-tight">
-                    <Sparkles className="text-amber-500" size={18} />
-                    Kết quả tìm kiếm ({results.length})
-                  </h3>
-                </div>
-                
-                <div className="space-y-8">
-                  {results.map((res, idx) => (
+                <div className="p-6 md:p-8">
+                  <div className="flex items-center justify-between mb-6">
+                    <h3 className="text-sm font-black text-slate-900 flex items-center gap-2 uppercase tracking-tight">
+                      <Sparkles className="text-amber-500" size={18} />
+                      Kết quả tìm kiếm ({results.length})
+                    </h3>
+                  </div>
+                  
+                  <div className="space-y-8 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
+                    {results.map((res, idx) => (
                     <motion.div 
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
@@ -548,6 +549,7 @@ export function PublicWarrantyCheck({ onBack }: { onBack?: () => void }) {
                       </div>
                     </motion.div>
                   ))}
+                  </div>
                 </div>
               </motion.div>
             )}
