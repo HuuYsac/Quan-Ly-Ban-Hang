@@ -86,6 +86,13 @@ service cloud.firestore {
       allow read, write: if isApproved();
     }
 
+    // Specific rule for repairs to allow public warranty check
+    match /repairs/{repairId} {
+      // Allow list for public warranty check (limit 50)
+      allow list: if request.query.limit <= 50;
+      allow read, write: if isApproved();
+    }
+
     // Default rule for other collections
     match /{allPaths=**} {
       allow read, write: if isApproved();

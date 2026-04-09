@@ -220,8 +220,101 @@ export function PublicWarrantyCheck({ onBack }: { onBack?: () => void }) {
         });
       });
 
+      if (foundItems.length === 0 && formData.customerName) {
+        const name = formData.customerName.trim();
+        
+        // Fallback Orders by Name
+        const qOrdersName = query(ordersRef, where('customerName', '==', name), limit(50));
+        const snapOrdersName = await getDocs(qOrdersName);
+        snapOrdersName.forEach(doc => {
+          if (!orderDocIds.has(doc.id)) {
+            const orderData = { id: doc.id, ...doc.data() } as any;
+            const products = (orderData.products || []).filter((p: any) => {
+              if (p.isGift) return false;
+              if (formData.serviceTag && p.serviceTag) {
+                return p.serviceTag.toLowerCase().includes(formData.serviceTag.trim().toLowerCase());
+              }
+              return p.purchaseDate || p.warrantyMonths;
+            });
+            
+            products.forEach((product: any) => {
+              const pDate = product.purchaseDate || orderData.date || orderData.createdAt?.split('T')[0];
+              const wMonths = product.warrantyMonths || 12;
+              if (!pDate) return;
+
+              const purchaseDate = new Date(pDate);
+              const expiryDate = new Date(purchaseDate);
+              expiryDate.setMonth(expiryDate.getMonth() + wMonths);
+              const isExpired = today > expiryDate;
+              const diffTime = expiryDate.getTime() - today.getTime();
+              const daysRemaining = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+              foundItems.push({
+                type: 'order',
+                product,
+                order: orderData,
+                purchaseDate: pDate,
+                expiryDate: expiryDate.toLocaleDateString('vi-VN'),
+                isExpired,
+                daysRemaining: isExpired ? 0 : daysRemaining
+              });
+            });
+            orderDocIds.add(doc.id);
+          }
+        });
+
+        // Fallback Repairs by Name
+        const qRepairsName = query(collection(db, 'repairs'), where('customerName', '==', name), limit(50));
+        const snapRepairsName = await getDocs(qRepairsName);
+        snapRepairsName.forEach(doc => {
+          if (!repairDocIds.has(doc.id)) {
+            const repairData = { id: doc.id, ...doc.data() } as any;
+            if (formData.serviceTag && repairData.serviceTag) {
+              if (!repairData.serviceTag.toLowerCase().includes(formData.serviceTag.trim().toLowerCase())) return;
+            }
+
+            const pDate = repairData.returnDate || repairData.receivedDate || repairData.createdAt?.split('T')[0];
+            const wMonths = repairData.warrantyMonths || 0;
+            if (!pDate || wMonths === 0) return;
+
+            const purchaseDate = new Date(pDate);
+            const expiryDate = new Date(purchaseDate);
+            expiryDate.setMonth(expiryDate.getMonth() + wMonths);
+            const isExpired = today > expiryDate;
+            const diffTime = expiryDate.getTime() - today.getTime();
+            const daysRemaining = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+            foundItems.push({
+              type: 'repair',
+              product: {
+                name: repairData.productName,
+                serviceTag: repairData.serviceTag,
+                warrantyMonths: wMonths
+              },
+              order: {
+                customerName: repairData.customerName,
+                customerPhone: repairData.customerPhone,
+                id: repairData.id
+              },
+              purchaseDate: pDate,
+              expiryDate: expiryDate.toLocaleDateString('vi-VN'),
+              isExpired,
+              daysRemaining: isExpired ? 0 : daysRemaining,
+              issue: repairData.issue
+            });
+            repairDocIds.add(doc.id);
+          }
+        });
+      }
+
       if (foundItems.length > 0) {
-        foundItems.sort((a, b) => new Date(b.purchaseDate).getTime() - new Date(a.purchaseDate).getTime());
+        foundItems.sort((a, b) => {
+          const timeA = new Date(a.purchaseDate).getTime();
+          const timeB = new Date(b.purchaseDate).getTime();
+          if (isNaN(timeA)) return 1;
+          if (isNaN(timeB)) return -1;
+          return timeB - timeA;
+        });
         setResults(foundItems);
       } else {
         setError('Không tìm thấy thông tin bảo hành. Vui lòng kiểm tra lại số điện thoại hoặc thử nhập thêm Tên khách hàng / Số Serial.');
