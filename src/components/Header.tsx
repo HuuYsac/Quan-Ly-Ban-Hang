@@ -1,8 +1,9 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { ShoppingCart, Menu, User, Bell, Search, Package, UserCircle, FileText, CheckCircle2, Clock, AlertCircle } from 'lucide-react';
+import { ShoppingCart, Menu, User, Bell, Search, Package, UserCircle, FileText, CheckCircle2, Clock, AlertCircle, MessageSquare, CheckSquare } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { AppData } from '../types';
 import { formatCurrency } from '../lib/utils';
+import { auth } from '../firebase';
 
 interface HeaderProps {
   title: string;
@@ -10,9 +11,10 @@ interface HeaderProps {
   onNavigate: (page: string) => void;
   onToggleSidebar?: () => void;
   data: AppData;
+  currentUserUid?: string;
 }
 
-export function Header({ title, subtitle, onNavigate, onToggleSidebar, data }: HeaderProps) {
+export function Header({ title, subtitle, onNavigate, onToggleSidebar, data, currentUserUid }: HeaderProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearchResults, setShowSearchResults] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -101,8 +103,44 @@ export function Header({ title, subtitle, onNavigate, onToggleSidebar, data }: H
       });
     });
 
-    return list.slice(0, 5); // Show top 5
-  }, [data]);
+    // 4. Unread Messages
+    if (currentUserUid) {
+      const unreadMessages = (data.messages || [])
+        .filter(m => m.receiverId === currentUserUid && !m.read)
+        .slice(0, 3);
+      
+      unreadMessages.forEach(msg => {
+        list.push({
+          id: `msg-${msg.id}`,
+          title: 'Tin nhắn mới',
+          desc: `${msg.senderName}: ${msg.content}`,
+          time: 'Chưa đọc',
+          icon: <MessageSquare size={14} className="text-rose-600" />,
+          bg: 'bg-rose-50',
+          page: 'messages'
+        });
+      });
+
+      // 5. Assigned Tasks
+      const pendingTasks = (data.internalTasks || [])
+        .filter(t => t.assignedTo === currentUserUid && t.status !== 'completed')
+        .slice(0, 2);
+      
+      pendingTasks.forEach(task => {
+        list.push({
+          id: `task-${task.id}`,
+          title: 'Công việc mới',
+          desc: `Bạn được giao: ${task.title}`,
+          time: 'Đang chờ',
+          icon: <CheckSquare size={14} className="text-emerald-600" />,
+          bg: 'bg-emerald-50',
+          page: 'messages'
+        });
+      });
+    }
+
+    return list.sort((a, b) => b.id.localeCompare(a.id)).slice(0, 8); // Show top 8, sorted
+  }, [data, currentUserUid]);
 
   return (
     <header className="bg-white/80 backdrop-blur-md px-4 md:px-8 py-4 border-b border-slate-100 flex justify-between items-center sticky top-0 z-40 print:hidden">

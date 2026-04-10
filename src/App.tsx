@@ -328,6 +328,7 @@ export default function App() {
           onNavigate={setActivePage} 
           onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
           data={data}
+          currentUserUid={user?.uid}
         />
         
         <main className="flex-1 p-4 md:p-8 max-w-7xl mx-auto w-full print:p-0">
