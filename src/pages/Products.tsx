@@ -19,6 +19,12 @@ export function Products({ data, updateData, addItem, updateItem, deleteItem, is
   const [filterSupplier, setFilterSupplier] = useState('all');
   const [sortBy, setSortBy] = useState<'name' | 'price-asc' | 'price-desc' | 'newest'>('newest');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isAddCategoryModalOpen, setIsAddCategoryModalOpen] = useState(false);
+  const [isAddSupplierModalOpen, setIsAddSupplierModalOpen] = useState(false);
+  const [isSubmittingCategory, setIsSubmittingCategory] = useState(false);
+  const [isSubmittingSupplier, setIsSubmittingSupplier] = useState(false);
+  const [newlyCreatedCategory, setNewlyCreatedCategory] = useState<any | null>(null);
+  const [newlyCreatedSupplier, setNewlyCreatedSupplier] = useState<any | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [toast, setToast] = useState<{ message: string; type: ToastType } | null>(null);
   const [confirmingDelete, setConfirmingDelete] = useState<string | null>(null);
@@ -34,6 +40,18 @@ export function Products({ data, updateData, addItem, updateItem, deleteItem, is
     stock: '',
     minStock: '10',
     supplier: ''
+  });
+  const [categoryFormData, setCategoryFormData] = useState({
+    name: '',
+    parent: ''
+  });
+  const [supplierFormData, setSupplierFormData] = useState({
+    name: '',
+    phone: '',
+    email: '',
+    address: '',
+    products: '',
+    notes: ''
   });
 
   const filteredProducts = data.products
@@ -90,6 +108,73 @@ export function Products({ data, updateData, addItem, updateItem, deleteItem, is
       supplier: product.supplier || ''
     });
     setIsAddModalOpen(true);
+  };
+
+  const handleCreateCategory = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (isSubmittingCategory) return;
+
+    try {
+      setIsSubmittingCategory(true);
+      const maxId = (data.categories || []).reduce((max, c) => {
+        const idNum = parseInt((c.id || '').replace('DM', ''));
+        return isNaN(idNum) ? max : Math.max(max, idNum);
+      }, 0);
+      const newId = `DM${String(maxId + 1).padStart(3, '0')}`;
+      const newCategory: any = {
+        id: newId,
+        name: categoryFormData.name,
+        parent: categoryFormData.parent || null,
+        createdAt: new Date().toISOString()
+      };
+      await addItem('categories', newCategory);
+      setNewlyCreatedCategory(newCategory);
+      setFormData({ ...formData, category: newCategory.name });
+      setIsAddCategoryModalOpen(false);
+      setCategoryFormData({ name: '', parent: '' });
+      showToast('Đã thêm danh mục mới');
+    } catch (error) {
+      console.error('Error creating category:', error);
+      showToast('Lỗi khi tạo danh mục', 'error');
+    } finally {
+      setIsSubmittingCategory(false);
+    }
+  };
+
+  const handleCreateSupplier = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (isSubmittingSupplier) return;
+
+    try {
+      setIsSubmittingSupplier(true);
+      const maxId = (data.suppliers || []).reduce((max, s) => {
+        const idNum = parseInt((s.id || '').replace('NCC', ''));
+        return isNaN(idNum) ? max : Math.max(max, idNum);
+      }, 0);
+      const newId = `NCC${String(maxId + 1).padStart(3, '0')}`;
+      const newSupplier: any = {
+        id: newId,
+        name: supplierFormData.name,
+        phone: supplierFormData.phone,
+        email: supplierFormData.email || '',
+        address: supplierFormData.address || '',
+        products: supplierFormData.products || '',
+        notes: supplierFormData.notes || '',
+        debt: 0,
+        createdAt: new Date().toISOString()
+      };
+      await addItem('suppliers', newSupplier);
+      setNewlyCreatedSupplier(newSupplier);
+      setFormData({ ...formData, supplier: newSupplier.name });
+      setIsAddSupplierModalOpen(false);
+      setSupplierFormData({ name: '', phone: '', email: '', address: '', products: '', notes: '' });
+      showToast('Đã thêm nhà cung cấp mới');
+    } catch (error) {
+      console.error('Error creating supplier:', error);
+      showToast('Lỗi khi tạo nhà cung cấp', 'error');
+    } finally {
+      setIsSubmittingSupplier(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -402,6 +487,85 @@ export function Products({ data, updateData, addItem, updateItem, deleteItem, is
       </div>
     </div>
 
+    {/* Add Category Modal */}
+    {isAddCategoryModalOpen && (
+      <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center z-[110] p-4">
+        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md animate-in fade-in zoom-in-95 duration-200">
+          <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-blue-50/50">
+            <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+              <Plus size={20} className="text-blue-600" />
+              Thêm danh mục mới
+            </h3>
+            <button onClick={() => setIsAddCategoryModalOpen(false)} className="p-2 hover:bg-white rounded-full text-gray-400 hover:text-gray-600 transition-colors">
+              <X size={20} />
+            </button>
+          </div>
+          <form onSubmit={handleCreateCategory} className="p-6 space-y-4">
+            <div>
+              <label className="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider">Tên danh mục *</label>
+              <input type="text" required value={categoryFormData.name} onChange={e => setCategoryFormData({...categoryFormData, name: e.target.value})} className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" placeholder="VD: Laptop Gaming" />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider">Danh mục cha</label>
+              <select value={categoryFormData.parent} onChange={e => setCategoryFormData({...categoryFormData, parent: e.target.value})} className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500">
+                <option value="">Không có (Danh mục gốc)</option>
+                {data.categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+            </div>
+            <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
+              <button type="button" onClick={() => setIsAddCategoryModalOpen(false)} className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium transition-colors">Hủy</button>
+              <button type="submit" disabled={isSubmittingCategory} className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold transition-all shadow-lg shadow-blue-600/20 disabled:opacity-50">
+                {isSubmittingCategory ? 'Đang lưu...' : 'Lưu danh mục'}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    )}
+
+    {/* Add Supplier Modal */}
+    {isAddSupplierModalOpen && (
+      <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center z-[110] p-4">
+        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-xl animate-in fade-in zoom-in-95 duration-200">
+          <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-blue-50/50">
+            <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+              <Plus size={20} className="text-blue-600" />
+              Thêm nhà cung cấp mới
+            </h3>
+            <button onClick={() => setIsAddSupplierModalOpen(false)} className="p-2 hover:bg-white rounded-full text-gray-400 hover:text-gray-600 transition-colors">
+              <X size={20} />
+            </button>
+          </div>
+          <form onSubmit={handleCreateSupplier} className="p-6 space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="md:col-span-2">
+                <label className="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider">Tên nhà cung cấp *</label>
+                <input type="text" required value={supplierFormData.name} onChange={e => setSupplierFormData({...supplierFormData, name: e.target.value})} className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" placeholder="VD: Công ty TNHH ABC" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider">Số điện thoại *</label>
+                <input type="text" required value={supplierFormData.phone} onChange={e => setSupplierFormData({...supplierFormData, phone: e.target.value})} className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" placeholder="090..." />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider">Email</label>
+                <input type="email" value={supplierFormData.email} onChange={e => setSupplierFormData({...supplierFormData, email: e.target.value})} className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" placeholder="ncc@gmail.com" />
+              </div>
+              <div className="md:col-span-2">
+                <label className="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider">Địa chỉ</label>
+                <input type="text" value={supplierFormData.address} onChange={e => setSupplierFormData({...supplierFormData, address: e.target.value})} className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" placeholder="Số 123, Đường..." />
+              </div>
+            </div>
+            <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
+              <button type="button" onClick={() => setIsAddSupplierModalOpen(false)} className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium transition-colors">Hủy</button>
+              <button type="submit" disabled={isSubmittingSupplier} className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold transition-all shadow-lg shadow-blue-600/20 disabled:opacity-50">
+                {isSubmittingSupplier ? 'Đang lưu...' : 'Lưu nhà cung cấp'}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    )}
+
     {/* Add Product Modal */}
     {isAddModalOpen && (
       <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-[100] sm:p-4">
@@ -436,31 +600,59 @@ export function Products({ data, updateData, addItem, updateItem, deleteItem, is
                 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Danh mục *</label>
-                  <select 
-                    required
-                    value={formData.category}
-                    onChange={e => setFormData({...formData, category: e.target.value})}
-                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-                  >
-                    <option value="">Chọn danh mục</option>
-                    {data.categories.map(c => (
-                      <option key={c.id} value={c.name}>{c.name}</option>
-                    ))}
-                  </select>
+                  <div className="flex gap-2">
+                    <select 
+                      required
+                      value={formData.category}
+                      onChange={e => setFormData({...formData, category: e.target.value})}
+                      className="flex-1 px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                    >
+                      <option value="">Chọn danh mục</option>
+                      {data.categories.map(c => (
+                        <option key={c.id} value={c.name}>{c.name}</option>
+                      ))}
+                      {newlyCreatedCategory && !data.categories.find(c => c.name === newlyCreatedCategory.name) && (
+                        <option key={newlyCreatedCategory.id} value={newlyCreatedCategory.name}>
+                          {newlyCreatedCategory.name} (Vừa thêm)
+                        </option>
+                      )}
+                    </select>
+                    <button 
+                      type="button"
+                      onClick={() => setIsAddCategoryModalOpen(true)}
+                      className="p-2 text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors border border-blue-100"
+                    >
+                      <Plus size={20} />
+                    </button>
+                  </div>
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Nhà cung cấp</label>
-                  <select 
-                    value={formData.supplier}
-                    onChange={e => setFormData({...formData, supplier: e.target.value})}
-                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-                  >
-                    <option value="">Chọn nhà cung cấp</option>
-                    {data.suppliers.map(s => (
-                      <option key={s.id} value={s.name}>{s.name}</option>
-                    ))}
-                  </select>
+                  <div className="flex gap-2">
+                    <select 
+                      value={formData.supplier}
+                      onChange={e => setFormData({...formData, supplier: e.target.value})}
+                      className="flex-1 px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                    >
+                      <option value="">Chọn nhà cung cấp</option>
+                      {data.suppliers.map(s => (
+                        <option key={s.id} value={s.name}>{s.name}</option>
+                      ))}
+                      {newlyCreatedSupplier && !data.suppliers.find(s => s.name === newlyCreatedSupplier.name) && (
+                        <option key={newlyCreatedSupplier.id} value={newlyCreatedSupplier.name}>
+                          {newlyCreatedSupplier.name} (Vừa thêm)
+                        </option>
+                      )}
+                    </select>
+                    <button 
+                      type="button"
+                      onClick={() => setIsAddSupplierModalOpen(true)}
+                      className="p-2 text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors border border-blue-100"
+                    >
+                      <Plus size={20} />
+                    </button>
+                  </div>
                 </div>
 
                 <div>

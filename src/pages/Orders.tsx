@@ -22,12 +22,15 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
   const [isAddCustomerModalOpen, setIsAddCustomerModalOpen] = useState(false);
   const [isAddProductModalOpen, setIsAddProductModalOpen] = useState(false);
   const [isAddSupplierModalOpen, setIsAddSupplierModalOpen] = useState(false);
+  const [isAddCategoryModalOpen, setIsAddCategoryModalOpen] = useState(false);
   const [isSubmittingCustomer, setIsSubmittingCustomer] = useState(false);
   const [isSubmittingProduct, setIsSubmittingProduct] = useState(false);
   const [isSubmittingSupplier, setIsSubmittingSupplier] = useState(false);
+  const [isSubmittingCategory, setIsSubmittingCategory] = useState(false);
   const [newlyCreatedCustomer, setNewlyCreatedCustomer] = useState<any | null>(null);
   const [newlyCreatedProduct, setNewlyCreatedProduct] = useState<any | null>(null);
   const [newlyCreatedSupplier, setNewlyCreatedSupplier] = useState<any | null>(null);
+  const [newlyCreatedCategory, setNewlyCreatedCategory] = useState<any | null>(null);
   const [currentOrderItemIndex, setCurrentOrderItemIndex] = useState<number | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [viewOrder, setViewOrder] = useState<Order | null>(null);
@@ -60,6 +63,10 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
     address: '',
     products: '',
     notes: ''
+  });
+  const [categoryFormData, setCategoryFormData] = useState({
+    name: '',
+    parent: ''
   });
   const [customerFormData, setCustomerFormData] = useState({
     name: '',
@@ -474,6 +481,44 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
       showToast('Có lỗi xảy ra khi tạo nhà cung cấp. Vui lòng thử lại.', 'error');
     } finally {
       setIsSubmittingSupplier(false);
+    }
+  };
+
+  const handleCreateCategory = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (isSubmittingCategory) return;
+
+    try {
+      setIsSubmittingCategory(true);
+      
+      // Robust ID generation
+      const maxId = (data.categories || []).reduce((max, c) => {
+        const idNum = parseInt((c.id || '').replace('DM', ''));
+        return isNaN(idNum) ? max : Math.max(max, idNum);
+      }, 0);
+      const newId = `DM${String(maxId + 1).padStart(3, '0')}`;
+      
+      const newCategory: any = {
+        id: newId,
+        name: categoryFormData.name,
+        parent: categoryFormData.parent || null,
+        createdAt: new Date().toISOString()
+      };
+
+      await addItem('categories', newCategory);
+
+      setNewlyCreatedCategory(newCategory);
+      setProductFormData({ ...productFormData, category: newCategory.name });
+      setIsAddCategoryModalOpen(false);
+      setCategoryFormData({
+        name: '', parent: ''
+      });
+      showToast('Đã thêm danh mục mới');
+    } catch (error) {
+      console.error('Error creating category:', error);
+      showToast('Có lỗi xảy ra khi tạo danh mục. Vui lòng thử lại.', 'error');
+    } finally {
+      setIsSubmittingCategory(false);
     }
   };
 
@@ -1725,6 +1770,69 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
       )}
 
       {/* Add Supplier Modal (Nested) */}
+      {isAddCategoryModalOpen && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center z-[120] p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md animate-in fade-in zoom-in-95 duration-200">
+            <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-blue-50/50">
+              <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                <PlusCircle className="text-blue-600" size={20} />
+                Thêm danh mục mới
+              </h3>
+              <button 
+                onClick={() => setIsAddCategoryModalOpen(false)}
+                className="p-2 hover:bg-white rounded-full text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            
+            <form onSubmit={handleCreateCategory} className="p-6 space-y-4">
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider">Tên danh mục *</label>
+                <input 
+                  type="text" required
+                  value={categoryFormData.name}
+                  onChange={e => setCategoryFormData({...categoryFormData, name: e.target.value})}
+                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                  placeholder="VD: Laptop Gaming"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider">Danh mục cha</label>
+                <select 
+                  value={categoryFormData.parent}
+                  onChange={e => setCategoryFormData({...categoryFormData, parent: e.target.value})}
+                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                >
+                  <option value="">Không có (Danh mục gốc)</option>
+                  {(data.categories || []).map(c => (
+                    <option key={c.id} value={c.id}>{c.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
+                <button 
+                  type="button"
+                  onClick={() => setIsAddCategoryModalOpen(false)}
+                  className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium transition-colors"
+                >
+                  Hủy
+                </button>
+                <button 
+                  type="submit"
+                  disabled={isSubmittingCategory}
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold transition-all shadow-lg shadow-blue-600/20 disabled:opacity-50"
+                >
+                  {isSubmittingCategory ? 'Đang lưu...' : 'Lưu danh mục'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {isAddSupplierModalOpen && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center z-[120] p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-xl max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-200">
@@ -1867,13 +1975,31 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider">Danh mục</label>
-                  <input 
-                    type="text"
-                    value={productFormData.category}
-                    onChange={e => setProductFormData({...productFormData, category: e.target.value})}
-                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-                    placeholder="Laptop, Linh kiện..."
-                  />
+                  <div className="flex gap-2">
+                    <select 
+                      value={productFormData.category}
+                      onChange={e => setProductFormData({...productFormData, category: e.target.value})}
+                      className="flex-1 px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                    >
+                      <option value="">Chọn danh mục</option>
+                      {(data.categories || []).map(c => (
+                        <option key={c.id} value={c.name}>{c.name}</option>
+                      ))}
+                      {newlyCreatedCategory && !(data.categories || []).find(c => c.name === newlyCreatedCategory.name) && (
+                        <option key={newlyCreatedCategory.id} value={newlyCreatedCategory.name}>
+                          {newlyCreatedCategory.name} (Vừa thêm)
+                        </option>
+                      )}
+                    </select>
+                    <button 
+                      type="button"
+                      onClick={() => setIsAddCategoryModalOpen(true)}
+                      className="p-2 text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors border border-blue-100"
+                      title="Thêm danh mục mới"
+                    >
+                      <PlusCircle size={20} />
+                    </button>
+                  </div>
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider">Giá bán *</label>
