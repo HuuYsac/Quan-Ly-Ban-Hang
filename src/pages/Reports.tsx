@@ -33,8 +33,10 @@ export function Reports({ data, updateData }: ReportsProps) {
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
 
   // Helper to get import price for profit calculation
-  const getImportPrice = (productId: string, itemImportPrice?: number) => {
-    if (itemImportPrice !== undefined) return itemImportPrice;
+  const getImportPrice = (productId: string, itemImportPrice?: number | null) => {
+    if (itemImportPrice !== undefined && itemImportPrice !== null && itemImportPrice > 0) {
+      return itemImportPrice;
+    }
     const product = (data.products || []).find(p => p.id === productId);
     return product?.importPrice || 0;
   };
@@ -103,11 +105,23 @@ export function Reports({ data, updateData }: ReportsProps) {
       return isWithinInterval(rDate, { start: prevStartDate, end: prevEndDate });
     });
 
-    const orderRevenue = currentPeriodItems.reduce((sum, item) => sum + (item.subtotal || 0), 0);
+    const currentPeriodOrders = paidOrders.filter(o => {
+      const oDate = parseISO(o.date);
+      return isWithinInterval(oDate, { start: startDate, end: endDate });
+    });
+
+    const prevPeriodOrders = paidOrders.filter(o => {
+      const oDate = parseISO(o.date);
+      return isWithinInterval(oDate, { start: prevStartDate, end: prevEndDate });
+    });
+
+    const orderRevenue = currentPeriodItems.reduce((sum, item) => sum + (item.subtotal || 0), 0) + 
+                         currentPeriodOrders.reduce((sum, o) => sum + (o.packagingFee || 0) + (o.shippingFee || 0), 0);
     const repairRevenue = currentPeriodRepairs.reduce((sum, r) => sum + (r.customerPrice || 0), 0);
     const totalRevenue = orderRevenue + repairRevenue;
 
-    const prevOrderRevenue = prevPeriodItems.reduce((sum, item) => sum + (item.subtotal || 0), 0);
+    const prevOrderRevenue = prevPeriodItems.reduce((sum, item) => sum + (item.subtotal || 0), 0) +
+                             prevPeriodOrders.reduce((sum, o) => sum + (o.packagingFee || 0) + (o.shippingFee || 0), 0);
     const prevRepairRevenue = prevPeriodRepairs.reduce((sum, r) => sum + (r.customerPrice || 0), 0);
     const prevRevenue = prevOrderRevenue + prevRepairRevenue;
     

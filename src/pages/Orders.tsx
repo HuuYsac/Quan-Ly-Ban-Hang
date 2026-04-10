@@ -423,7 +423,8 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
         ...newItems[currentOrderItemIndex],
         productId: newProduct.id,
         name: newProduct.name,
-        price: newProduct.price
+        price: newProduct.price,
+        importPrice: newProduct.importPrice
       };
       setOrderItems(newItems);
       
@@ -1157,6 +1158,19 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
                       <td colSpan={4} className="p-4 text-right font-bold text-gray-600 uppercase">Tổng cộng:</td>
                       <td className="p-4 text-right font-black text-xl text-blue-700">{formatCurrency(viewOrder.total)}</td>
                     </tr>
+                    {isAdmin && (
+                      <tr className="border-t border-gray-100">
+                        <td colSpan={4} className="p-3 text-right text-xs font-bold text-emerald-600 uppercase italic">Lợi nhuận đơn hàng:</td>
+                        <td className="p-3 text-right font-bold text-emerald-700">
+                          {formatCurrency(
+                            (viewOrder.products || []).reduce((sum, item) => {
+                              const cost = (item.importPrice || 0) * item.quantity;
+                              return sum + (item.subtotal || 0) - cost;
+                            }, 0)
+                          )}
+                        </td>
+                      </tr>
+                    )}
                   </tfoot>
                 </table>
 

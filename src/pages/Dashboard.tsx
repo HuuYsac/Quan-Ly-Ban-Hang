@@ -41,6 +41,7 @@ import {
   Cell
 } from 'recharts';
 import { subDays, format, isSameDay, parseISO } from 'date-fns';
+import { vi } from 'date-fns/locale';
 
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -85,6 +86,25 @@ export function Dashboard({ data, onNavigate, isAdmin }: DashboardProps) {
 
     const totalRevenue = paidOrders.reduce((sum, o) => sum + o.total, 0) + 
                          completedRepairs.reduce((sum, r) => sum + (r.customerPrice || 0), 0);
+
+    // Profit Calculation
+    const getImportPrice = (productId: string, itemImportPrice?: number | null) => {
+      if (itemImportPrice !== undefined && itemImportPrice !== null && itemImportPrice > 0) {
+        return itemImportPrice;
+      }
+      const product = (data.products || []).find(p => p.id === productId);
+      return product?.importPrice || 0;
+    };
+
+    const orderCost = paidOrders.reduce((sum, o) => {
+      const itemsCost = (o.products || []).reduce((iSum, item) => {
+        return iSum + (getImportPrice(item.productId, item.importPrice) * item.quantity);
+      }, 0);
+      return sum + itemsCost;
+    }, 0);
+
+    const repairCost = completedRepairs.reduce((sum, r) => sum + (r.partnerCost || 0), 0);
+    const totalProfit = totalRevenue - (orderCost + repairCost);
 
     // Low Stock
     const lowStockProducts = data.products?.filter(p => p.stock <= p.minStock) || [];
@@ -143,6 +163,7 @@ export function Dashboard({ data, onNavigate, isAdmin }: DashboardProps) {
       todayRevenue,
       todayOrdersCount: todayOrders.length,
       totalRevenue,
+      totalProfit,
       customerCount: data.customers?.length || 0,
       productCount: data.products?.length || 0,
       lowStockCount: lowStockProducts.length,
@@ -163,17 +184,22 @@ export function Dashboard({ data, onNavigate, isAdmin }: DashboardProps) {
       <motion.div 
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex flex-col md:flex-row md:items-center justify-between gap-4"
+        className="flex flex-col md:flex-row md:items-center justify-between gap-6"
       >
-        <div>
-          <h1 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight">
-            Chào buổi sáng, <span className="text-indigo-600">Hữu!</span>
-          </h1>
-          <p className="text-slate-500 text-sm font-medium">Đây là những gì đang diễn ra tại cửa hàng của bạn hôm nay.</p>
+        <div className="flex items-center gap-5">
+          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-600 to-blue-600 flex items-center justify-center shadow-xl shadow-indigo-200 shrink-0">
+            <Sparkles size={32} className="text-white animate-pulse" />
+          </div>
+          <div>
+            <h1 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight leading-tight">
+              Chào buổi sáng, <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-blue-600">Hữu!</span>
+            </h1>
+            <p className="text-slate-500 text-sm font-medium mt-1">Hệ thống đã sẵn sàng. Hôm nay bạn có <span className="text-indigo-600 font-bold">{stats.todayOrdersCount} đơn hàng mới</span>.</p>
+          </div>
         </div>
-        <div className="flex items-center gap-3 text-xs font-bold text-slate-500 bg-white/50 backdrop-blur-sm px-4 py-2.5 rounded-2xl border border-slate-100 shadow-sm">
+        <div className="flex items-center gap-3 text-[11px] font-black text-slate-500 bg-white/80 backdrop-blur-md px-5 py-3 rounded-2xl border border-white shadow-xl shadow-slate-200/50">
           <Calendar size={16} className="text-indigo-500" />
-          <span className="uppercase tracking-wider">{format(new Date(), 'eeee, dd/MM/yyyy')}</span>
+          <span className="uppercase tracking-widest">{format(new Date(), 'eeee, dd/MM/yyyy', { locale: vi })}</span>
         </div>
       </motion.div>
 
@@ -190,7 +216,7 @@ export function Dashboard({ data, onNavigate, isAdmin }: DashboardProps) {
             }
           }
         }}
-        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6"
+        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 sm:gap-5"
       >
         {isAdmin && stats.pendingUsersCount > 0 ? (
           <StatCard 
@@ -221,6 +247,15 @@ export function Dashboard({ data, onNavigate, isAdmin }: DashboardProps) {
           trendUp={true} 
           color="indigo"
           onClick={() => onNavigate('orders')}
+        />
+        <StatCard 
+          title="Lợi nhuận" 
+          value={formatCurrency(stats.totalProfit)} 
+          icon={TrendingUp} 
+          trend="Tổng tích lũy" 
+          trendUp={true} 
+          color="emerald"
+          onClick={() => onNavigate('reports')}
         />
         <StatCard 
           title="Khách hàng" 
@@ -268,34 +303,37 @@ export function Dashboard({ data, onNavigate, isAdmin }: DashboardProps) {
               Chi tiết báo cáo <ChevronRight size={14} />
             </motion.button>
           </div>
-          <div className="h-72 w-full">
+          <div className="h-64 w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={stats.chartData}>
+              <BarChart data={stats.chartData} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                 <XAxis 
                   dataKey="name" 
                   axisLine={false} 
                   tickLine={false} 
-                  tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 600 }} 
+                  tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 700 }} 
                 />
                 <YAxis hide />
                 <Tooltip 
-                  cursor={{ fill: '#f8fafc', radius: 8 }}
+                  cursor={{ fill: '#f8fafc', radius: 12 }}
                   contentStyle={{ 
-                    borderRadius: '16px', 
-                    border: 'none', 
-                    boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)',
-                    padding: '12px'
+                    borderRadius: '20px', 
+                    border: '1px solid #f1f5f9', 
+                    boxShadow: '0 25px 50px -12px rgb(0 0 0 / 0.1)',
+                    padding: '16px',
+                    backdropFilter: 'blur(8px)',
+                    backgroundColor: 'rgba(255, 255, 255, 0.9)'
                   }}
-                  itemStyle={{ fontWeight: 800, color: '#1e293b' }}
-                  formatter={(value: number) => [formatCurrency(value), 'Doanh thu']}
+                  itemStyle={{ fontWeight: 900, color: '#4f46e5', fontSize: '14px' }}
+                  labelStyle={{ fontWeight: 700, color: '#64748b', marginBottom: '4px', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.05em' }}
+                  formatter={(value: number) => [formatCurrency(value), 'DOANH THU']}
                 />
-                <Bar dataKey="revenue" radius={[6, 6, 0, 0]} barSize={32}>
+                <Bar dataKey="revenue" radius={[8, 8, 0, 0]} barSize={36}>
                   {stats.chartData.map((entry, index) => (
                     <Cell 
                       key={`cell-${index}`} 
                       fill={index === 6 ? '#4f46e5' : '#e2e8f0'} 
-                      className="transition-all duration-300 hover:fill-indigo-400"
+                      className="transition-all duration-500 hover:fill-indigo-400"
                     />
                   ))}
                 </Bar>
@@ -309,16 +347,19 @@ export function Dashboard({ data, onNavigate, isAdmin }: DashboardProps) {
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.3 }}
-          className="glass-card p-6"
+          className="glass-card p-6 flex flex-col"
         >
           <div className="flex items-center gap-3 mb-8">
-            <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shadow-sm">
               <Sparkles size={20} />
             </div>
-            <h3 className="text-lg font-black text-slate-900 tracking-tight">Thao tác nhanh</h3>
+            <div>
+              <h3 className="text-lg font-black text-slate-900 tracking-tight">Thao tác nhanh</h3>
+              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Lối tắt hệ thống</p>
+            </div>
           </div>
           
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-3 gap-3 flex-1">
             <QuickAction icon={FileText} title="Tạo đơn" color="blue" onClick={() => onNavigate('orders')} />
             <QuickAction icon={UserPlus} title="+ Khách" color="emerald" onClick={() => onNavigate('customers')} />
             <QuickAction icon={PlusCircle} title="+ SP" color="amber" onClick={() => onNavigate('products')} />
@@ -326,6 +367,7 @@ export function Dashboard({ data, onNavigate, isAdmin }: DashboardProps) {
             <QuickAction icon={HeartHandshake} title="CRM" color="indigo" onClick={() => onNavigate('crm')} />
             <QuickAction icon={ShieldCheck} title="Bảo hành" color="emerald" onClick={() => onNavigate('warranty')} />
           </div>
+        </motion.div>
 
           <motion.div 
             whileHover={{ scale: 1.02 }}
@@ -345,8 +387,7 @@ export function Dashboard({ data, onNavigate, isAdmin }: DashboardProps) {
               <p className="text-[10px] text-slate-400 font-medium">Dữ liệu thời gian thực từ các đơn đã thanh toán</p>
             </div>
           </motion.div>
-        </motion.div>
-      </div>
+        </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Critical Alerts */}
@@ -372,19 +413,27 @@ export function Dashboard({ data, onNavigate, isAdmin }: DashboardProps) {
                 {stats.lowStockCount}
               </span>
             </div>
-            <div className="space-y-2">
+            <div className="space-y-3">
               {stats.lowStockProducts.length > 0 ? stats.lowStockProducts.map(p => (
                 <motion.div 
-                  whileHover={{ x: 4 }}
+                  whileHover={{ x: 4, backgroundColor: 'rgba(248, 250, 252, 1)' }}
                   key={p.id} 
                   onClick={() => setViewProduct(p)}
-                  className="flex items-center justify-between p-3 hover:bg-slate-50 rounded-xl transition-all cursor-pointer group border border-transparent hover:border-slate-100"
+                  className="flex items-center justify-between p-3.5 bg-slate-50/30 rounded-2xl transition-all cursor-pointer group border border-slate-100/50 hover:border-indigo-100"
                 >
-                  <span className="text-xs text-slate-600 font-bold truncate max-w-[150px] group-hover:text-indigo-600">{p.name}</span>
-                  <span className="text-[10px] font-black text-rose-600 bg-rose-50 px-2 py-1 rounded-lg">Còn {p.stock}</span>
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center text-slate-400 group-hover:text-indigo-600 shadow-sm">
+                      <Package size={14} />
+                    </div>
+                    <span className="text-xs text-slate-600 font-bold truncate max-w-[140px] group-hover:text-slate-900">{p.name}</span>
+                  </div>
+                  <span className="text-[10px] font-black text-rose-600 bg-rose-50 px-2.5 py-1 rounded-lg ring-1 ring-rose-100">Còn {p.stock}</span>
                 </motion.div>
               )) : (
-                <p className="text-xs text-slate-400 italic text-center py-4">Tồn kho đang ở mức an toàn ✨</p>
+                <div className="flex flex-col items-center justify-center py-8 opacity-40">
+                  <Sparkles size={24} className="text-slate-300 mb-2" />
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Tồn kho an toàn</p>
+                </div>
               )}
             </div>
           </motion.div>
@@ -410,22 +459,30 @@ export function Dashboard({ data, onNavigate, isAdmin }: DashboardProps) {
                 {stats.pendingRepairsCount}
               </span>
             </div>
-            <div className="space-y-2">
+            <div className="space-y-3">
               {stats.pendingRepairs.length > 0 ? stats.pendingRepairs.map(r => (
                 <motion.div 
-                  whileHover={{ x: 4 }}
+                  whileHover={{ x: 4, backgroundColor: 'rgba(248, 250, 252, 1)' }}
                   key={r.id} 
                   onClick={() => setViewRepair(r)}
-                  className="flex items-center justify-between p-3 hover:bg-slate-50 rounded-xl transition-all cursor-pointer group border border-transparent hover:border-slate-100"
+                  className="flex items-center justify-between p-3.5 bg-slate-50/30 rounded-2xl transition-all cursor-pointer group border border-slate-100/50 hover:border-indigo-100"
                 >
-                  <div className="flex flex-col">
-                    <span className="text-xs text-slate-600 font-bold truncate max-w-[150px] group-hover:text-indigo-600">{r.customerName}</span>
-                    <span className="text-[10px] text-slate-400 font-medium">{r.productName}</span>
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center text-slate-400 group-hover:text-indigo-600 shadow-sm">
+                      <Wrench size={14} />
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-xs text-slate-600 font-bold truncate max-w-[130px] group-hover:text-slate-900">{r.customerName}</span>
+                      <span className="text-[9px] text-slate-400 font-bold uppercase tracking-tighter">{r.productName}</span>
+                    </div>
                   </div>
-                  <span className="text-[10px] font-black text-indigo-600 bg-indigo-50 px-2 py-1 rounded-lg">ĐANG XỬ LÝ</span>
+                  <span className="text-[9px] font-black text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-lg ring-1 ring-indigo-100">XỬ LÝ</span>
                 </motion.div>
               )) : (
-                <p className="text-xs text-slate-400 italic text-center py-4">Không có máy đang sửa chữa.</p>
+                <div className="flex flex-col items-center justify-center py-8 opacity-40">
+                  <HeartHandshake size={24} className="text-slate-300 mb-2" />
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Không có máy sửa</p>
+                </div>
               )}
             </div>
           </motion.div>
@@ -451,25 +508,33 @@ export function Dashboard({ data, onNavigate, isAdmin }: DashboardProps) {
                 {stats.expiringWarrantiesCount}
               </span>
             </div>
-            <div className="space-y-2">
+            <div className="space-y-3">
               {stats.expiringWarranties.length > 0 ? stats.expiringWarranties.map((w, i) => (
                 <motion.div 
-                  whileHover={{ x: 4 }}
+                  whileHover={{ x: 4, backgroundColor: 'rgba(248, 250, 252, 1)' }}
                   key={i} 
                   onClick={() => {
                     const customer = data.customers?.find(c => c.id === w.customerId);
                     if (customer) setViewCustomer(customer);
                   }}
-                  className="flex items-center justify-between p-3 hover:bg-slate-50 rounded-xl transition-all cursor-pointer group border border-transparent hover:border-slate-100"
+                  className="flex items-center justify-between p-3.5 bg-slate-50/30 rounded-2xl transition-all cursor-pointer group border border-slate-100/50 hover:border-indigo-100"
                 >
-                  <div className="flex flex-col">
-                    <span className="text-xs text-slate-600 font-bold truncate max-w-[150px] group-hover:text-indigo-600">{w.customerName}</span>
-                    <span className="text-[10px] text-slate-400 font-medium">{w.productName}</span>
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center text-slate-400 group-hover:text-indigo-600 shadow-sm">
+                      <ShieldAlert size={14} />
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-xs text-slate-600 font-bold truncate max-w-[130px] group-hover:text-slate-900">{w.customerName}</span>
+                      <span className="text-[9px] text-slate-400 font-bold uppercase tracking-tighter">{w.productName}</span>
+                    </div>
                   </div>
-                  <span className="text-[10px] font-black text-rose-600 bg-rose-50 px-2 py-1 rounded-lg">CÒN {w.daysRemaining} NGÀY</span>
+                  <span className="text-[9px] font-black text-rose-600 bg-rose-50 px-2.5 py-1 rounded-lg ring-1 ring-rose-100">{w.daysRemaining} NGÀY</span>
                 </motion.div>
               )) : (
-                <p className="text-xs text-slate-400 italic text-center py-4">Không có bảo hành sắp hết hạn.</p>
+                <div className="flex flex-col items-center justify-center py-8 opacity-40">
+                  <ShieldCheck size={24} className="text-slate-300 mb-2" />
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Bảo hành an toàn</p>
+                </div>
               )}
             </div>
           </motion.div>
@@ -497,7 +562,7 @@ export function Dashboard({ data, onNavigate, isAdmin }: DashboardProps) {
               Xem tất cả
             </motion.button>
           </div>
-          <div className="space-y-2">
+          <div className="space-y-3">
             {(data.orders || []).slice(0, 6).map((order, idx) => (
               <motion.div 
                 initial={{ opacity: 0, x: -10 }}
@@ -505,17 +570,17 @@ export function Dashboard({ data, onNavigate, isAdmin }: DashboardProps) {
                 transition={{ delay: 0.5 + (idx * 0.05) }}
                 key={order.id} 
                 onClick={() => setViewOrder(order)}
-                className="flex items-center gap-4 p-4 hover:bg-slate-50/80 rounded-2xl transition-all group cursor-pointer border border-transparent hover:border-slate-100"
+                className="flex items-center gap-4 p-4 hover:bg-slate-50/80 rounded-2xl transition-all group cursor-pointer border border-transparent hover:border-slate-100/50 hover:shadow-sm"
               >
                 <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 transition-all group-hover:scale-110 group-hover:rotate-3 shadow-sm ${
-                  order.paymentStatus === 'Đã thanh toán' ? 'bg-emerald-50 text-emerald-600' : 'bg-indigo-50 text-indigo-600'
+                  order.paymentStatus === 'Đã thanh toán' ? 'bg-emerald-500 text-white' : 'bg-indigo-500 text-white'
                 }`}>
-                  <ClipboardList size={20} />
+                  <ClipboardList size={20} strokeWidth={2.5} />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between mb-1">
+                  <div className="flex items-center justify-between mb-1.5">
                     <h4 
-                      className="text-sm font-bold text-slate-900 truncate group-hover:text-indigo-600 transition-colors"
+                      className="text-sm font-black text-slate-900 truncate group-hover:text-indigo-600 transition-colors"
                       onClick={(e) => {
                         e.stopPropagation();
                         const customer = data.customers?.find(c => c.id === order.customerId);
@@ -524,13 +589,20 @@ export function Dashboard({ data, onNavigate, isAdmin }: DashboardProps) {
                     >
                       {order.customerName}
                     </h4>
-                    <span className="text-sm font-black text-slate-900 tracking-tight">{formatCurrency(order.total)}</span>
+                    <span className="text-sm font-black text-indigo-600 tracking-tight">{formatCurrency(order.total)}</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <p className="text-[11px] text-slate-400 font-medium truncate">
-                      {order.paymentStatus === 'Đã thanh toán' ? 'Đã thanh toán đơn hàng' : 'Đặt hàng mới'} <span className="text-slate-500 font-bold">#{order.id}</span>
-                    </p>
-                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
+                    <div className="flex items-center gap-2">
+                      <span className={`text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded ${
+                        order.paymentStatus === 'Đã thanh toán' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'
+                      }`}>
+                        {order.paymentStatus}
+                      </span>
+                      <p className="text-[11px] text-slate-400 font-bold truncate">
+                        Đơn hàng <span className="text-slate-600">#{order.id}</span>
+                      </p>
+                    </div>
+                    <span className="text-[10px] text-slate-400 font-black uppercase tracking-widest">
                       {order.date} • {order.time}
                     </span>
                   </div>
@@ -752,6 +824,19 @@ export function Dashboard({ data, onNavigate, isAdmin }: DashboardProps) {
                     <span className="text-slate-400">Tổng cộng</span>
                     <span className="text-2xl font-black">{formatCurrency(viewOrder.total)}</span>
                   </div>
+                  {isAdmin && (
+                    <div className="flex justify-between items-center mb-2 pt-2 border-t border-slate-100">
+                      <span className="text-emerald-600 text-xs font-bold italic">Lợi nhuận đơn hàng</span>
+                      <span className="text-emerald-700 font-bold">
+                        {formatCurrency(
+                          (viewOrder.products || []).reduce((sum, item) => {
+                            const cost = (item.importPrice || 0) * item.quantity;
+                            return sum + (item.subtotal || 0) - cost;
+                          }, 0)
+                        )}
+                      </span>
+                    </div>
+                  )}
                   <p className="text-xs text-slate-500 italic">
                     {numberToVietnameseWords(viewOrder.total)}
                   </p>
@@ -959,42 +1044,55 @@ export function Dashboard({ data, onNavigate, isAdmin }: DashboardProps) {
 
 function StatCard({ title, value, icon: Icon, trend, trendUp, color, onClick }: any) {
   const colorMap: Record<string, string> = {
-    blue: 'bg-blue-500 shadow-blue-200 text-white',
-    indigo: 'bg-indigo-500 shadow-indigo-200 text-white',
-    emerald: 'bg-emerald-500 shadow-emerald-200 text-white',
-    amber: 'bg-amber-500 shadow-amber-200 text-white',
-    rose: 'bg-rose-500 shadow-rose-200 text-white',
+    blue: 'bg-blue-600 text-white shadow-blue-200',
+    indigo: 'bg-indigo-600 text-white shadow-indigo-200',
+    emerald: 'bg-emerald-600 text-white shadow-emerald-200',
+    amber: 'bg-amber-600 text-white shadow-amber-200',
+    rose: 'bg-rose-600 text-white shadow-rose-200',
   };
 
-  const lightColorMap: Record<string, string> = {
-    blue: 'bg-blue-50 text-blue-600',
-    indigo: 'bg-indigo-50 text-indigo-600',
-    emerald: 'bg-emerald-50 text-emerald-600',
-    amber: 'bg-amber-50 text-amber-600',
-    rose: 'bg-rose-50 text-rose-600',
+  const ringColorMap: Record<string, string> = {
+    blue: 'group-hover:ring-blue-100',
+    indigo: 'group-hover:ring-indigo-100',
+    emerald: 'group-hover:ring-emerald-100',
+    amber: 'group-hover:ring-amber-100',
+    rose: 'group-hover:ring-rose-100',
   };
 
   return (
     <motion.div 
+      variants={{
+        hidden: { opacity: 0, y: 20 },
+        visible: { opacity: 1, y: 0 }
+      }}
       whileHover={{ y: -5, transition: { duration: 0.2 } }}
       onClick={onClick}
-      className={`glass-card p-6 group relative overflow-hidden ${onClick ? 'cursor-pointer' : ''}`}
+      className={`glass-card p-5 group relative overflow-hidden transition-all duration-300 ${onClick ? 'cursor-pointer hover:shadow-2xl hover:shadow-slate-200' : ''}`}
     >
-      <div className="absolute -right-4 -top-4 w-24 h-24 bg-slate-50/50 rounded-full blur-2xl group-hover:bg-slate-100/50 transition-colors"></div>
+      <div className="absolute -right-6 -top-6 w-24 h-24 bg-slate-50/50 rounded-full blur-2xl group-hover:bg-slate-100/50 transition-colors"></div>
       
-      <div className="flex items-center justify-between mb-4 relative z-10">
-        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg transition-all group-hover:scale-110 group-hover:rotate-3 ${colorMap[color] || colorMap.blue}`}>
-          <Icon size={22} />
+      <div className="flex items-start justify-between mb-4 relative z-10">
+        <div className={`w-11 h-11 rounded-xl flex items-center justify-center shadow-lg transition-all duration-500 group-hover:scale-110 group-hover:rotate-3 ring-4 ring-transparent ${ringColorMap[color] || 'group-hover:ring-slate-100'} ${colorMap[color] || colorMap.blue}`}>
+          <Icon size={20} strokeWidth={2.5} />
         </div>
-        <div className={`flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-full ${trendUp ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'}`}>
-          {trendUp ? <ArrowUpRight size={12} /> : <AlertTriangle size={12} />}
+        <div className={`flex items-center gap-1 text-[9px] font-black uppercase tracking-tighter px-2 py-1 rounded-lg ${trendUp ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'}`}>
+          {trendUp ? <ArrowUpRight size={10} strokeWidth={3} /> : <AlertTriangle size={10} strokeWidth={3} />}
           {trend}
         </div>
       </div>
       
       <div className="relative z-10">
-        <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">{title}</h3>
-        <div className="text-2xl font-black text-slate-900 tracking-tight">{value}</div>
+        <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">{title}</h3>
+        <div className="text-xl font-black text-slate-900 tracking-tight group-hover:text-indigo-600 transition-colors">{value}</div>
+      </div>
+      
+      <div className="absolute bottom-0 left-0 w-full h-1 bg-slate-100/50 overflow-hidden">
+        <motion.div 
+          initial={{ x: '-100%' }}
+          animate={{ x: '0%' }}
+          transition={{ duration: 1, delay: 0.5 }}
+          className={`h-full w-full opacity-30 ${colorMap[color]?.split(' ')[0]}`}
+        />
       </div>
     </motion.div>
   );
@@ -1014,12 +1112,12 @@ function QuickAction({ icon: Icon, title, color, onClick }: any) {
       whileHover={{ y: -4, scale: 1.02 }}
       whileTap={{ scale: 0.95 }}
       onClick={onClick}
-      className={`flex flex-col items-center justify-center p-4 rounded-2xl transition-all hover:text-white shadow-sm hover:shadow-xl group ${colorMap[color]}`}
+      className={`flex flex-col items-center justify-center p-3 rounded-2xl transition-all hover:text-white shadow-sm hover:shadow-xl group border border-transparent hover:border-white/20 ${colorMap[color]}`}
     >
-      <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-2 bg-white/50 group-hover:bg-transparent transition-colors">
-        <Icon size={20} className="transition-transform group-hover:scale-110" />
+      <div className="w-9 h-9 rounded-xl flex items-center justify-center mb-2 bg-white/50 group-hover:bg-transparent transition-colors shadow-sm">
+        <Icon size={18} className="transition-transform group-hover:scale-110" />
       </div>
-      <span className="text-[10px] font-bold uppercase tracking-widest">{title}</span>
+      <span className="text-[9px] font-black uppercase tracking-widest text-center leading-tight">{title}</span>
     </motion.button>
   );
 }
