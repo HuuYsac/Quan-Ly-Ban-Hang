@@ -2,8 +2,9 @@ import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { AppData, Order, OrderItem } from '../types';
 import { formatCurrency, numberToVietnameseWords } from '../lib/utils';
-import { ShoppingCart, Plus, Search, Eye, Printer, Trash2, X, PlusCircle, Edit, FileText, DollarSign, Package, CreditCard } from 'lucide-react';
+import { ShoppingCart, Plus, Search, Eye, Printer, Trash2, X, PlusCircle, Edit, FileText, DollarSign, Package, CreditCard, ChevronDown } from 'lucide-react';
 import { Toast, ToastType, ConfirmModal } from '../components/Notification';
+import { SearchableSelect } from '../components/SearchableSelect';
 
 interface OrdersProps {
   data: AppData;
@@ -1361,30 +1362,19 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
                   <div className="md:col-span-4">
                     <label className="block text-xs font-bold text-gray-500 uppercase mb-1 ml-1">Khách hàng *</label>
                     <div className="flex gap-2">
-                      <select 
-                        required
+                      <SearchableSelect 
+                        className="flex-1"
+                        options={(data.customers || []).map(c => ({
+                          id: c.id,
+                          label: c.name,
+                          sublabel: c.phone
+                        }))}
                         value={formData.customerId}
-                        onChange={e => {
-                          if (e.target.value === 'add-new-customer') {
-                            setIsAddCustomerModalOpen(true);
-                          } else {
-                            setFormData({...formData, customerId: e.target.value});
-                          }
-                        }}
-                        className="flex-1 px-3 sm:px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm sm:text-base bg-white shadow-sm transition-all"
-                      >
-                        <option value="">Chọn khách hàng</option>
-                        {(data.customers || []).map(c => (
-                          <option key={c.id} value={c.id}>{c.name} - {c.phone}</option>
-                        ))}
-                        <option value="add-new-customer" className="text-blue-600 font-bold">+ Thêm khách hàng mới</option>
-                        {/* Show newly created customer if not yet in data.customers */}
-                        {newlyCreatedCustomer && !(data.customers || []).find(c => c.id === newlyCreatedCustomer.id) && (
-                          <option key={newlyCreatedCustomer.id} value={newlyCreatedCustomer.id}>
-                            {newlyCreatedCustomer.name} - {newlyCreatedCustomer.phone} (Vừa thêm)
-                          </option>
-                        )}
-                      </select>
+                        onChange={(val) => setFormData({...formData, customerId: val})}
+                        placeholder="Chọn khách hàng"
+                        onAddNew={() => setIsAddCustomerModalOpen(true)}
+                        addNewLabel="Thêm khách hàng mới"
+                      />
                       <button 
                         type="button"
                         onClick={() => setIsAddCustomerModalOpen(true)}
@@ -1533,32 +1523,23 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
                         <div className="sm:col-span-5">
                           <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1 ml-1">Sản phẩm *</label>
                           <div className="flex gap-2">
-                            <select 
-                              required
+                            <SearchableSelect 
+                              className="flex-1"
+                              options={(data.products || []).map(p => ({
+                                id: p.id,
+                                label: p.name,
+                                sublabel: `${formatCurrency(p.price)} - Còn: ${p.stock}`,
+                                disabled: p.stock <= 0
+                              }))}
                               value={item.productId}
-                              onChange={e => {
-                                if (e.target.value === 'add-new-product') {
-                                  setCurrentOrderItemIndex(index);
-                                  setIsAddProductModalOpen(true);
-                                } else {
-                                  handleItemChange(index, 'productId', e.target.value);
-                                }
+                              onChange={(val) => handleItemChange(index, 'productId', val)}
+                              placeholder="Chọn sản phẩm"
+                              onAddNew={() => {
+                                setCurrentOrderItemIndex(index);
+                                setIsAddProductModalOpen(true);
                               }}
-                              className="flex-1 min-w-0 px-3 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm bg-gray-50/30"
-                            >
-                              <option value="">Chọn sản phẩm</option>
-                              {(data.products || []).map(p => (
-                                <option key={p.id} value={p.id} disabled={p.stock <= 0}>
-                                  {p.name} - {formatCurrency(p.price)} (Còn: {p.stock})
-                                </option>
-                              ))}
-                              <option value="add-new-product" className="text-blue-600 font-bold">+ Thêm sản phẩm mới</option>
-                              {newlyCreatedProduct && !(data.products || []).find(p => p.id === newlyCreatedProduct.id) && (
-                                <option key={newlyCreatedProduct.id} value={newlyCreatedProduct.id}>
-                                  {newlyCreatedProduct.name} - {formatCurrency(newlyCreatedProduct.price)} (Vừa thêm)
-                                </option>
-                              )}
-                            </select>
+                              addNewLabel="Thêm sản phẩm mới"
+                            />
                             <button 
                               type="button"
                               onClick={() => {
