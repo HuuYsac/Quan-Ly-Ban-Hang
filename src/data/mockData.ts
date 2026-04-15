@@ -15,6 +15,7 @@ export const initialData: AppData = {
   warrantyNotifications: [],
   customers: [],
   suppliers: [],
+  technicians: [],
   products: [],
   categories: [],
   orders: [],

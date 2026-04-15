@@ -291,10 +291,19 @@ export interface InternalTask {
   messageId?: string;
 }
 
+export interface Technician {
+  id: string;
+  name: string;
+  phone?: string;
+  type: 'Thợ' | 'Đối tác';
+  createdAt: string;
+}
+
 export interface AppData {
   users: User[];
   customers: Customer[];
   suppliers: Supplier[];
+  technicians: Technician[];
   products: Product[];
   categories: Category[];
   orders: Order[];

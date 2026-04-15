@@ -221,6 +221,19 @@
         "messageId": { "type": "string" }
       },
       "required": ["id", "title", "assignedTo", "status", "createdBy", "createdAt"]
+    },
+    "Technician": {
+      "title": "Technician",
+      "description": "Technician or Partner information",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "phone": { "type": "string" },
+        "type": { "type": "string", "enum": ["Thợ", "Đối tác"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "name", "type", "createdAt"]
     }
   },
   "firestore": {
@@ -235,6 +248,10 @@
     "suppliers/{supplierId}": {
       "schema": { "$ref": "#/entities/Supplier" },
       "description": "Supplier database"
+    },
+    "technicians/{technicianId}": {
+      "schema": { "$ref": "#/entities/Technician" },
+      "description": "Technician and Partner database"
     },
     "products/{productId}": {
       "schema": { "$ref": "#/entities/Product" },

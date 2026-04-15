@@ -18,10 +18,13 @@ import {
   Trash2,
   ExternalLink,
   DollarSign,
-  TrendingUp as TrendingUpIcon
+  TrendingUp as TrendingUpIcon,
+  PlusCircle
 } from 'lucide-react';
-import { Repair } from '../types';
+import { Repair, Customer, Technician } from '../types';
 import { formatCurrency } from '../lib/utils';
+import { SearchableSelect } from '../components/SearchableSelect';
+import { Toast, ToastType } from '../components/Notification';
 
 const Repairs: React.FC = () => {
   const { data, addItem, updateItem, deleteItem } = useAppStore();
@@ -29,6 +32,31 @@ const Repairs: React.FC = () => {
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingRepair, setEditingRepair] = useState<Repair | null>(null);
+  const [toast, setToast] = useState<{ message: string; type: ToastType } | null>(null);
+
+  // New Modals State
+  const [isAddCustomerModalOpen, setIsAddCustomerModalOpen] = useState(false);
+  const [isAddTechnicianModalOpen, setIsAddTechnicianModalOpen] = useState(false);
+  const [isSubmittingCustomer, setIsSubmittingCustomer] = useState(false);
+  const [isSubmittingTechnician, setIsSubmittingTechnician] = useState(false);
+
+  const [customerFormData, setCustomerFormData] = useState({
+    name: '',
+    phone: '',
+    type: 'ca-nhan' as const,
+    email: '',
+    address: ''
+  });
+
+  const [technicianFormData, setTechnicianFormData] = useState({
+    name: '',
+    phone: '',
+    type: 'Thợ' as const
+  });
+
+  const showToast = (message: string, type: ToastType = 'success') => {
+    setToast({ message, type });
+  };
 
   const [formData, setFormData] = useState<Partial<Repair>>({
     customerId: '',
@@ -141,6 +169,62 @@ const Repairs: React.FC = () => {
       profit: repair.profit || 0
     });
     setIsModalOpen(true);
+  };
+
+  const handleCreateCustomer = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (isSubmittingCustomer) return;
+
+    try {
+      setIsSubmittingCustomer(true);
+      const newId = `KH${Date.now()}`;
+      const newCustomer: Customer = {
+        id: newId,
+        ...customerFormData,
+        debt: 0,
+        createdAt: new Date().toISOString()
+      };
+      await addItem('customers', newCustomer);
+      setFormData(prev => ({
+        ...prev,
+        customerId: newCustomer.id,
+        customerName: newCustomer.name,
+        customerPhone: newCustomer.phone
+      }));
+      setIsAddCustomerModalOpen(false);
+      setCustomerFormData({ name: '', phone: '', type: 'ca-nhan', email: '', address: '' });
+      showToast('Đã thêm khách hàng mới');
+    } catch (error) {
+      console.error('Error creating customer:', error);
+      showToast('Lỗi khi tạo khách hàng', 'error');
+    } finally {
+      setIsSubmittingCustomer(false);
+    }
+  };
+
+  const handleCreateTechnician = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (isSubmittingTechnician) return;
+
+    try {
+      setIsSubmittingTechnician(true);
+      const newId = `T${Date.now()}`;
+      const newTechnician: Technician = {
+        id: newId,
+        ...technicianFormData,
+        createdAt: new Date().toISOString()
+      };
+      await addItem('technicians', newTechnician);
+      setFormData(prev => ({ ...prev, technician: newTechnician.name }));
+      setIsAddTechnicianModalOpen(false);
+      setTechnicianFormData({ name: '', phone: '', type: 'Thợ' });
+      showToast('Đã thêm thợ/đối tác mới');
+    } catch (error) {
+      console.error('Error creating technician:', error);
+      showToast('Lỗi khi tạo thợ/đối tác', 'error');
+    } finally {
+      setIsSubmittingTechnician(false);
+    }
   };
 
   const handleDelete = async (id: string) => {
@@ -460,47 +544,39 @@ const Repairs: React.FC = () => {
                   <h4 className="text-xs font-bold text-blue-600 uppercase tracking-wider">Thông tin khách hàng</h4>
                   <div>
                     <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Chọn khách hàng *</label>
-                    <select 
-                      required
-                      value={formData.customerId}
-                      onChange={e => {
-                        const customer = data.customers.find(c => c.id === e.target.value);
-                        if (customer) {
-                          setFormData({
-                            ...formData, 
-                            customerId: customer.id,
-                            customerName: customer.name,
-                            customerPhone: customer.phone
-                          });
-                        } else {
-                          setFormData({...formData, customerId: e.target.value});
-                        }
-                      }}
-                      className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm"
-                    >
-                      <option value="">-- Chọn khách hàng --</option>
-                      {data.customers.map(c => (
-                        <option key={c.id} value={c.id}>{c.name} - {c.phone}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Tên khách hàng (Tự động)</label>
-                    <input 
-                      readOnly
-                      type="text"
-                      value={formData.customerName}
-                      className="w-full px-4 py-2 border border-gray-100 bg-gray-50 rounded-xl text-sm text-gray-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Số điện thoại (Tự động)</label>
-                    <input 
-                      readOnly
-                      type="text"
-                      value={formData.customerPhone}
-                      className="w-full px-4 py-2 border border-gray-100 bg-gray-50 rounded-xl text-sm text-gray-500"
-                    />
+                    <div className="flex gap-2">
+                      <SearchableSelect 
+                        className="flex-1"
+                        options={(data.customers || []).map(c => ({
+                          id: c.id,
+                          label: c.name,
+                          sublabel: c.phone
+                        }))}
+                        value={formData.customerId || ''}
+                        onChange={(val) => {
+                          const customer = data.customers.find(c => c.id === val);
+                          if (customer) {
+                            setFormData({
+                              ...formData, 
+                              customerId: customer.id,
+                              customerName: customer.name,
+                              customerPhone: customer.phone
+                            });
+                          }
+                        }}
+                        placeholder="Tìm khách hàng..."
+                        onAddNew={() => setIsAddCustomerModalOpen(true)}
+                        addNewLabel="Thêm khách mới"
+                      />
+                      <button 
+                        type="button"
+                        onClick={() => setIsAddCustomerModalOpen(true)}
+                        className="p-2.5 text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-xl transition-colors border border-blue-100 flex-shrink-0 shadow-sm"
+                        title="Thêm khách hàng mới"
+                      >
+                        <PlusCircle size={20} />
+                      </button>
+                    </div>
                   </div>
                 </div>
 
@@ -545,12 +621,29 @@ const Repairs: React.FC = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Thợ / Đối tác nhận</label>
-                    <input 
-                      type="text"
-                      value={formData.technician}
-                      onChange={e => setFormData({...formData, technician: e.target.value})}
-                      className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm"
-                    />
+                    <div className="flex gap-2">
+                      <SearchableSelect 
+                        className="flex-1"
+                        options={(data.technicians || []).map(t => ({
+                          id: t.name, // Use name as ID for simplicity if technician is just a string in Repair
+                          label: t.name,
+                          sublabel: t.type + (t.phone ? ` - ${t.phone}` : '')
+                        }))}
+                        value={formData.technician || ''}
+                        onChange={(val) => setFormData({...formData, technician: val})}
+                        placeholder="Chọn thợ..."
+                        onAddNew={() => setIsAddTechnicianModalOpen(true)}
+                        addNewLabel="Thêm thợ mới"
+                      />
+                      <button 
+                        type="button"
+                        onClick={() => setIsAddTechnicianModalOpen(true)}
+                        className="p-2.5 text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-xl transition-colors border border-blue-100 flex-shrink-0 shadow-sm"
+                        title="Thêm thợ mới"
+                      >
+                        <PlusCircle size={20} />
+                      </button>
+                    </div>
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Trạng thái</label>
@@ -656,6 +749,93 @@ const Repairs: React.FC = () => {
             </form>
           </div>
         </div>
+      )}
+      {/* Add Customer Modal */}
+      {isAddCustomerModalOpen && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center z-[110] p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md animate-in fade-in zoom-in-95 duration-200">
+            <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-blue-50/50">
+              <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                <PlusCircle size={20} className="text-blue-600" />
+                Thêm khách hàng mới
+              </h3>
+              <button onClick={() => setIsAddCustomerModalOpen(false)} className="p-2 hover:bg-white rounded-full text-gray-400 hover:text-gray-600 transition-colors">
+                <X size={20} />
+              </button>
+            </div>
+            <form onSubmit={handleCreateCustomer} className="p-6 space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-gray-500 mb-1 uppercase tracking-wider">Tên khách hàng *</label>
+                <input type="text" required value={customerFormData.name} onChange={e => setCustomerFormData({...customerFormData, name: e.target.value})} className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" placeholder="Họ và tên" />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-500 mb-1 uppercase tracking-wider">Số điện thoại *</label>
+                <input type="text" required value={customerFormData.phone} onChange={e => setCustomerFormData({...customerFormData, phone: e.target.value})} className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" placeholder="090..." />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-500 mb-1 uppercase tracking-wider">Loại khách hàng</label>
+                <select value={customerFormData.type} onChange={e => setCustomerFormData({...customerFormData, type: e.target.value as any})} className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500">
+                  <option value="ca-nhan">Cá nhân</option>
+                  <option value="doanh-nghiep">Doanh nghiệp</option>
+                </select>
+              </div>
+              <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
+                <button type="button" onClick={() => setIsAddCustomerModalOpen(false)} className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl font-bold transition-colors">Hủy</button>
+                <button type="submit" disabled={isSubmittingCustomer} className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold transition-all shadow-lg shadow-blue-600/20 disabled:opacity-50">
+                  {isSubmittingCustomer ? 'Đang lưu...' : 'Lưu khách hàng'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Add Technician Modal */}
+      {isAddTechnicianModalOpen && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center z-[110] p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md animate-in fade-in zoom-in-95 duration-200">
+            <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-blue-50/50">
+              <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                <PlusCircle size={20} className="text-blue-600" />
+                Thêm thợ / đối tác mới
+              </h3>
+              <button onClick={() => setIsAddTechnicianModalOpen(false)} className="p-2 hover:bg-white rounded-full text-gray-400 hover:text-gray-600 transition-colors">
+                <X size={20} />
+              </button>
+            </div>
+            <form onSubmit={handleCreateTechnician} className="p-6 space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-gray-500 mb-1 uppercase tracking-wider">Tên thợ / đối tác *</label>
+                <input type="text" required value={technicianFormData.name} onChange={e => setTechnicianFormData({...technicianFormData, name: e.target.value})} className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" placeholder="Tên thợ hoặc đối tác" />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-500 mb-1 uppercase tracking-wider">Số điện thoại</label>
+                <input type="text" value={technicianFormData.phone} onChange={e => setTechnicianFormData({...technicianFormData, phone: e.target.value})} className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" placeholder="090..." />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-500 mb-1 uppercase tracking-wider">Loại</label>
+                <select value={technicianFormData.type} onChange={e => setTechnicianFormData({...technicianFormData, type: e.target.value as any})} className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500">
+                  <option value="Thợ">Thợ</option>
+                  <option value="Đối tác">Đối tác</option>
+                </select>
+              </div>
+              <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
+                <button type="button" onClick={() => setIsAddTechnicianModalOpen(false)} className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl font-bold transition-colors">Hủy</button>
+                <button type="submit" disabled={isSubmittingTechnician} className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold transition-all shadow-lg shadow-blue-600/20 disabled:opacity-50">
+                  {isSubmittingTechnician ? 'Đang lưu...' : 'Lưu thợ/đối tác'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {toast && (
+        <Toast 
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
       )}
     </div>
   );
