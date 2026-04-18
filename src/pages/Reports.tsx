@@ -125,15 +125,19 @@ export function Reports({ data, updateData }: ReportsProps) {
     const prevRepairRevenue = prevPeriodRepairs.reduce((sum, r) => sum + (r.customerPrice || 0), 0);
     const prevRevenue = prevOrderRevenue + prevRepairRevenue;
     
+    const currentOrderExpenses = currentPeriodOrders.reduce((sum, o) => 
+      sum + (o.packagingFee || 0) + (o.shippingFee || 0) + (o.commission || 0), 0);
     const orderCost = currentPeriodItems.reduce((sum, item) => {
       return sum + (getImportPrice(item.productId, item.importPrice) * item.quantity);
-    }, 0);
+    }, 0) + currentOrderExpenses;
     const repairCost = currentPeriodRepairs.reduce((sum, r) => sum + (r.partnerCost || 0), 0);
     const totalCost = orderCost + repairCost;
 
+    const prevOrderExpenses = prevPeriodOrders.reduce((sum, o) => 
+      sum + (o.packagingFee || 0) + (o.shippingFee || 0) + (o.commission || 0), 0);
     const prevOrderCost = prevPeriodItems.reduce((sum, item) => {
       return sum + (getImportPrice(item.productId, item.importPrice) * item.quantity);
-    }, 0);
+    }, 0) + prevOrderExpenses;
     const prevRepairCost = prevPeriodRepairs.reduce((sum, r) => sum + (r.partnerCost || 0), 0);
     const prevCost = prevOrderCost + prevRepairCost;
 

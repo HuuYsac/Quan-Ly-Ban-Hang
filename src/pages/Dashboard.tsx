@@ -100,7 +100,8 @@ export function Dashboard({ data, onNavigate, isAdmin }: DashboardProps) {
       const itemsCost = (o.products || []).reduce((iSum, item) => {
         return iSum + (getImportPrice(item.productId, item.importPrice) * item.quantity);
       }, 0);
-      return sum + itemsCost;
+      const otherCosts = (o.commission || 0) + (o.packagingFee || 0) + (o.shippingFee || 0);
+      return sum + itemsCost + otherCosts;
     }, 0);
 
     const repairCost = completedRepairs.reduce((sum, r) => sum + (r.partnerCost || 0), 0);

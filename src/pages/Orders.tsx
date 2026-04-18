@@ -582,6 +582,7 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
 
     try {
       let total = 0;
+      let totalProductCost = 0;
       const finalItems = validItems.map(item => {
         let subtotal = 0;
         if (!item.isGift) {
@@ -593,10 +594,18 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
           }
         }
         total += subtotal;
+        totalProductCost += (item.importPrice || 0) * item.quantity;
         return { ...item, subtotal, purchaseDate: formData.date };
       });
 
-      total += (Number(formData.packagingFee) || 0) + (Number(formData.shippingFee) || 0);
+      const packagingFee = Number(formData.packagingFee) || 0;
+      const shippingFee = Number(formData.shippingFee) || 0;
+      const commission = Number(formData.commission) || 0;
+
+      total += packagingFee + shippingFee;
+      
+      const totalCost = totalProductCost + packagingFee + shippingFee + commission;
+      const profit = total - totalCost;
 
       if (editingId) {
         const oldOrder = (data.orders || []).find(o => o.id === editingId);
@@ -654,6 +663,8 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
           date: formData.date,
           products: finalItems,
           total,
+          totalCost,
+          profit,
           status: formData.paymentStatus === 'Đã thanh toán' ? 'Chờ đóng gói' : 'Đang xử lý',
           paymentMethod: formData.paymentMethod,
           paymentStatus: formData.paymentStatus,
@@ -689,6 +700,8 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
           time: now.toTimeString().split(' ')[0].substring(0, 5),
           products: finalItems,
           total,
+          totalCost,
+          profit,
           status: formData.paymentStatus === 'Đã thanh toán' ? 'Chờ đóng gói' : 'Đang xử lý',
           paymentMethod: formData.paymentMethod,
           paymentStatus: formData.paymentStatus,
@@ -1155,6 +1168,12 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
                         <td className="p-2 text-right font-bold text-gray-900">{formatCurrency(viewOrder.shippingFee).replace('₫', '').trim()}</td>
                       </tr>
                     )}
+                    {viewOrder.commission > 0 && (
+                      <tr className="border-t border-gray-100">
+                        <td colSpan={4} className="p-2 text-right text-xs font-bold text-gray-500 uppercase">Hoa hồng CTV:</td>
+                        <td className="p-2 text-right font-bold text-rose-600">{formatCurrency(viewOrder.commission).replace('₫', '').trim()}</td>
+                      </tr>
+                    )}
                     <tr className="bg-gray-50 border-t-2 border-gray-200">
                       <td colSpan={4} className="p-4 text-right font-bold text-gray-600 uppercase">Tổng cộng:</td>
                       <td className="p-4 text-right font-black text-xl text-blue-700">{formatCurrency(viewOrder.total)}</td>
@@ -1163,12 +1182,12 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
                       <tr className="border-t border-gray-100">
                         <td colSpan={4} className="p-3 text-right text-xs font-bold text-emerald-600 uppercase italic">Lợi nhuận đơn hàng:</td>
                         <td className="p-3 text-right font-bold text-emerald-700">
-                          {formatCurrency(
+                          {formatCurrency(viewOrder.profit ?? (
                             (viewOrder.products || []).reduce((sum, item) => {
                               const cost = (item.importPrice || 0) * item.quantity;
                               return sum + (item.subtotal || 0) - cost;
-                            }, 0)
-                          )}
+                            }, 0) - (viewOrder.commission || 0) - (viewOrder.packagingFee || 0) - (viewOrder.shippingFee || 0)
+                          ))}
                         </td>
                       </tr>
                     )}
