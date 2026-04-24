@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { GoogleGenAI } from "@google/genai";
 import { AppData, Product } from '../types';
 import { formatCurrency } from '../lib/utils';
 import { Package, Plus, Search, Edit, Trash2, AlertTriangle, CheckCircle2, X, Facebook, MessageSquare, Copy, Loader2, Sparkles } from 'lucide-react';
@@ -132,8 +131,6 @@ export function Products({ data, updateData, addItem, updateItem, deleteItem, is
 
     setIsGenerating(true);
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-      
       const systemInstruction = `
 Bạn là Hữu Laptop - Một chuyên gia kỹ thuật máy tính chân thành và thực dụng.
 Mục tiêu của bạn là hỗ trợ nhân viên tư vấn sản phẩm và tạo nội dung marketing chuyên sâu.
@@ -155,13 +152,26 @@ Mục tiêu của bạn là hỗ trợ nhân viên tư vấn sản phẩm và t�
         ? `Viết bài đăng FACEBOOK bán sản phẩm: ${formData.name}. Danh mục: ${formData.category}. Cấu hình: ${specs}. Giá: ${formatCurrency(parseInt(formData.price))}. Yêu cầu: Tiêu đề in hoa, phân tích kỹ thuật chân thành, bảo hành/phần mềm chuẩn Hữu Laptop. KHÔNG dùng **.`
         : `Viết kịch bản SHORTS (video ngắn) dưới dạng bảng Markdown cho sản phẩm: ${formData.name}. Cấu hình: ${specs}. Giá: ${formatCurrency(parseInt(formData.price))}. Yêu cầu: Hook mạnh, tập trung độ bền và hiệu năng thực tế. KHÔNG dùng **.`;
 
-      const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: `${systemInstruction}\n\n${prompt}`
+      const response = await fetch('/api/ai/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          systemInstruction,
+          prompt
+        })
       });
 
-      if (response && response.text) {
-        setGeneratedAIContent(response.text.replace(/\*\*/g, ''));
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Lỗi từ máy chủ AI');
+      }
+
+      const result = await response.json();
+
+      if (result.text) {
+        setGeneratedAIContent(result.text.replace(/\*\*/g, ''));
       } else {
         throw new Error('Không nhận được phản hồi từ AI');
       }
