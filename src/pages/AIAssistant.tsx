@@ -1,5 +1,4 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { GoogleGenAI } from "@google/genai";
 import { AppData, Product } from '../types';
 import { Send, Bot, User, Sparkles, Copy, Facebook, MessageSquare, Loader2, Search, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -57,21 +56,6 @@ export function AIAssistant({ data }: AIAssistantProps) {
     setIsLoading(true);
 
     try {
-      const apiKey = process.env.GEMINI_API_KEY;
-      if (!apiKey) {
-        // If still missing, check if we can prompt again
-        if (typeof window !== 'undefined' && window.aistudio) {
-          const hasKey = await window.aistudio.hasSelectedApiKey();
-          if (!hasKey) {
-            await window.aistudio.openSelectKey();
-            throw new Error('API_KEY_MISSING: Vui lòng chọn API Key từ bảng điều khiển.');
-          }
-        }
-        throw new Error('API_KEY_MISSING: Vui lòng cấu hình GEMINI_API_KEY trong môi trường.');
-      }
-      
-      const ai = new GoogleGenAI({ apiKey });
-
       // Limit product context to avoid token limits if there are many products
       const maxProducts = 300;
       const productsToInclude = (data.products || []).slice(0, maxProducts);
@@ -89,7 +73,7 @@ export function AIAssistant({ data }: AIAssistantProps) {
 
         [PHONG CÁCH & ĐỊNH VỊ]
         - Xưng hô: Xưng là "Hữu Laptop" hoặc "mình", gọi khách hàng là "anh em" hoặc "khách".
-        - Giọng văn: Chân thành, thực dụng, góc nhìn chuyên gia kỹ thuật cứng tay. Tránh từ ngữ sáo rỗng, hoa mỹ, "lùa gà".
+        - Giọng văn: Chân thành, thực dùng, góc nhìn chuyên gia kỹ thuật cứng tay. Tránh từ ngữ sáo rỗng, hoa mỹ, "lùa gà".
         - Trọng tâm: Nhấn mạnh độ bền bỉ, tính ổn định, nhiệt độ mát mẻ, khả năng gánh tab trình duyệt/giả lập.
 
         [NGUYÊN TẮC VỀ DỊCH VỤ]
@@ -104,15 +88,28 @@ export function AIAssistant({ data }: AIAssistantProps) {
         3. KHÔNG SỬ DỤNG ký tự ** để in đậm văn bản.
       `;
 
-      const chat = ai.chats.create({
-        model: "gemini-3-flash-preview",
-        config: {
-          systemInstruction: systemInstruction,
+      // Construct history for context
+      const history = messages.slice(-5).map(m => `${m.role === 'user' ? 'Khách' : 'Hữu Laptop'}: ${m.content}`).join('\n');
+      const promptWithHistory = `Lịch sử hội thoại:\n${history}\n\nKhách hỏi: ${userMessage}`;
+
+      const response = await fetch('/api/ai/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
         },
+        body: JSON.stringify({
+          systemInstruction,
+          prompt: promptWithHistory
+        })
       });
 
-      const result = await chat.sendMessage({ message: userMessage });
-      const responseText = result.text.replace(/\*\*/g, '');
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Lỗi từ máy chủ AI');
+      }
+
+      const result = await response.json();
+      const responseText = (result.text || '').replace(/\*\*/g, '');
 
       // Identify products mentioned in the response
       const mentionedProducts = (data.products || []).filter(p => 
@@ -158,19 +155,6 @@ export function AIAssistant({ data }: AIAssistantProps) {
     setIsGenerating(true);
     setGeneratedContent(null);
     try {
-      if (typeof window !== 'undefined' && window.aistudio && !process.env.GEMINI_API_KEY) {
-        const hasKey = await window.aistudio.hasSelectedApiKey();
-        if (!hasKey) {
-          await window.aistudio.openSelectKey();
-          return;
-        }
-      }
-
-      const apiKey = process.env.GEMINI_API_KEY;
-      if (!apiKey) throw new Error('API_KEY_MISSING');
-      
-      const ai = new GoogleGenAI({ apiKey });
-      
       let prompt = "";
       if (type === 'fb') {
         prompt = `Bạn là Hữu Laptop. Viết một BÀI FACEBOOK bán sản phẩm sau:
@@ -202,12 +186,24 @@ export function AIAssistant({ data }: AIAssistantProps) {
           Lưu ý: KHÔNG dùng **. Cung cấp nội dung dưới dạng bảng Markdown.`;
       }
 
-      const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: prompt
+      const response = await fetch('/api/ai/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          systemInstruction: "Bạn là Hữu Laptop, chuyên gia máy tính chân thành và thực dụng.",
+          prompt
+        })
       });
 
-      const cleanContent = response.text.replace(/\*\*/g, '');
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Lỗi từ máy chủ AI');
+      }
+
+      const result = await response.json();
+      const cleanContent = (result.text || '').replace(/\*\*/g, '');
       setGeneratedContent({ type, content: cleanContent });
     } catch (error) {
       console.error('Error generating content:', error);
