@@ -61,6 +61,11 @@ export interface Product {
   stock: number;
   minStock: number;
   supplier?: string;
+  cpu?: string;
+  ram?: string;
+  ssd?: string;
+  screen?: string;
+  status_info?: string;
   createdAt?: string;
   updatedAt?: string;
 }
