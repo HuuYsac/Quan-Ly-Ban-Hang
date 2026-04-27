@@ -15,22 +15,46 @@ export function PublicWarrantyCheck({ onBack }: { onBack?: () => void }) {
   const [results, setResults] = useState<any[]>([]);
   const [error, setError] = useState<string | null>(null);
 
-  const handleSearch = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!formData.phone) {
-      setError('Vui lòng nhập số điện thoại tra cứu.');
-      return;
+  React.useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const phone = params.get('phone') || '';
+    const tag = params.get('tag') || '';
+    
+    if (phone || tag) {
+      setFormData(prev => ({
+        ...prev,
+        phone: phone,
+        serviceTag: tag
+      }));
+      
+      // We need to wait for state update or use a ref, 
+      // but since we're in a useEffect, we can just call search logic directly with these values.
+      if (phone) {
+        triggerAutoSearch(phone, tag);
+      }
     }
+  }, []);
 
+  const triggerAutoSearch = async (phone: string, tag: string) => {
     setLoading(true);
     setError(null);
     setResults([]);
 
     try {
-      const customersRef = collection(db, 'customers');
+      // Re-using the search logic (extracted for cleaner code)
+      await performSearch(phone, tag);
+    } catch (err) {
+      setError('Lỗi tra cứu tự động.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const performSearch = async (phoneToSearch: string, tagToSearch: string) => {
+    const customersRef = collection(db, 'customers');
       const ordersRef = collection(db, 'orders');
       
-      const rawPhone = formData.phone.trim();
+      const rawPhone = phoneToSearch.trim();
       const digitsOnly = rawPhone.replace(/\D/g, '');
       
       const phoneVariations = new Set<string>();
@@ -75,7 +99,7 @@ export function PublicWarrantyCheck({ onBack }: { onBack?: () => void }) {
 
         for (const chunk of chunkedIds) {
           // Orders
-          const qOrders = query(ordersRef, where('customerId', 'in', chunk), limit(50));
+          const qOrders = query(collection(db, 'orders'), where('customerId', 'in', chunk), limit(50));
           const snapOrders = await getDocs(qOrders);
           snapOrders.forEach(doc => {
             if (!orderDocIds.has(doc.id)) {
@@ -98,7 +122,7 @@ export function PublicWarrantyCheck({ onBack }: { onBack?: () => void }) {
 
       for (const phone of uniquePhones) {
         // Orders
-        const qOrders = query(ordersRef, where('customerPhone', '==', phone), limit(20));
+        const qOrders = query(collection(db, 'orders'), where('customerPhone', '==', phone), limit(20));
         const snapOrders = await getDocs(qOrders);
         snapOrders.forEach(doc => {
           if (!orderDocIds.has(doc.id)) {
@@ -121,7 +145,7 @@ export function PublicWarrantyCheck({ onBack }: { onBack?: () => void }) {
       if (customerNames.size > 0) {
         for (const name of Array.from(customerNames)) {
           // Orders
-          const qOrders = query(ordersRef, where('customerName', '==', name), limit(20));
+          const qOrders = query(collection(db, 'orders'), where('customerName', '==', name), limit(20));
           const snapOrders = await getDocs(qOrders);
           snapOrders.forEach(doc => {
             if (!orderDocIds.has(doc.id)) {
@@ -149,8 +173,8 @@ export function PublicWarrantyCheck({ onBack }: { onBack?: () => void }) {
       allOrders.forEach((orderData) => {
         const products = (orderData.products || []).filter((p: any) => {
           if (p.isGift) return false;
-          if (formData.serviceTag && p.serviceTag) {
-            return p.serviceTag.toLowerCase().includes(formData.serviceTag.trim().toLowerCase());
+          if (tagToSearch && p.serviceTag) {
+            return p.serviceTag.toLowerCase().includes(tagToSearch.trim().toLowerCase());
           }
           return p.purchaseDate || p.warrantyMonths;
         });
@@ -183,8 +207,8 @@ export function PublicWarrantyCheck({ onBack }: { onBack?: () => void }) {
 
       // Process Repairs
       allRepairs.forEach((repairData) => {
-        if (formData.serviceTag && repairData.serviceTag) {
-          if (!repairData.serviceTag.toLowerCase().includes(formData.serviceTag.trim().toLowerCase())) return;
+        if (tagToSearch && repairData.serviceTag) {
+          if (!repairData.serviceTag.toLowerCase().includes(tagToSearch.trim().toLowerCase())) return;
         }
 
         const pDate = repairData.returnDate || repairData.receivedDate || repairData.createdAt?.split('T')[0];
@@ -224,15 +248,15 @@ export function PublicWarrantyCheck({ onBack }: { onBack?: () => void }) {
         const name = formData.customerName.trim();
         
         // Fallback Orders by Name
-        const qOrdersName = query(ordersRef, where('customerName', '==', name), limit(50));
+        const qOrdersName = query(collection(db, 'orders'), where('customerName', '==', name), limit(50));
         const snapOrdersName = await getDocs(qOrdersName);
         snapOrdersName.forEach(doc => {
           if (!orderDocIds.has(doc.id)) {
             const orderData = { id: doc.id, ...doc.data() } as any;
             const products = (orderData.products || []).filter((p: any) => {
               if (p.isGift) return false;
-              if (formData.serviceTag && p.serviceTag) {
-                return p.serviceTag.toLowerCase().includes(formData.serviceTag.trim().toLowerCase());
+              if (tagToSearch && p.serviceTag) {
+                return p.serviceTag.toLowerCase().includes(tagToSearch.trim().toLowerCase());
               }
               return p.purchaseDate || p.warrantyMonths;
             });
@@ -269,8 +293,8 @@ export function PublicWarrantyCheck({ onBack }: { onBack?: () => void }) {
         snapRepairsName.forEach(doc => {
           if (!repairDocIds.has(doc.id)) {
             const repairData = { id: doc.id, ...doc.data() } as any;
-            if (formData.serviceTag && repairData.serviceTag) {
-              if (!repairData.serviceTag.toLowerCase().includes(formData.serviceTag.trim().toLowerCase())) return;
+            if (tagToSearch && repairData.serviceTag) {
+              if (!repairData.serviceTag.toLowerCase().includes(tagToSearch.trim().toLowerCase())) return;
             }
 
             const pDate = repairData.returnDate || repairData.receivedDate || repairData.createdAt?.split('T')[0];
@@ -319,6 +343,21 @@ export function PublicWarrantyCheck({ onBack }: { onBack?: () => void }) {
       } else {
         setError('Không tìm thấy thông tin bảo hành. Vui lòng kiểm tra lại số điện thoại hoặc thử nhập thêm Tên khách hàng / Số Serial.');
       }
+  };
+
+  const handleSearch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formData.phone) {
+      setError('Vui lòng nhập số điện thoại tra cứu.');
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+    setResults([]);
+
+    try {
+      await performSearch(formData.phone, formData.serviceTag);
     } catch (err: any) {
       console.error('Error searching warranty:', err);
       setError('Có lỗi xảy ra trong quá trình tra cứu. Vui lòng thử lại sau.');

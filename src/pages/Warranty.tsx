@@ -18,7 +18,10 @@ import {
   MessageSquare,
   Smartphone,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  Share2,
+  Copy,
+  ExternalLink
 } from 'lucide-react';
 import { formatCurrency } from '../lib/utils';
 import { Repair, WarrantyNotification, NotificationSettings } from '../types';
@@ -241,6 +244,13 @@ const Warranty: React.FC = () => {
 
   const hasBeenNotified = (serviceTag: string) => {
     return data.warrantyNotifications?.some(n => n.serviceTag === serviceTag && n.status === 'success');
+  };
+
+  const handleCopyShareLink = (phone: string, serviceTag: string) => {
+    const baseUrl = window.location.origin;
+    const shareUrl = `${baseUrl}?phone=${phone}&tag=${serviceTag}`;
+    navigator.clipboard.writeText(shareUrl);
+    showToast('Đã copy link tra cứu bảo hành cho khách!');
   };
 
   // Automatic notification check
@@ -519,6 +529,16 @@ const Warranty: React.FC = () => {
                   </td>
                   <td className="p-4 text-right">
                     <div className="flex items-center justify-end gap-2">
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleCopyShareLink(warranty.customerPhone, warranty.serviceTag);
+                        }}
+                        className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all"
+                        title="Copy Link chia sẻ"
+                      >
+                        <Share2 size={16} />
+                      </button>
                       {warranty.status === 'expiring' && (
                         <div className="flex items-center gap-1 mr-2">
                           {hasBeenNotified(warranty.serviceTag) ? (
@@ -628,18 +648,29 @@ const Warranty: React.FC = () => {
                     Còn {warranty.daysRemaining} ngày
                   </div>
                 </div>
-                {warranty.status !== 'expired' && (
+                <div className="flex items-center gap-2">
                   <button 
-                    onClick={() => {
-                      setSelectedWarranty(warranty);
-                      setIsRepairModalOpen(true);
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleCopyShareLink(warranty.customerPhone, warranty.serviceTag);
                     }}
-                    className="flex items-center gap-1 px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-bold shadow-sm"
+                    className="p-2 bg-indigo-50 text-indigo-600 rounded-lg"
                   >
-                    <Wrench size={14} />
-                    Sửa chữa
+                    <Share2 size={16} />
                   </button>
-                )}
+                  {warranty.status !== 'expired' && (
+                    <button 
+                      onClick={() => {
+                        setSelectedWarranty(warranty);
+                        setIsRepairModalOpen(true);
+                      }}
+                      className="flex items-center gap-1 px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-bold shadow-sm"
+                    >
+                      <Wrench size={14} />
+                      Sửa chữa
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           ))}

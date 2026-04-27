@@ -121,6 +121,14 @@ export default function App() {
     }
   };
 
+  useEffect(() => {
+    // Check for query parameters to show public warranty check
+    const params = new URLSearchParams(window.location.search);
+    if (params.has('phone') || params.has('tag') || params.get('check-warranty') === 'true') {
+      setShowPublicWarranty(true);
+    }
+  }, []);
+
   const handleLogout = async () => {
     await auth.signOut();
   };
