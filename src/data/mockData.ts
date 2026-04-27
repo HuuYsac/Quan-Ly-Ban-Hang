@@ -45,5 +45,6 @@ export const initialData: AppData = {
   promotions: [],
   messages: [],
   groups: [],
-  internalTasks: []
+  internalTasks: [],
+  notes: []
 };

@@ -22,6 +22,7 @@ import { AIAssistant } from './pages/AIAssistant';
 import { Members } from './pages/Members';
 import { Profile } from './pages/Profile';
 import Messages from './pages/Messages';
+import { Notes } from './pages/Notes';
 import Warranty from './pages/Warranty';
 import Repairs from './pages/Repairs';
 import { useAppStore } from './hooks/useAppStore';
@@ -226,6 +227,7 @@ export default function App() {
       case 'orders': return { title: 'Quản lý Đơn hàng', subtitle: 'Danh sách và xử lý đơn hàng' };
       case 'reports': return { title: 'Báo cáo', subtitle: 'Thống kê doanh thu và hoạt động' };
       case 'crm': return { title: 'Quản lý quan hệ khách hàng (CRM)', subtitle: 'Quản lý tiềm năng, chăm sóc khách hàng và khuyến mãi' };
+      case 'notes': return { title: 'Ghi chú cá nhân', subtitle: 'Lưu trữ thông tin và ý tưởng công việc' };
       case 'warranty': return { title: 'Quản lý Bảo hành', subtitle: 'Theo dõi và kiểm tra thời hạn bảo hành sản phẩm' };
       case 'repairs': return { title: 'Quản lý Sửa chữa', subtitle: 'Theo dõi tiến độ sửa chữa và bảo hành thiết bị' };
       case 'settings': return { title: 'Cài đặt hệ thống', subtitle: 'Tùy chỉnh hệ thống và giao diện' };
@@ -290,6 +292,9 @@ export default function App() {
       case 'messages':
         if (!isApproved) return <AccessDenied />;
         return <Messages />;
+      case 'notes':
+        if (!isApproved) return <AccessDenied />;
+        return <Notes data={data} />;
       case 'profile':
         return <Profile />;
       default:

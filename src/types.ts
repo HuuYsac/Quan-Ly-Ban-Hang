@@ -61,11 +61,6 @@ export interface Product {
   stock: number;
   minStock: number;
   supplier?: string;
-  cpu?: string;
-  ram?: string;
-  ssd?: string;
-  screen?: string;
-  status_info?: string;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -306,6 +301,16 @@ export interface Technician {
   createdAt: string;
 }
 
+export interface Note {
+  id: string;
+  title?: string;
+  content: string;
+  createdBy: string;
+  createdAt: string;
+  updatedAt?: string;
+  color?: string;
+}
+
 export interface AppData {
   users: User[];
   customers: Customer[];
@@ -323,6 +328,7 @@ export interface AppData {
   messages: Message[];
   groups: Group[];
   internalTasks: InternalTask[];
+  notes: Note[];
   shopInfo: ShopInfo;
   settings: Settings;
   cskhSettings?: CSKHSettings;

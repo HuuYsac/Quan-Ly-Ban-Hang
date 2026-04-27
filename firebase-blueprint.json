@@ -234,12 +234,31 @@
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["id", "name", "type", "createdAt"]
+    },
+    "Note": {
+      "title": "Note",
+      "description": "Personal or shared notes",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "content": { "type": "string" },
+        "createdBy": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "color": { "type": "string" }
+      },
+      "required": ["id", "content", "createdBy", "createdAt"]
     }
   },
   "firestore": {
     "users/{userId}": {
       "schema": { "$ref": "#/entities/User" },
       "description": "Stores user profiles"
+    },
+    "notes/{noteId}": {
+      "schema": { "$ref": "#/entities/Note" },
+      "description": "Stores user notes"
     },
     "customers/{customerId}": {
       "schema": { "$ref": "#/entities/Customer" },

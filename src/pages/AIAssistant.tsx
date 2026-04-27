@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { GoogleGenAI } from "@google/genai";
 import { AppData, Product } from '../types';
-import { Send, Bot, User, Sparkles, Copy, Facebook, MessageSquare, Loader2, Search, X } from 'lucide-react';
+import { Send, Bot, User, Sparkles, Copy, Facebook, MessageSquare, Loader2, Search } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import ReactMarkdown from 'react-markdown';
 import { formatCurrency } from '../lib/utils';
@@ -19,13 +20,13 @@ export function AIAssistant({ data }: AIAssistantProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       role: 'model',
-      content: 'Chào anh em! Mình là Hữu Laptop đây. Anh em cần tư vấn dòng máy nào bền bỉ, ổn định để làm việc hay viết bài bán hàng chuẩn kỹ thuật thì cứ bảo mình nhé!'
+      content: 'Xin chào! Tôi là trợ lý AI của cửa hàng. Tôi có thể giúp bạn tìm kiếm sản phẩm, tư vấn cấu hình hoặc viết bài đăng bán hàng. Bạn cần giúp gì hôm nay?'
     }
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [generatedContent, setGeneratedContent] = useState<{ type: 'fb' | 'shorts', content: string } | null>(null);
-  const [isGenerating, setIsGenerating] = useState(false);
+  const [fbPost, setFbPost] = useState<string | null>(null);
+  const [isGeneratingPost, setIsGeneratingPost] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -56,6 +57,21 @@ export function AIAssistant({ data }: AIAssistantProps) {
     setIsLoading(true);
 
     try {
+      const apiKey = process.env.GEMINI_API_KEY;
+      if (!apiKey) {
+        // If still missing, check if we can prompt again
+        if (typeof window !== 'undefined' && window.aistudio) {
+          const hasKey = await window.aistudio.hasSelectedApiKey();
+          if (!hasKey) {
+            await window.aistudio.openSelectKey();
+            throw new Error('API_KEY_MISSING: Vui lòng chọn API Key từ bảng điều khiển.');
+          }
+        }
+        throw new Error('API_KEY_MISSING: Vui lòng cấu hình GEMINI_API_KEY trong môi trường.');
+      }
+      
+      const ai = new GoogleGenAI({ apiKey });
+
       // Limit product context to avoid token limits if there are many products
       const maxProducts = 300;
       const productsToInclude = (data.products || []).slice(0, maxProducts);
@@ -65,51 +81,28 @@ export function AIAssistant({ data }: AIAssistantProps) {
       ).join('\n');
 
       const systemInstruction = `
-        Bạn là Hữu Laptop - Một chuyên gia kỹ thuật máy tính chân thành và thực dụng.
-        Mục tiêu của bạn là hỗ trợ nhân viên tư vấn sản phẩm và tạo nội dung marketing chuyên sâu.
-
-        [DANH SÁCH SẢN PHẨM HIỆN CÓ]
+        Bạn là một trợ lý bán hàng thông minh cho một cửa hàng máy tính và thiết bị công nghệ tại Việt Nam.
+        Dưới đây là danh sách sản phẩm hiện có trong kho${(data.products || []).length > maxProducts ? ' (chỉ hiển thị ' + maxProducts + ' sản phẩm đầu tiên)' : ''}:
         ${productsContext}
 
-        [PHONG CÁCH & ĐỊNH VỊ]
-        - Xưng hô: Xưng là "Hữu Laptop" hoặc "mình", gọi khách hàng là "anh em" hoặc "khách".
-        - Giọng văn: Chân thành, thực dùng, góc nhìn chuyên gia kỹ thuật cứng tay. Tránh từ ngữ sáo rỗng, hoa mỹ, "lùa gà".
-        - Trọng tâm: Nhấn mạnh độ bền bỉ, tính ổn định, nhiệt độ mát mẻ, khả năng gánh tab trình duyệt/giả lập.
-
-        [NGUYÊN TẮC VỀ DỊCH VỤ]
-        1. Bảo hành: Không tự bịa số tháng. Luôn ghi: "Thời gian bảo hành linh hoạt, thời hạn phụ thuộc chuẩn theo gói dịch vụ anh em lựa chọn".
-        2. Hệ điều hành: Máy luôn được tối ưu sâu, bung file chuẩn (Sysprep/Acronis) nên cực kỳ ổn định, không lỗi vặt.
-        3. Phần mềm: Có sẵn Office 2021 Standard (250K) hoặc bản Bind vĩnh viễn (1.490K) cho anh em làm việc, không lo crack virus.
-        4. Địa lý: Shop tại Bình Phước, nhận ship toàn quốc có video test máy kỹ càng.
-
-        [NHIỆM VỤ]
-        1. Tư vấn cấu hình: Dựa vào ngân sách/nhu cầu, liệt kê máy phù hợp từ danh sách sản phẩm.
-        2. Trả lời kỹ thuật: Giải đáp thắc mắc về nâng cấp, độ bền, hiệu năng thực tế.
-        3. KHÔNG SỬ DỤNG ký tự ** để in đậm văn bản.
+        Nhiệm vụ của bạn:
+        1. Trả lời các câu hỏi của nhân viên về sản phẩm một cách chuyên nghiệp và thân thiện.
+        2. Khi nhân viên hỏi về tư vấn sản phẩm theo ngân sách hoặc nhu cầu, hãy liệt kê các sản phẩm phù hợp nhất từ danh sách trên.
+        3. Nếu sản phẩm không có trong danh sách, hãy thông báo lịch sự rằng hiện tại không có mẫu đó.
+        4. Luôn sử dụng tiếng Việt tự nhiên, phù hợp với ngữ cảnh bán hàng.
+        5. Khi liệt kê sản phẩm, hãy định dạng rõ ràng để nhân viên dễ theo dõi.
+        6. KHÔNG SỬ DỤNG ký tự ** để in đậm văn bản. Hãy để văn bản bình thường.
       `;
 
-      // Construct history for context
-      const history = messages.slice(-5).map(m => `${m.role === 'user' ? 'Khách' : 'Hữu Laptop'}: ${m.content}`).join('\n');
-      const promptWithHistory = `Lịch sử hội thoại:\n${history}\n\nKhách hỏi: ${userMessage}`;
-
-      const response = await fetch('/api/ai/generate', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
+      const chat = ai.chats.create({
+        model: "gemini-3-flash-preview",
+        config: {
+          systemInstruction: systemInstruction,
         },
-        body: JSON.stringify({
-          systemInstruction,
-          prompt: promptWithHistory
-        })
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Lỗi từ máy chủ AI');
-      }
-
-      const result = await response.json();
-      const responseText = (result.text || '').replace(/\*\*/g, '');
+      const result = await chat.sendMessage({ message: userMessage });
+      const responseText = result.text.replace(/\*\*/g, '');
 
       // Identify products mentioned in the response
       const mentionedProducts = (data.products || []).filter(p => 
@@ -151,64 +144,48 @@ export function AIAssistant({ data }: AIAssistantProps) {
     }
   };
 
-  const generateContent = async (product: Product, type: 'fb' | 'shorts') => {
-    setIsGenerating(true);
-    setGeneratedContent(null);
+  const generateFacebookPost = async (product: Product) => {
+    setIsGeneratingPost(true);
+    setFbPost(null);
     try {
-      let prompt = "";
-      if (type === 'fb') {
-        prompt = `Bạn là Hữu Laptop. Viết một BÀI FACEBOOK bán sản phẩm sau:
+      // Check for API key selection if missing
+      if (typeof window !== 'undefined' && window.aistudio && !process.env.GEMINI_API_KEY) {
+        const hasKey = await window.aistudio.hasSelectedApiKey();
+        if (!hasKey) {
+          await window.aistudio.openSelectKey();
+          return;
+        }
+      }
+
+      const apiKey = process.env.GEMINI_API_KEY;
+      if (!apiKey) {
+        throw new Error('API_KEY_MISSING: Vui lòng cấu hình GEMINI_API_KEY trong môi trường.');
+      }
+      
+      const ai = new GoogleGenAI({ apiKey });
+      const response = await ai.models.generateContent({
+        model: "gemini-3-flash-preview",
+        contents: `Viết một bài đăng Facebook ngắn gọn, hấp dẫn để bán sản phẩm sau:
           Tên: ${product.name}
           Giá: ${formatCurrency(product.price)}
           Danh mục: ${product.category}
           
-          Cấu trúc bài viết:
-          1. Tiêu đề in hoa đánh trúng tâm lý (VD: LAPTOP BEN BI CHO ANH EM KY THUAT).
-          2. 3 gạch đầu dòng phân tích kỹ thuật thực tế (về độ bền, tản nhiệt, khả năng gánh việc).
-          3. Thông tin bảo hành: "Thời gian bảo hành linh hoạt, thời hạn phụ thuộc chuẩn theo gói dịch vụ anh em lựa chọn".
-          4. Thông tin phần mềm: Nhắc về Windows tối ưu Sysprep và Office bản quyền Office 2021 Standard (250K) hoặc Bind (1.490K).
-          5. Lời kêu gọi chốt sale chân thành.
-          6. Hashtags: #HuuLaptop #LaptopBenBi #LaptopBinhPhuoc.
-          
-          Lưu ý: Giọng văn chân thành, thực dụng, không sáo rỗng. KHÔNG dùng **.`;
-      } else {
-        prompt = `Bạn là Hữu Laptop. Viết kịch bản SHORTS (video ngắn) cho sản phẩm:
-          Tên: ${product.name}
-          Giá: ${formatCurrency(product.price)}
-          
           Yêu cầu:
-          - Định dạng: Bảng 2 cột (Góc quay/Hành động | Lời thoại).
-          - Hook (3 giây đầu): Cực mạnh, giữ chân người xem (VD: "Đừng mua laptop này nếu anh em chỉ thích vẻ ngoài hào nhoáng...").
-          - Nội dung: Tập trung vào độ bền, hiệu năng thực tế, bung file chuẩn ổn định.
-          - Thời lượng: Dưới 60 giây.
-          - Kết thúc: Kêu gọi anh em ghé kho tại Bình Phước hoặc inbox xem video test máy.
-          
-          Lưu ý: KHÔNG dùng **. Cung cấp nội dung dưới dạng bảng Markdown.`;
-      }
-
-      const response = await fetch('/api/ai/generate', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          systemInstruction: "Bạn là Hữu Laptop, chuyên gia máy tính chân thành và thực dụng.",
-          prompt
-        })
+          - Có tiêu đề thu hút.
+          - Liệt kê 3-4 điểm nổi bật.
+          - Có lời kêu gọi hành động (CTA).
+          - Sử dụng emoji phù hợp.
+          - Ngôn ngữ trẻ trung, năng động.
+          - KHÔNG SỬ DỤNG ký tự ** để in đậm văn bản. Hãy để văn bản bình thường.`
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Lỗi từ máy chủ AI');
-      }
-
-      const result = await response.json();
-      const cleanContent = (result.text || '').replace(/\*\*/g, '');
-      setGeneratedContent({ type, content: cleanContent });
+      // Remove any remaining ** characters just in case
+      const cleanPost = response.text.replace(/\*\*/g, '');
+      setFbPost(cleanPost);
     } catch (error) {
-      console.error('Error generating content:', error);
+      console.error('Error generating FB post:', error);
     } finally {
-      setIsGenerating(false);
+      setIsGeneratingPost(false);
     }
   };
 
@@ -265,28 +242,17 @@ export function AIAssistant({ data }: AIAssistantProps) {
                       {msg.products.map(p => (
                         <div 
                           key={p.id}
-                          className="p-3 bg-white border border-gray-200 rounded-xl hover:border-blue-500 hover:shadow-md transition-all group"
+                          onClick={() => generateFacebookPost(p)}
+                          className="p-3 bg-white border border-gray-200 rounded-xl hover:border-blue-500 hover:shadow-md transition-all cursor-pointer group"
                         >
                           <div className="flex justify-between items-start mb-1">
                             <span className="text-xs font-bold text-blue-600 uppercase tracking-wider">{p.category}</span>
                             <Sparkles size={14} className="text-gray-300 group-hover:text-blue-500 transition-colors" />
                           </div>
-                          <h4 className="text-sm font-bold text-gray-900">{p.name}</h4>
+                          <h4 className="text-sm font-bold text-gray-900 group-hover:text-blue-600 transition-colors">{p.name}</h4>
                           <p className="text-sm font-bold text-emerald-600 mt-1">{formatCurrency(p.price)}</p>
-                          
-                          <div className="mt-3 flex gap-2">
-                            <button 
-                              onClick={() => generateContent(p, 'fb')}
-                              className="flex-1 flex items-center justify-center gap-1.5 py-1.5 bg-blue-50 text-blue-600 rounded-lg text-[10px] font-bold hover:bg-blue-100 transition-colors"
-                            >
-                              <Facebook size={12} /> Bài đăng FB
-                            </button>
-                            <button 
-                              onClick={() => generateContent(p, 'shorts')}
-                              className="flex-1 flex items-center justify-center gap-1.5 py-1.5 bg-rose-50 text-rose-600 rounded-lg text-[10px] font-bold hover:bg-rose-100 transition-colors"
-                            >
-                              <MessageSquare size={12} /> Kịch bản Shorts
-                            </button>
+                          <div className="mt-2 flex items-center gap-1 text-[10px] text-gray-400 font-medium uppercase">
+                            <MessageSquare size={10} /> Click để viết bài FB
                           </div>
                         </div>
                       ))}
@@ -346,36 +312,31 @@ export function AIAssistant({ data }: AIAssistantProps) {
           </div>
         </div>
 
-        {/* Side Panel for Generated Content */}
+        {/* Side Panel for FB Post */}
         <AnimatePresence>
-          {generatedContent && (
+          {fbPost && (
             <motion.div
               initial={{ x: 300, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
               exit={{ x: 300, opacity: 0 }}
-              className="w-96 border-l border-gray-100 bg-gray-50/30 p-4 overflow-y-auto hidden lg:block"
+              className="w-80 border-l border-gray-100 bg-gray-50/30 p-4 overflow-y-auto hidden lg:block"
             >
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-bold text-gray-900 flex items-center gap-2">
-                  {generatedContent.type === 'fb' ? (
-                    <><Facebook size={18} className="text-blue-600" /> Bài đăng Facebook</>
-                  ) : (
-                    <><MessageSquare size={18} className="text-rose-600" /> Kịch bản Shorts</>
-                  )}
+                  <Facebook size={18} className="text-blue-600" />
+                  Bài đăng FB
                 </h3>
                 <button 
-                  onClick={() => setGeneratedContent(null)}
-                  className="p-1 hover:bg-gray-200 rounded-full text-gray-400 transition-colors"
+                  onClick={() => setFbPost(null)}
+                  className="text-gray-400 hover:text-gray-600"
                 >
-                  <X size={16} />
+                  <Copy size={16} onClick={() => copyToClipboard(fbPost)} />
                 </button>
               </div>
-              <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm text-sm whitespace-pre-wrap leading-relaxed relative group overflow-x-auto">
-                <div className="markdown-body prose prose-xs max-w-none">
-                  <ReactMarkdown>{generatedContent.content}</ReactMarkdown>
-                </div>
+              <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm text-sm whitespace-pre-wrap leading-relaxed relative group">
+                {fbPost}
                 <button
-                  onClick={() => copyToClipboard(generatedContent.content)}
+                  onClick={() => copyToClipboard(fbPost)}
                   className="absolute top-2 right-2 p-2 bg-gray-100 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
                   title="Sao chép"
                 >
@@ -383,22 +344,22 @@ export function AIAssistant({ data }: AIAssistantProps) {
                 </button>
               </div>
               <button
-                onClick={() => copyToClipboard(generatedContent.content)}
-                className="w-full mt-4 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-bold flex items-center justify-center gap-2 hover:bg-blue-700 transition-colors shadow-lg shadow-blue-600/20"
+                onClick={() => copyToClipboard(fbPost)}
+                className="w-full mt-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-bold flex items-center justify-center gap-2 hover:bg-blue-700 transition-colors"
               >
-                <Copy size={16} /> Sao chép tất cả
+                <Copy size={16} /> Sao chép nội dung
               </button>
             </motion.div>
           )}
         </AnimatePresence>
 
-        {/* Mobile Modal for Loading */}
+        {/* Mobile Modal for FB Post */}
         <AnimatePresence>
-          {isGenerating && (
+          {isGeneratingPost && (
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/20 backdrop-blur-sm">
               <div className="bg-white p-6 rounded-2xl shadow-xl flex flex-col items-center gap-4">
                 <Loader2 size={32} className="animate-spin text-blue-600" />
-                <p className="text-sm font-medium text-gray-600">Hữu Laptop đang sáng tạo nội dung...</p>
+                <p className="text-sm font-medium text-gray-600">Đang sáng tạo nội dung bài viết...</p>
               </div>
             </div>
           )}

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { AppData, Customer, Supplier, Product, Category, Order, ShopInfo, Settings, CSKHSettings, NotificationSettings, WarrantyNotification, Store, User as AppUser } from '../types';
+import { AppData, Customer, Supplier, Product, Category, Order, ShopInfo, Settings, CSKHSettings, NotificationSettings, WarrantyNotification, Store, User as AppUser, Note } from '../types';
 import { initialData } from '../data/mockData';
 import { db, auth } from '../firebase';
 import { 
@@ -145,6 +145,17 @@ export function useAppStore() {
 
       collectionsToSync.forEach(([name, key]) => syncCollection(name, key));
 
+      // Personal Notes Sync
+      const notesRef = collection(db, 'notes');
+      const notesQuery = query(notesRef, where('createdBy', '==', user.uid));
+      const unsubNotes = onSnapshot(notesQuery, (snapshot) => {
+        const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Note));
+        setData(prev => ({ ...prev, notes: items }));
+      }, (error) => {
+        console.error("Error syncing notes:", error);
+      });
+      unsubscribers.push(unsubNotes);
+
       // Top-level config
       unsubscribers.push(onSnapshot(doc(db, 'config', 'shopInfo'), (doc) => {
         if (doc.exists()) setData(prev => ({ ...prev, shopInfo: doc.data() as ShopInfo }));
@@ -267,6 +278,7 @@ export function useAppStore() {
       await syncCollection('messages', 'messages');
       await syncCollection('groups', 'groups');
       await syncCollection('internalTasks', 'internalTasks');
+      await syncCollection('notes', 'notes');
 
     } catch (error) {
       handleFirestoreError(error, OperationType.WRITE, 'updateData', user);

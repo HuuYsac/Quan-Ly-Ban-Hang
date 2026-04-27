@@ -72,6 +72,12 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    // Specific rule for notes
+    match /notes/{noteId} {
+      allow read, update, delete: if isApproved() && resource.data.createdBy == request.auth.uid;
+      allow create: if isApproved() && request.resource.data.createdBy == request.auth.uid;
+    }
+
     // Specific rule for customers to allow public warranty search by phone
     match /customers/{customerId} {
       // Allow list for public warranty search (limit 10)

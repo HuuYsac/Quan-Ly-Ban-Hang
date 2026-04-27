@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { AppData, Product } from '../types';
 import { formatCurrency } from '../lib/utils';
-import { Package, Plus, Search, Edit, Trash2, AlertTriangle, CheckCircle2, X, Facebook, MessageSquare, Copy, Loader2, Sparkles } from 'lucide-react';
+import { Package, Plus, Search, Edit, Trash2, AlertTriangle, CheckCircle2, X } from 'lucide-react';
 import { Toast, ToastType, ConfirmModal } from '../components/Notification';
 
 interface ProductsProps {
@@ -28,8 +28,6 @@ export function Products({ data, updateData, addItem, updateItem, deleteItem, is
   const [editingId, setEditingId] = useState<string | null>(null);
   const [toast, setToast] = useState<{ message: string; type: ToastType } | null>(null);
   const [confirmingDelete, setConfirmingDelete] = useState<string | null>(null);
-  const [generatedAIContent, setGeneratedAIContent] = useState('');
-  const [isGenerating, setIsGenerating] = useState(false);
 
   const showToast = (message: string, type: ToastType = 'success') => {
     setToast({ message, type });
@@ -41,12 +39,7 @@ export function Products({ data, updateData, addItem, updateItem, deleteItem, is
     importPrice: '',
     stock: '',
     minStock: '10',
-    supplier: '',
-    cpu: '',
-    ram: '',
-    ssd: '',
-    screen: '',
-    status_info: ''
+    supplier: ''
   });
   const [categoryFormData, setCategoryFormData] = useState({
     name: '',
@@ -112,80 +105,9 @@ export function Products({ data, updateData, addItem, updateItem, deleteItem, is
       importPrice: product.importPrice ? product.importPrice.toString() : '',
       stock: product.stock.toString(),
       minStock: product.minStock.toString(),
-      supplier: product.supplier || '',
-      cpu: product.cpu || '',
-      ram: product.ram || '',
-      ssd: product.ssd || '',
-      screen: product.screen || '',
-      status_info: product.status_info || ''
+      supplier: product.supplier || ''
     });
-    setGeneratedAIContent('');
     setIsAddModalOpen(true);
-  };
-
-  const generateAIContent = async (type: 'fb' | 'shorts') => {
-    if (!formData.name) {
-      setToast({ message: 'Vui lòng nhập tên sản phẩm để tạo content', type: 'error' });
-      return;
-    }
-
-    setIsGenerating(true);
-    try {
-      const systemInstruction = `
-Bạn là Hữu Laptop - Một chuyên gia kỹ thuật máy tính chân thành và thực dụng.
-Mục tiêu của bạn là hỗ trợ nhân viên tư vấn sản phẩm và tạo nội dung marketing chuyên sâu.
-
-[PHONG CÁCH & ĐỊNH VỊ]
-- Xưng hô: Xưng là "Hữu Laptop" hoặc "mình", gọi khách hàng là "anh em" hoặc "khách".
-- Giọng văn: Chân thành, thực dụng, góc nhìn chuyên gia kỹ thuật cứng tay. Tránh từ ngữ sáo rỗng, hoa mỹ, "lùa gà".
-- Trọng tâm: Nhấn mạnh độ bền bỉ, tính ổn định, nhiệt độ mát mẻ, khả năng gánh tab trình duyệt/giả lập.
-
-[NGUYÊN TẮC VỀ DỊCH VỤ]
-1. Bảo hành: Không tự bịa số tháng. Luôn ghi: "Thời gian bảo hành linh hoạt, thời hạn phụ thuộc chuẩn theo gói dịch vụ anh em lựa chọn".
-2. Hệ điều hành: Máy luôn được tối ưu sâu, bung file chuẩn (Sysprep/Acronis) nên cực kỳ ổn định, không lỗi vặt.
-3. Phần mềm: Có sẵn Office 2021 Standard (250K) hoặc bản Bind vĩnh viễn (1.490K) cho anh em làm việc, không lo crack virus.
-4. Địa lý: Shop tại Bình Phước, nhận ship toàn quốc có video test máy kỹ càng.
-`;
-
-      const specs = `CPU: ${formData.cpu}, RAM: ${formData.ram}, SSD: ${formData.ssd}, Màn: ${formData.screen}, Tình trạng: ${formData.status_info}`;
-      const prompt = type === 'fb' 
-        ? `Viết bài đăng FACEBOOK bán sản phẩm: ${formData.name}. Danh mục: ${formData.category}. Cấu hình: ${specs}. Giá: ${formatCurrency(parseInt(formData.price))}. Yêu cầu: Tiêu đề in hoa, phân tích kỹ thuật chân thành, bảo hành/phần mềm chuẩn Hữu Laptop. KHÔNG dùng **.`
-        : `Viết kịch bản SHORTS (video ngắn) dưới dạng bảng Markdown cho sản phẩm: ${formData.name}. Cấu hình: ${specs}. Giá: ${formatCurrency(parseInt(formData.price))}. Yêu cầu: Hook mạnh, tập trung độ bền và hiệu năng thực tế. KHÔNG dùng **.`;
-
-      const response = await fetch('/api/ai/generate', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          systemInstruction,
-          prompt
-        })
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Lỗi từ máy chủ AI');
-      }
-
-      const result = await response.json();
-
-      if (result.text) {
-        setGeneratedAIContent(result.text.replace(/\*\*/g, ''));
-      } else {
-        throw new Error('Không nhận được phản hồi từ AI');
-      }
-    } catch (error: any) {
-      console.error('AI Error:', error);
-      setToast({ message: 'Lỗi khi gọi AI: ' + (error.message || 'Lỗi không xác định'), type: 'error' });
-    } finally {
-      setIsGenerating(false);
-    }
-  };
-
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text);
-    setToast({ message: 'Đã sao chép nội dung vào bộ nhớ tạm', type: 'success' });
   };
 
   const handleCreateCategory = async (e: React.FormEvent) => {
@@ -272,11 +194,6 @@ Mục tiêu của bạn là hỗ trợ nhân viên tư vấn sản phẩm và t�
           stock: Number(formData.stock),
           minStock: Number(formData.minStock),
           supplier: formData.supplier,
-          cpu: formData.cpu,
-          ram: formData.ram,
-          ssd: formData.ssd,
-          screen: formData.screen,
-          status_info: formData.status_info,
           updatedAt: new Date().toISOString()
         };
 
@@ -297,11 +214,6 @@ Mục tiêu của bạn là hỗ trợ nhân viên tư vấn sản phẩm và t�
           stock: Number(formData.stock),
           minStock: Number(formData.minStock),
           supplier: formData.supplier,
-          cpu: formData.cpu,
-          ram: formData.ram,
-          ssd: formData.ssd,
-          screen: formData.screen,
-          status_info: formData.status_info,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString()
         };
@@ -313,7 +225,7 @@ Mục tiêu của bạn là hỗ trợ nhân viên tư vấn sản phẩm và t�
       setEditingId(null);
       showToast(editingId ? 'Đã cập nhật sản phẩm thành công' : 'Đã thêm sản phẩm thành công');
       setFormData({
-        name: '', category: '', price: '', importPrice: '', stock: '', minStock: '10', supplier: '', cpu: '', ram: '', ssd: '', screen: '', status_info: ''
+        name: '', category: '', price: '', importPrice: '', stock: '', minStock: '10', supplier: ''
       });
     } catch (error) {
       console.error('Lỗi khi lưu sản phẩm:', error);
@@ -402,7 +314,7 @@ Mục tiêu của bạn là hỗ trợ nhân viên tư vấn sản phẩm và t�
             onClick={() => {
               setEditingId(null);
               setFormData({
-                name: '', category: '', price: '', importPrice: '', stock: '', minStock: '10', supplier: '', cpu: '', ram: '', ssd: '', screen: '', status_info: ''
+                name: '', category: '', price: '', importPrice: '', stock: '', minStock: '10', supplier: ''
               });
               setIsAddModalOpen(true);
             }}
@@ -681,37 +593,9 @@ Mục tiêu của bạn là hỗ trợ nhân viên tư vấn sản phẩm và t�
                     type="text" required
                     value={formData.name}
                     onChange={e => setFormData({...formData, name: e.target.value})}
-                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-bold"
+                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                     placeholder="VD: MacBook Pro M3 Max"
                   />
-                </div>
-
-                <div className="md:col-span-2 bg-blue-50/30 p-4 rounded-xl border border-blue-100/50 space-y-4">
-                  <h4 className="text-xs font-bold text-blue-600 uppercase tracking-widest flex items-center gap-2">
-                    <Package size={14} /> Thông số kỹ thuật & Tình trạng
-                  </h4>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div>
-                      <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">CPU</label>
-                      <input type="text" value={formData.cpu} onChange={e => setFormData({...formData, cpu: e.target.value})} className="w-full px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 outline-none" placeholder="Intel Core i7" />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">RAM</label>
-                      <input type="text" value={formData.ram} onChange={e => setFormData({...formData, ram: e.target.value})} className="w-full px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 outline-none" placeholder="16Gb" />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Ổ cứng</label>
-                      <input type="text" value={formData.ssd} onChange={e => setFormData({...formData, ssd: e.target.value})} className="w-full px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 outline-none" placeholder="512Gb NVMe" />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Màn hình</label>
-                      <input type="text" value={formData.screen} onChange={e => setFormData({...formData, screen: e.target.value})} className="w-full px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 outline-none" placeholder="14 inch FHD" />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Tình trạng máy (Ngoại hình, Pin...)</label>
-                    <input type="text" value={formData.status_info} onChange={e => setFormData({...formData, status_info: e.target.value})} className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 outline-none" placeholder="Máy đẹp 99%, pin 4-5h..." />
-                  </div>
                 </div>
                 
                 <div>
@@ -816,64 +700,6 @@ Mục tiêu của bạn là hỗ trợ nhân viên tư vấn sản phẩm và t�
                     placeholder="VD: 5"
                   />
                 </div>
-              </div>
-
-              {/* AI Content Assistant Section */}
-              <div className="md:col-span-2 space-y-4 pt-4 border-t border-gray-100">
-                <div className="flex items-center justify-between">
-                  <h4 className="text-sm font-bold text-blue-600 flex items-center gap-2 uppercase tracking-wider">
-                    <Sparkles size={16} />
-                    Trợ lý AI Content (Hữu Laptop)
-                  </h4>
-                  <div className="flex gap-2">
-                    <button 
-                      type="button"
-                      disabled={isGenerating}
-                      onClick={() => generateAIContent('fb')}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg text-xs font-bold hover:bg-blue-100 transition-colors disabled:opacity-50"
-                    >
-                      <Facebook size={14} />
-                      Tạo Content Facebook
-                    </button>
-                    <button 
-                      type="button"
-                      disabled={isGenerating}
-                      onClick={() => generateAIContent('shorts')}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-rose-50 text-rose-600 rounded-lg text-xs font-bold hover:bg-rose-100 transition-colors disabled:opacity-50"
-                    >
-                      <MessageSquare size={14} />
-                      Viết Kịch Bản Shorts
-                    </button>
-                  </div>
-                </div>
-
-                <div className="relative">
-                  <textarea 
-                    value={generatedAIContent}
-                    onChange={(e) => setGeneratedAIContent(e.target.value)}
-                    placeholder="Kết quả AI Content sẽ hiển thị ở đây..."
-                    className="w-full h-48 px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm leading-relaxed bg-gray-50/30"
-                  />
-                  {isGenerating && (
-                    <div className="absolute inset-0 bg-white/60 backdrop-blur-[1px] flex flex-col items-center justify-center rounded-xl">
-                      <Loader2 size={24} className="animate-spin text-blue-600 mb-2" />
-                      <span className="text-xs font-medium text-gray-500 italic">Đang sáng tạo...</span>
-                    </div>
-                  )}
-                </div>
-
-                {generatedAIContent && (
-                  <div className="flex justify-end">
-                    <button 
-                      type="button"
-                      onClick={() => copyToClipboard(generatedAIContent)}
-                      className="inline-flex items-center gap-2 px-4 py-2 bg-gray-900 text-white rounded-lg text-xs font-bold hover:bg-black transition-all shadow-md group"
-                    >
-                      <Copy size={14} className="group-active:scale-95" />
-                      Copy Nội Dung
-                    </button>
-                  </div>
-                )}
               </div>
 
               <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
