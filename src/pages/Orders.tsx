@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { AppData, Order, OrderItem } from '../types';
 import { formatCurrency, numberToVietnameseWords } from '../lib/utils';
-import { ShoppingCart, Plus, Search, Eye, Printer, Trash2, X, PlusCircle, Edit, FileText, DollarSign, Package, CreditCard, ChevronDown } from 'lucide-react';
+import { ShoppingCart, Plus, Search, Eye, Printer, Trash2, X, PlusCircle, Edit, FileText, DollarSign, Package, CreditCard, ChevronDown, Share2 } from 'lucide-react';
 import { Toast, ToastType, ConfirmModal } from '../components/Notification';
 import { SearchableSelect } from '../components/SearchableSelect';
 
@@ -745,6 +745,22 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
         }
 
         await addItem('orders', newOrder);
+
+        // Add real-time notification
+        try {
+          await addItem('notifications', {
+            id: `notif-${Date.now()}`,
+            title: 'Đơn hàng mới',
+            content: `Đơn hàng ${newOrder.id} vừa được tạo bởi ${customer.name}`,
+            type: 'order',
+            createdAt: new Date().toISOString(),
+            read: false,
+            link: 'orders',
+            icon: 'shopping-cart'
+          });
+        } catch (err) {
+          console.error('Error creating notification:', err);
+        }
       }
 
       setIsAddModalOpen(false);
@@ -982,9 +998,26 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
                               e.stopPropagation();
                               setViewOrder(order);
                             }}
-                            className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all"
+                            className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all border border-transparent hover:border-indigo-100"
+                            title="Xem chi tiết"
                           >
                             <Eye size={18} />
+                          </motion.button>
+                          <motion.button 
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.9 }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const baseUrl = window.location.origin;
+                              const serviceTag = order.products?.[0]?.serviceTag || '';
+                              const shareUrl = `${baseUrl}?phone=${order.customerPhone}&tag=${serviceTag}`;
+                              navigator.clipboard.writeText(shareUrl);
+                              showToast('Đã copy link tra cứu bảo hành gửi khách!');
+                            }}
+                            className="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all border border-transparent hover:border-emerald-100"
+                            title="Sao chép link tra cứu gửi khách"
+                          >
+                            <Share2 size={18} />
                           </motion.button>
                           <motion.button 
                             whileHover={{ scale: 1.1 }}

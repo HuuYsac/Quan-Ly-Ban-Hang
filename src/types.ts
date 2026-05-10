@@ -311,6 +311,18 @@ export interface Note {
   color?: string;
 }
 
+export interface Notification {
+  id: string;
+  title: string;
+  content: string;
+  type: 'order' | 'repair' | 'stock' | 'customer' | 'message' | 'system';
+  createdAt: string;
+  read: boolean;
+  link?: string;
+  userId?: string;
+  icon?: string;
+}
+
 export interface AppData {
   users: User[];
   customers: Customer[];
@@ -329,6 +341,7 @@ export interface AppData {
   groups: Group[];
   internalTasks: InternalTask[];
   notes: Note[];
+  notifications: Notification[];
   shopInfo: ShopInfo;
   settings: Settings;
   cskhSettings?: CSKHSettings;

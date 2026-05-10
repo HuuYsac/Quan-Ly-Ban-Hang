@@ -249,6 +249,23 @@
         "color": { "type": "string" }
       },
       "required": ["id", "content", "createdBy", "createdAt"]
+    },
+    "Notification": {
+      "title": "Notification",
+      "description": "System-wide real-time notifications",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "content": { "type": "string" },
+        "type": { "type": "string", "enum": ["order", "repair", "stock", "customer", "message", "system"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "read": { "type": "boolean" },
+        "link": { "type": "string" },
+        "userId": { "type": "string" },
+        "icon": { "type": "string" }
+      },
+      "required": ["id", "title", "content", "type", "createdAt", "read"]
     }
   },
   "firestore": {
@@ -303,6 +320,10 @@
     "internalTasks/{taskId}": {
       "schema": { "$ref": "#/entities/InternalTask" },
       "description": "Internal tasks assigned via chat"
+    },
+    "notifications/{notificationId}": {
+      "schema": { "$ref": "#/entities/Notification" },
+      "description": "System-wide real-time notifications"
     },
     "config/shopInfo": {
       "schema": { "$ref": "#/entities/ShopInfo" },

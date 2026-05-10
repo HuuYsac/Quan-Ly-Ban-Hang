@@ -17,6 +17,7 @@ import {
   Edit2,
   Trash2,
   ExternalLink,
+  Share2,
   DollarSign,
   TrendingUp as TrendingUpIcon,
   PlusCircle
@@ -110,6 +111,22 @@ const Repairs: React.FC = () => {
     try {
       if (editingRepair) {
         await updateItem('repairs', editingRepair.id, { ...formData, profit });
+        
+        // Notify if status changed to "Đã xong"
+        if (formData.status === 'Đã xong' && editingRepair.status !== 'Đã xong') {
+          try {
+            await addItem('notifications', {
+              id: `notif-${Date.now()}`,
+              title: 'Sửa chữa hoàn tất',
+              content: `Thiết bị ${formData.productName} của ${formData.customerName} đã sửa xong.`,
+              type: 'repair',
+              createdAt: new Date().toISOString(),
+              read: false,
+              link: 'repairs',
+              icon: 'check-circle'
+            });
+          } catch (err) { console.error(err); }
+        }
       } else {
         const newRepair: Repair = {
           ...formData as Repair,
@@ -118,6 +135,20 @@ const Repairs: React.FC = () => {
           createdAt: new Date().toISOString()
         };
         await addItem('repairs', newRepair);
+
+        // Notify new repair
+        try {
+          await addItem('notifications', {
+            id: `notif-${Date.now()}`,
+            title: 'Phiếu sửa chữa mới',
+            content: `Nhận sửa ${newRepair.productName} cho ${newRepair.customerName}`,
+            type: 'repair',
+            createdAt: new Date().toISOString(),
+            read: false,
+            link: 'repairs',
+            icon: 'wrench'
+          });
+        } catch (err) { console.error(err); }
       }
       
       setIsModalOpen(false);
@@ -414,6 +445,19 @@ const Repairs: React.FC = () => {
                   </td>
                   <td className="p-4 text-right">
                     <div className="flex items-center justify-end gap-1">
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const baseUrl = window.location.origin;
+                          const shareUrl = `${baseUrl}?phone=${repair.customerPhone}&tag=${repair.serviceTag}`;
+                          navigator.clipboard.writeText(shareUrl);
+                          showToast('Đã copy link tra cứu bảo hành gửi khách!');
+                        }}
+                        className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all border border-transparent hover:border-indigo-100"
+                        title="Sao chép link tra cứu gửi khách"
+                      >
+                        <Share2 size={18} />
+                      </button>
                       <button 
                         onClick={() => handleEdit(repair)}
                         className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"

@@ -140,7 +140,8 @@ export function useAppStore() {
         ['promotions', 'promotions'],
         ['messages', 'messages'],
         ['groups', 'groups'],
-        ['internalTasks', 'internalTasks']
+        ['internalTasks', 'internalTasks'],
+        ['notifications', 'notifications']
       ];
 
       collectionsToSync.forEach(([name, key]) => syncCollection(name, key));
@@ -278,6 +279,7 @@ export function useAppStore() {
       await syncCollection('messages', 'messages');
       await syncCollection('groups', 'groups');
       await syncCollection('internalTasks', 'internalTasks');
+      await syncCollection('notifications', 'notifications');
       await syncCollection('notes', 'notes');
 
     } catch (error) {
@@ -329,7 +331,7 @@ export function useAppStore() {
     try {
       const collections = [
         'customers', 'suppliers', 'products', 'categories', 'orders', 
-        'repairs', 'leads', 'careTasks', 'sales', 'warrantyNotifications', 'promotions', 'messages', 'groups', 'internalTasks'
+        'repairs', 'leads', 'careTasks', 'sales', 'warrantyNotifications', 'promotions', 'messages', 'groups', 'internalTasks', 'notifications'
       ];
 
       for (const colName of collections) {

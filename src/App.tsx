@@ -133,6 +133,30 @@ export default function App() {
     await auth.signOut();
   };
 
+  useEffect(() => {
+    const theme = data.settings?.theme || 'light';
+    const root = window.document.documentElement;
+    
+    const applyTheme = (resolvedTheme: 'light' | 'dark') => {
+      root.classList.remove('light', 'dark');
+      root.classList.add(resolvedTheme);
+      root.style.colorScheme = resolvedTheme;
+    };
+
+    if (theme === 'system') {
+      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+      applyTheme(mediaQuery.matches ? 'dark' : 'light');
+
+      const listener = (e: MediaQueryListEvent) => {
+        applyTheme(e.matches ? 'dark' : 'light');
+      };
+      mediaQuery.addEventListener('change', listener);
+      return () => mediaQuery.removeEventListener('change', listener);
+    } else {
+      applyTheme(theme as 'light' | 'dark');
+    }
+  }, [data.settings?.theme]);
+
   if (authLoading || (user && dataLoading) || (user && isApproved === null)) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
@@ -342,6 +366,7 @@ export default function App() {
           onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
           data={data}
           currentUserUid={user?.uid}
+          updateData={updateData}
         />
         
         <main className="flex-1 p-4 md:p-8 max-w-7xl mx-auto w-full print:p-0">

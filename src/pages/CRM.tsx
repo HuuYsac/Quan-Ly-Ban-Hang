@@ -31,7 +31,8 @@ import {
   Edit2,
   UserPlus,
   RefreshCw,
-  Facebook
+  Facebook,
+  ShoppingCart
 } from 'lucide-react';
 
 interface CRMProps {
@@ -43,6 +44,9 @@ interface CRMProps {
 }
 
 export function CRM({ data, updateData, addItem, updateItem, deleteItem }: CRMProps) {
+  const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
+  const [selectedCustomerPhone, setSelectedCustomerPhone] = useState<string | null>(null);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [leadStatusFilter, setLeadStatusFilter] = useState<'all' | 'Mới' | 'Đã liên hệ' | 'Đang thương lượng' | 'Thành công' | 'Thất bại'>('all');
   const [activeTab, setActiveTab] = useState<'leads' | 'tasks' | 'promotions'>('tasks');
   const [searchTerm, setSearchTerm] = useState('');
@@ -492,6 +496,235 @@ export function CRM({ data, updateData, addItem, updateItem, deleteItem }: CRMPr
     }
   };
 
+  const handleShowDetails = (id?: string, phone?: string) => {
+    setSelectedCustomerId(id || null);
+    setSelectedCustomerPhone(phone || null);
+    setIsDetailModalOpen(true);
+  };
+
+  const CustomerDetailModal = () => {
+    if (!isDetailModalOpen) return null;
+
+    const customer = data.customers?.find(c => c.id === selectedCustomerId || (selectedCustomerPhone && c.phone === selectedCustomerPhone));
+    const lead = data.leads?.find(l => l.id === selectedCustomerId || (selectedCustomerPhone && l.phone === selectedCustomerPhone));
+    
+    const phone = selectedCustomerPhone || customer?.phone || lead?.phone;
+    const name = customer?.name || lead?.name || 'Khách hàng';
+
+    const customerOrders = data.orders?.filter(o => 
+      (selectedCustomerId && o.customerId === selectedCustomerId) || 
+      (phone && o.customerPhone === phone)
+    ) || [];
+
+    const customerRepairs = data.repairs?.filter(r => 
+      (selectedCustomerId && r.customerId === selectedCustomerId) || 
+      (phone && r.customerPhone === phone)
+    ) || [];
+
+    const customerTasks = careTasks.filter(t => t.customerId === selectedCustomerId || (customer?.id && t.customerId === customer.id));
+
+    return (
+      <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[150] p-4 backdrop-blur-sm">
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.95, y: 20 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col border border-gray-100 dark:border-slate-800"
+        >
+          <div className="px-8 py-6 border-b border-gray-100 dark:border-slate-800 flex items-center justify-between bg-gradient-to-r from-slate-50 to-white dark:from-slate-800/50 dark:to-slate-900">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-2xl flex items-center justify-center font-bold text-xl">
+                {name.charAt(0)}
+              </div>
+              <div>
+                <h3 className="text-xl font-black text-gray-900 dark:text-white">{name}</h3>
+                <div className="flex items-center gap-3 mt-1">
+                  <span className="text-sm text-gray-500 dark:text-slate-400 flex items-center gap-1">
+                    <Phone size={14} className="text-gray-400" />
+                    {phone || 'Không có SĐT'}
+                  </span>
+                  {customer?.id && (
+                    <span className="px-2 py-0.5 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded text-[10px] font-bold uppercase tracking-wider">
+                      Mã: {customer.id}
+                    </span>
+                  )}
+                  {lead && !customer && (
+                    <span className="px-2 py-0.5 bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 rounded text-[10px] font-bold uppercase tracking-wider">
+                      Tiềm năng: {lead.status}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+            <button 
+              onClick={() => setIsDetailModalOpen(false)}
+              className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-slate-800 rounded-xl transition-all"
+            >
+              <X size={24} />
+            </button>
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-8 custom-scrollbar space-y-8">
+            {/* Quick Stats */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+              <div className="bg-blue-50/50 dark:bg-blue-900/10 p-4 rounded-2xl border border-blue-100 dark:border-blue-900/20">
+                <p className="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest mb-1">Tổng mua hàng</p>
+                <h4 className="text-xl font-black text-slate-900 dark:text-white">{customerOrders.length} đơn</h4>
+                <p className="text-xs text-blue-500 dark:text-blue-400 font-bold mt-1">
+                  {formatCurrency(customerOrders.reduce((sum, o) => sum + o.total, 0))}
+                </p>
+              </div>
+              <div className="bg-emerald-50/50 dark:bg-emerald-900/10 p-4 rounded-2xl border border-emerald-100 dark:border-emerald-900/20">
+                <p className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-widest mb-1">Sửa chữa</p>
+                <h4 className="text-xl font-black text-slate-900 dark:text-white">{customerRepairs.length} lượt</h4>
+                <p className="text-xs text-emerald-500 dark:text-emerald-400 font-bold mt-1">
+                  Đã hoàn thành {customerRepairs.filter(r => r.status === 'Đã xong').length}
+                </p>
+              </div>
+              <div className="bg-purple-50/50 dark:bg-purple-900/10 p-4 rounded-2xl border border-purple-100 dark:border-purple-900/20">
+                <p className="text-[10px] font-bold text-purple-600 dark:text-purple-400 uppercase tracking-widest mb-1">Chăm sóc</p>
+                <h4 className="text-xl font-black text-slate-900 dark:text-white">{customerTasks.length} nhiệm vụ</h4>
+                <p className="text-xs text-purple-500 dark:text-purple-400 font-bold mt-1">
+                  Đã xong {customerTasks.filter(t => t.status === 'completed').length}
+                </p>
+              </div>
+            </div>
+
+            {/* Purchase History */}
+            <div className="space-y-4">
+              <h4 className="font-black text-slate-900 dark:text-white text-sm uppercase tracking-widest flex items-center gap-2">
+                <ShoppingCart size={18} className="text-blue-600 dark:text-blue-400" />
+                Lịch sử mua hàng
+              </h4>
+              {customerOrders.length > 0 ? (
+                <div className="space-y-3">
+                  {customerOrders.map(order => (
+                    <div key={order.id} className="bg-white dark:bg-slate-800/50 border border-gray-100 dark:border-slate-800 p-4 rounded-2xl hover:border-blue-200 dark:hover:border-blue-900 transition-all group">
+                      <div className="flex justify-between items-start mb-3">
+                        <div>
+                          <span className="text-xs font-mono text-blue-600 dark:text-blue-400 font-bold">#{order.id}</span>
+                          <span className="text-xs text-gray-400 dark:text-slate-600 mx-2">•</span>
+                          <span className="text-xs text-gray-500 dark:text-slate-400">{new Date(order.date).toLocaleDateString('vi-VN')}</span>
+                        </div>
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
+                          order.status === 'Hoàn thành' ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400' : 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
+                        }`}>
+                          {order.status}
+                        </span>
+                      </div>
+                      <div className="space-y-2">
+                        {order.products.map((p, i) => (
+                          <div key={i} className="flex justify-between items-center text-sm">
+                            <span className="text-gray-700 dark:text-slate-300 font-medium">{p.name} <span className="text-gray-400 dark:text-slate-500">x{p.quantity}</span></span>
+                            <span className="text-gray-900 dark:text-white font-bold">{formatCurrency(p.price * p.quantity)}</span>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="mt-3 pt-3 border-t border-gray-50 dark:border-slate-800 flex justify-between items-center">
+                        <span className="text-xs text-gray-500 dark:text-slate-400">Thanh toán: <span className="font-bold text-gray-700 dark:text-slate-300">{order.paymentMethod}</span></span>
+                        <span className="text-sm font-black text-blue-600 dark:text-blue-400">{formatCurrency(order.total)}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs text-gray-400 italic bg-gray-50 dark:bg-slate-800/30 p-4 rounded-2xl border border-dashed border-gray-200 dark:border-slate-800 text-center">Chưa có đơn hàng nào.</p>
+              )}
+            </div>
+
+            {/* Repair History */}
+            <div className="space-y-4">
+              <h4 className="font-black text-slate-900 dark:text-white text-sm uppercase tracking-widest flex items-center gap-2">
+                <RefreshCw size={18} className="text-emerald-600 dark:text-emerald-400" />
+                Lịch sử sửa chữa
+              </h4>
+              {customerRepairs.length > 0 ? (
+                <div className="space-y-3">
+                  {customerRepairs.map(repair => (
+                    <div key={repair.id} className="bg-white dark:bg-slate-800/50 border border-gray-100 dark:border-slate-800 p-4 rounded-2xl hover:border-emerald-200 dark:hover:border-emerald-900 transition-all">
+                      <div className="flex justify-between items-start mb-3">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-bold text-gray-900 dark:text-white">{repair.productName}</span>
+                          <span className="text-[10px] px-1.5 py-0.5 bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-slate-400 rounded font-mono uppercase tracking-tighter">S/N: {repair.serviceTag}</span>
+                        </div>
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
+                          repair.status === 'Đã xong' ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400' : 'bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400'
+                        }`}>
+                          {repair.status}
+                        </span>
+                      </div>
+                      <p className="text-xs text-gray-600 dark:text-slate-400 bg-gray-50 dark:bg-slate-800/30 p-2 rounded-lg mb-2">
+                        <span className="font-bold">Lỗi:</span> {repair.issue}
+                      </p>
+                      <div className="flex justify-between items-center text-xs text-gray-500 dark:text-slate-400">
+                        <span>Ngày nhận: {new Date(repair.receivedDate).toLocaleDateString('vi-VN')}</span>
+                        <span className="font-bold text-emerald-600 dark:text-emerald-400">{formatCurrency(repair.customerPrice || 0)}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs text-gray-400 italic bg-gray-50 dark:bg-slate-800/30 p-4 rounded-2xl border border-dashed border-gray-200 dark:border-slate-800 text-center">Chưa có lượt sửa chữa nào.</p>
+              )}
+            </div>
+
+            {/* Interaction History */}
+            <div className="space-y-4">
+              <h4 className="font-black text-slate-900 dark:text-white text-sm uppercase tracking-widest flex items-center gap-2">
+                <Clock size={18} className="text-purple-600 dark:text-purple-400" />
+                Lịch sử chăm sóc & Tương tác
+              </h4>
+              {customerTasks.length > 0 ? (
+                <div className="space-y-3">
+                  {customerTasks.map(task => (
+                    <div key={task.id} className="flex items-start gap-4 p-4 bg-slate-50/50 dark:bg-slate-800/30 border border-slate-100 dark:border-slate-800 rounded-2xl">
+                      <div className={`w-8 h-8 rounded-full shrink-0 flex items-center justify-center ${task.status === 'completed' ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400' : 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-100 dark:text-indigo-400'}`}>
+                        {task.status === 'completed' ? <CheckCircle2 size={16} /> : <Calendar size={16} />}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex justify-between items-center">
+                          <p className="text-xs font-bold text-slate-900 dark:text-white">{task.description}</p>
+                          <span className="text-[10px] text-gray-400 dark:text-slate-500">{new Date(task.taskDate).toLocaleDateString('vi-VN')}</span>
+                        </div>
+                        <p className="text-[10px] text-gray-500 dark:text-slate-400 mt-1">Dựa trên đơn hàng #{task.orderId}</p>
+                        {task.status === 'completed' && task.completedAt && (
+                          <p className="text-[9px] text-emerald-600 italic mt-1">Hoàn thành vào: {new Date(task.completedAt).toLocaleDateString('vi-VN')}</p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs text-gray-400 italic bg-gray-50 dark:bg-slate-800/30 p-4 rounded-2xl border border-dashed border-gray-200 dark:border-slate-800 text-center">Chưa có tương tác nào.</p>
+              )}
+            </div>
+          </div>
+
+          <div className="p-6 bg-slate-50 dark:bg-slate-800 border-t border-gray-100 dark:border-slate-800 flex gap-4">
+            <button 
+              onClick={() => {
+                const url = getZaloLink(phone || '');
+                window.open(url, '_blank');
+              }}
+              className="flex-1 py-3 bg-blue-600 text-white rounded-xl font-bold shadow-lg shadow-blue-600/20 hover:bg-blue-700 transition-all flex items-center justify-center gap-2"
+            >
+              <MessageSquare size={18} />
+              Chat Zalo
+            </button>
+            <button 
+              onClick={() => {
+                window.location.href = `tel:${phone}`;
+              }}
+              className="flex-1 py-3 bg-emerald-600 text-white rounded-xl font-bold shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 transition-all flex items-center justify-center gap-2"
+            >
+              <Phone size={18} />
+              Gọi điện ngay
+            </button>
+          </div>
+        </motion.div>
+      </div>
+    );
+  };
+
   // Removed handleSendAdminReport as it's consolidated into handleSyncAndReport
 
   return (
@@ -682,9 +915,9 @@ export function CRM({ data, updateData, addItem, updateItem, deleteItem }: CRMPr
                           animate={{ opacity: 1, x: 0 }}
                           exit={{ opacity: 0, x: 20 }}
                           transition={{ delay: index * 0.05 }}
-                          onClick={() => {
-                            setEditingLead(lead);
-                            setShowLeadModal(true);
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleShowDetails(lead.id, lead.phone);
                           }}
                           className="hover:bg-gray-50/50 transition-colors group cursor-pointer"
                         >
@@ -769,9 +1002,9 @@ export function CRM({ data, updateData, addItem, updateItem, deleteItem }: CRMPr
                       animate={{ opacity: 1, scale: 1 }}
                       exit={{ opacity: 0, scale: 0.95 }}
                       transition={{ delay: index * 0.05 }}
-                      onClick={() => {
-                        setEditingLead(lead);
-                        setShowLeadModal(true);
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleShowDetails(lead.id, lead.phone);
                       }}
                       className="bg-gray-50 p-4 rounded-2xl border border-gray-100 space-y-4 cursor-pointer hover:border-blue-300 hover:shadow-md transition-all"
                     >
@@ -1006,7 +1239,10 @@ export function CRM({ data, updateData, addItem, updateItem, deleteItem }: CRMPr
                                     exit={{ opacity: 0, y: -10 }}
                                     transition={{ delay: index * 0.03 }}
                                     className={`hover:bg-gray-50/50 transition-colors group cursor-pointer ${task.status === 'completed' ? 'opacity-60' : ''}`}
-                                    onClick={() => handleToggleTaskStatus(task)}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleShowDetails(task.customerId, customer?.phone);
+                                    }}
                                   >
                                 <td className="px-4 py-4">
                                   <div className="flex items-center gap-3">
@@ -1142,7 +1378,10 @@ export function CRM({ data, updateData, addItem, updateItem, deleteItem }: CRMPr
                                 animate={{ opacity: 1, scale: 1 }}
                                 exit={{ opacity: 0, scale: 0.98 }}
                                 transition={{ delay: index * 0.03 }}
-                                onClick={() => handleToggleTaskStatus(task)}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleShowDetails(task.customerId, customer?.phone);
+                                }}
                                 className={`p-4 rounded-2xl border transition-all cursor-pointer hover:border-blue-300 hover:shadow-md ${task.status === 'completed' ? 'bg-gray-50 border-gray-100 opacity-75' : 'bg-white border-gray-200 shadow-sm'}`}
                               >
                             <div className="flex justify-between items-start mb-3">
@@ -1348,6 +1587,8 @@ export function CRM({ data, updateData, addItem, updateItem, deleteItem }: CRMPr
           </AnimatePresence>
         </div>
       </div>
+
+      <CustomerDetailModal />
 
       {/* Info Card */}
       <div className="bg-gradient-to-r from-blue-700 to-indigo-600 p-8 rounded-3xl text-white shadow-xl shadow-blue-500/20 relative overflow-hidden">
