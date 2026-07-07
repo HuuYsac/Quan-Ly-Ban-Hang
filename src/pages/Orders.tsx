@@ -1240,14 +1240,18 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
                     />
                     <div>
                       <h1 className="text-2xl font-black text-blue-700 uppercase tracking-tight">{data.shopInfo?.name || 'Hữu Laptop'}</h1>
-                      <p className="text-sm font-medium text-gray-600 mt-1">{data.shopInfo?.address}</p>
-                      <p className="text-sm font-bold text-gray-800">Hotline: {data.shopInfo?.phone}</p>
+                      <div className="text-sm font-medium text-gray-600 mt-1 whitespace-pre-line">
+                        {data.shopInfo?.address || '140/17/11 Lê Đức Thọ\nPhường 6, Gò Vấp'}
+                      </div>
+                      <p className="text-sm font-bold text-gray-800 mt-1">Hotline: {data.shopInfo?.phone}</p>
                       {data.shopInfo?.website && <p className="text-xs text-blue-600">{data.shopInfo.website}</p>}
                     </div>
                   </div>
-                  <div className="text-right">
-                    <h2 className="text-3xl font-black text-gray-900 dark:text-white uppercase mb-1">Hóa Đơn Bán Hàng</h2>
-                    <p className="text-sm text-gray-500">Mã đơn: <span className="font-bold text-black">#{viewOrder.id}</span></p>
+                    <div className="text-right">
+                      <h2 className="text-3xl font-black text-gray-900 dark:text-white uppercase mb-1 leading-tight">
+                        Hóa Đơn<br />Bán Hàng
+                      </h2>
+                      <p className="text-sm text-gray-500 mt-2">Mã đơn: <span className="font-bold text-black">#{viewOrder.id}</span></p>
                     <p className="text-sm text-gray-500">Ngày lập: <span className="font-bold text-black">{viewOrder.date}</span></p>
                   </div>
                 </div>
@@ -1341,19 +1345,6 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
                       <td colSpan={4} className="p-4 text-right font-bold text-gray-600 uppercase">Tổng cộng:</td>
                       <td className="p-4 text-right font-black text-xl text-blue-700">{formatCurrency(viewOrder.total)}</td>
                     </tr>
-                    {isAdmin && (
-                      <tr className="border-t border-gray-100 dark:border-gray-800">
-                        <td colSpan={4} className="p-3 text-right text-xs font-bold text-emerald-600 uppercase italic">Lợi nhuận đơn hàng:</td>
-                        <td className="p-3 text-right font-bold text-emerald-700">
-                          {formatCurrency(viewOrder.profit ?? (
-                            (viewOrder.products || []).reduce((sum, item) => {
-                              const cost = (item.importPrice || 0) * item.quantity;
-                              return sum + (item.subtotal || 0) - cost;
-                            }, 0) - (viewOrder.commission || 0) - (viewOrder.packagingFee || 0) - (viewOrder.shippingFee || 0)
-                          ))}
-                        </td>
-                      </tr>
-                    )}
                   </tfoot>
                 </table>
 

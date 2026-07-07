@@ -40,7 +40,7 @@ export function CompanyInfo({ data, updateData }: CompanyInfoProps) {
     }
   }, [data.shopInfo]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
@@ -159,13 +159,13 @@ export function CompanyInfo({ data, updateData }: CompanyInfoProps) {
                 <MapPin size={16} className="text-gray-400" />
                 Địa chỉ *
               </label>
-              <input 
-                type="text" 
+              <textarea
                 name="address"
                 required
                 value={formData.address}
                 onChange={handleChange}
-                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
+                rows={3}
+                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors resize-none"
                 placeholder="VD: 123 Đường ABC, Quận 1, TP.HCM"
               />
             </div>
