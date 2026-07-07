@@ -128,43 +128,43 @@ export function Members() {
     <div className="space-y-6">
       {/* Header & Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
+        <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm">
           <div className="flex items-center gap-4">
             <div className="p-3 bg-blue-50 rounded-xl">
               <UsersIcon className="text-blue-600" size={24} />
             </div>
             <div>
               <p className="text-sm text-gray-500 font-medium">Tổng thành viên</p>
-              <p className="text-2xl font-bold text-gray-900">{users.length}</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">{users.length}</p>
             </div>
           </div>
         </div>
-        <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
+        <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm">
           <div className="flex items-center gap-4">
             <div className="p-3 bg-emerald-50 rounded-xl">
               <UserCheck className="text-emerald-600" size={24} />
             </div>
             <div>
               <p className="text-sm text-gray-500 font-medium">Đã phê duyệt</p>
-              <p className="text-2xl font-bold text-gray-900">{users.filter(u => u.approved).length}</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">{users.filter(u => u.approved).length}</p>
             </div>
           </div>
         </div>
-        <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
+        <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm">
           <div className="flex items-center gap-4">
             <div className="p-3 bg-amber-50 rounded-xl">
               <UserX className="text-amber-600" size={24} />
             </div>
             <div>
               <p className="text-sm text-gray-500 font-medium">Chờ phê duyệt</p>
-              <p className="text-2xl font-bold text-gray-900">{users.filter(u => !u.approved).length}</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">{users.filter(u => !u.approved).length}</p>
             </div>
           </div>
         </div>
       </div>
 
       {/* Filters & Search */}
-      <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex flex-col md:flex-row gap-4 items-center justify-between">
+      <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm flex flex-col md:flex-row gap-4 items-center justify-between">
         <div className="relative w-full md:w-96">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
           <input
@@ -190,11 +190,11 @@ export function Members() {
       </div>
 
       {/* Users Table */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-gray-50/50 border-bottom border-gray-100">
+              <tr className="bg-gray-50/50 border-bottom border-gray-100 dark:border-gray-800">
                 <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Thành viên</th>
                 <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Vai trò & Chức vụ</th>
                 <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Liên hệ</th>
@@ -216,7 +216,7 @@ export function Members() {
                         {user.email[0].toUpperCase()}
                       </div>
                       <div>
-                        <p className="text-sm font-semibold text-gray-900">{user.email}</p>
+                        <p className="text-sm font-semibold text-gray-900 dark:text-white">{user.email}</p>
                         <p className="text-xs text-gray-500 font-mono">{user.uid.substring(0, 8)}...</p>
                       </div>
                     </div>
@@ -259,7 +259,7 @@ export function Members() {
                     <div className="space-y-1">
                       {user.bankAccount ? (
                         <>
-                          <div className="flex items-center gap-1.5 text-sm font-bold text-gray-900">
+                          <div className="flex items-center gap-1.5 text-sm font-bold text-gray-900 dark:text-white">
                             <CreditCard size={14} className="text-blue-500" /> {user.bankAccount}
                           </div>
                           <div className="text-[10px] text-gray-500 uppercase font-medium">
@@ -337,9 +337,9 @@ export function Members() {
       {/* Edit Modal */}
       {isEditing && selectedUser && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
-            <div className="p-6 border-b border-gray-100 flex items-center justify-between">
-              <h3 className="text-xl font-bold text-gray-900">Thiết lập thành viên</h3>
+          <div className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div className="p-6 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white">Thiết lập thành viên</h3>
               <button 
                 onClick={() => setIsEditing(false)}
                 className="p-2 hover:bg-gray-100 rounded-full transition-colors"
@@ -387,22 +387,22 @@ export function Members() {
               </div>
 
               {/* Bank Info (Read-only for Admin to view) */}
-              <div className="p-4 bg-slate-50 rounded-xl space-y-3">
+              <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-xl space-y-3">
                 <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-2">
                   <CreditCard size={14} /> Thông tin ngân hàng
                 </h4>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <p className="text-[10px] text-gray-400 uppercase">Ngân hàng</p>
-                    <p className="text-sm font-bold text-gray-900">{selectedUser.bankName || 'N/A'}</p>
+                    <p className="text-sm font-bold text-gray-900 dark:text-white">{selectedUser.bankName || 'N/A'}</p>
                   </div>
                   <div>
                     <p className="text-[10px] text-gray-400 uppercase">Số tài khoản</p>
-                    <p className="text-sm font-bold text-gray-900">{selectedUser.bankAccount || 'N/A'}</p>
+                    <p className="text-sm font-bold text-gray-900 dark:text-white">{selectedUser.bankAccount || 'N/A'}</p>
                   </div>
                   <div className="col-span-2">
                     <p className="text-[10px] text-gray-400 uppercase">Chủ tài khoản</p>
-                    <p className="text-sm font-bold text-gray-900">{selectedUser.bankAccountName || 'N/A'}</p>
+                    <p className="text-sm font-bold text-gray-900 dark:text-white">{selectedUser.bankAccountName || 'N/A'}</p>
                   </div>
                 </div>
               </div>
@@ -420,10 +420,10 @@ export function Members() {
                 </label>
               </div>
             </div>
-            <div className="p-6 bg-gray-50 border-t border-gray-100 flex gap-3">
+            <div className="p-6 bg-gray-50 border-t border-gray-100 dark:border-gray-800 flex gap-3">
               <button
                 onClick={() => setIsEditing(false)}
-                className="flex-1 py-2.5 px-4 border border-gray-300 rounded-xl text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors"
+                className="flex-1 py-2.5 px-4 border border-gray-300 rounded-xl text-sm font-medium text-gray-700 bg-white dark:bg-slate-900 hover:bg-gray-50 transition-colors"
               >
                 Hủy bỏ
               </button>

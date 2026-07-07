@@ -83,9 +83,9 @@ export function CompanyInfo({ data, updateData }: CompanyInfoProps) {
   return (
     <div>
       <div className="animate-in fade-in duration-500 max-w-4xl mx-auto">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-        <div className="p-6 border-b border-gray-100 bg-gray-50/50">
-          <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+        <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 overflow-hidden">
+        <div className="p-6 border-b border-gray-100 dark:border-gray-800 bg-gray-50/50">
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
             <Building className="text-blue-600" size={24} />
             Thông tin cửa hàng / doanh nghiệp
           </h2>
@@ -102,7 +102,7 @@ export function CompanyInfo({ data, updateData }: CompanyInfoProps) {
                   <img 
                     src={formData.logo} 
                     alt="Shop Logo" 
-                    className="w-32 h-32 object-contain rounded-lg border border-gray-200 bg-white shadow-sm"
+                    className="w-32 h-32 object-contain rounded-lg border border-gray-200 bg-white dark:bg-slate-900 shadow-sm"
                     referrerPolicy="no-referrer"
                   />
                   <button
@@ -114,7 +114,7 @@ export function CompanyInfo({ data, updateData }: CompanyInfoProps) {
                   </button>
                 </div>
               ) : (
-                <div className="w-32 h-32 flex flex-col items-center justify-center bg-white border border-gray-200 rounded-lg text-gray-400">
+                <div className="w-32 h-32 flex flex-col items-center justify-center bg-white dark:bg-slate-900 border border-gray-200 rounded-lg text-gray-400">
                   <Building size={40} strokeWidth={1.5} />
                   <span className="text-[10px] mt-2 font-medium uppercase tracking-wider">Chưa có logo</span>
                 </div>
@@ -130,7 +130,7 @@ export function CompanyInfo({ data, updateData }: CompanyInfoProps) {
               </label>
             </div>
             <div className="mt-4 text-center">
-              <h4 className="text-sm font-semibold text-gray-900">Logo cửa hàng</h4>
+              <h4 className="text-sm font-semibold text-gray-900 dark:text-white">Logo cửa hàng</h4>
               <p className="text-xs text-gray-500 mt-1">Định dạng: JPG, PNG. Dung lượng tối đa: 1MB</p>
             </div>
           </div>
@@ -268,7 +268,7 @@ export function CompanyInfo({ data, updateData }: CompanyInfoProps) {
             </div>
           </div>
 
-          <div className="mt-8 pt-6 border-t border-gray-100 flex items-center justify-between">
+          <div className="mt-8 pt-6 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between">
             <div>
               {showSuccess && (
                 <div className="flex items-center gap-2 text-emerald-600 animate-in slide-in-from-left-2">

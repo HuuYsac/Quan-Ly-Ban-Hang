@@ -317,13 +317,13 @@ export function Reports({ data, updateData }: ReportsProps) {
   return (
     <div className="animate-in fade-in duration-500 space-y-6">
       {/* Filter Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white dark:bg-slate-900 p-4 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
             <BarChart3 size={20} />
           </div>
           <div>
-            <h2 className="text-sm font-black text-slate-900 uppercase tracking-tight">Phân tích báo cáo</h2>
+            <h2 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-tight">Phân tích báo cáo</h2>
             <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Dữ liệu kinh doanh thời gian thực</p>
           </div>
         </div>
@@ -362,7 +362,7 @@ export function Reports({ data, updateData }: ReportsProps) {
                 onClick={() => setTimeFilter(f)}
                 className={`flex-1 sm:flex-none px-6 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
                   timeFilter === f 
-                    ? 'bg-white text-indigo-600 shadow-sm' 
+                    ? 'bg-white dark:bg-slate-900 text-indigo-600 shadow-sm' 
                     : 'text-slate-500 hover:text-slate-700'
                 }`}
               >
@@ -375,12 +375,12 @@ export function Reports({ data, updateData }: ReportsProps) {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 relative overflow-hidden group">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 shadow-sm border border-slate-100 dark:border-slate-800 relative overflow-hidden group">
           <div className="absolute -right-4 -top-4 w-16 h-16 bg-blue-50 rounded-full blur-xl group-hover:bg-blue-100 transition-colors"></div>
           <div className="flex justify-between items-start relative z-10">
             <div>
               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Doanh thu</p>
-              <h3 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">{formatCurrency(stats.totalRevenue)}</h3>
+              <h3 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">{formatCurrency(stats.totalRevenue)}</h3>
             </div>
             <div className="p-2 bg-blue-50 rounded-xl text-blue-600">
               <DollarSign size={18} />
@@ -392,12 +392,12 @@ export function Reports({ data, updateData }: ReportsProps) {
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 relative overflow-hidden group">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 shadow-sm border border-slate-100 dark:border-slate-800 relative overflow-hidden group">
           <div className="absolute -right-4 -top-4 w-16 h-16 bg-emerald-50 rounded-full blur-xl group-hover:bg-emerald-100 transition-colors"></div>
           <div className="flex justify-between items-start relative z-10">
             <div>
               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Lợi nhuận</p>
-              <h3 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">{formatCurrency(stats.totalProfit)}</h3>
+              <h3 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">{formatCurrency(stats.totalProfit)}</h3>
             </div>
             <div className="p-2 bg-emerald-50 rounded-xl text-emerald-600">
               <TrendingUp size={18} />
@@ -409,12 +409,12 @@ export function Reports({ data, updateData }: ReportsProps) {
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 relative overflow-hidden group">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 shadow-sm border border-slate-100 dark:border-slate-800 relative overflow-hidden group">
           <div className="absolute -right-4 -top-4 w-16 h-16 bg-indigo-50 rounded-full blur-xl group-hover:bg-indigo-100 transition-colors"></div>
           <div className="flex justify-between items-start relative z-10">
             <div>
               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Tỷ suất LN</p>
-              <h3 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">{stats.profitMargin.toFixed(1)}%</h3>
+              <h3 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">{stats.profitMargin.toFixed(1)}%</h3>
             </div>
             <div className="p-2 bg-indigo-50 rounded-xl text-indigo-600">
               <PieChartIcon size={18} />
@@ -425,12 +425,12 @@ export function Reports({ data, updateData }: ReportsProps) {
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 relative overflow-hidden group">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 shadow-sm border border-slate-100 dark:border-slate-800 relative overflow-hidden group">
           <div className="absolute -right-4 -top-4 w-16 h-16 bg-amber-50 rounded-full blur-xl group-hover:bg-amber-100 transition-colors"></div>
           <div className="flex justify-between items-start relative z-10">
             <div>
               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Đơn hàng</p>
-              <h3 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">{stats.totalOrders}</h3>
+              <h3 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">{stats.totalOrders}</h3>
             </div>
             <div className="p-2 bg-amber-50 rounded-xl text-amber-600">
               <Package size={18} />
@@ -444,13 +444,13 @@ export function Reports({ data, updateData }: ReportsProps) {
 
       {/* Charts Row 1 */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
+        <div className="lg:col-span-2 bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 p-6">
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
                 <Calendar size={16} />
               </div>
-              <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight">Biểu đồ tăng trưởng</h3>
+              <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-tight">Biểu đồ tăng trưởng</h3>
             </div>
           </div>
           <div className="h-80 w-full">
@@ -483,12 +483,12 @@ export function Reports({ data, updateData }: ReportsProps) {
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 p-6">
           <div className="flex items-center gap-3 mb-8">
             <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
               <PieChartIcon size={16} />
             </div>
-            <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight">Cơ cấu lợi nhuận</h3>
+            <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-tight">Cơ cấu lợi nhuận</h3>
           </div>
           <div className="h-64 w-full">
             <ResponsiveContainer width="100%" height="100%">
@@ -520,7 +520,7 @@ export function Reports({ data, updateData }: ReportsProps) {
                   <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }}></div>
                   <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider truncate max-w-[120px]">{cat.name}</span>
                 </div>
-                <span className="text-xs font-black text-slate-900">{formatCurrency(cat.profit)}</span>
+                <span className="text-xs font-black text-slate-900 dark:text-white">{formatCurrency(cat.profit)}</span>
               </div>
             ))}
           </div>
@@ -528,21 +528,21 @@ export function Reports({ data, updateData }: ReportsProps) {
       </div>
 
       {/* Solutions & Recommendations */}
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 p-6">
         <div className="flex items-center gap-3 mb-8">
           <div className="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center">
             <Lightbulb size={16} />
           </div>
-          <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight">Giải pháp tăng trưởng doanh thu</h3>
+          <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-tight">Giải pháp tăng trưởng doanh thu</h3>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {solutions.map((s, i) => (
             <div key={i} className={`${s.color} p-5 rounded-2xl border border-white/50 relative overflow-hidden group`}>
               <div className="flex items-center gap-3 mb-3">
-                <div className="p-2 bg-white rounded-xl shadow-sm">
+                <div className="p-2 bg-white dark:bg-slate-900 rounded-xl shadow-sm">
                   {s.icon}
                 </div>
-                <h4 className="text-xs font-black text-slate-900 uppercase tracking-tight">{s.title}</h4>
+                <h4 className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-tight">{s.title}</h4>
               </div>
               <p className="text-[11px] text-slate-600 font-medium leading-relaxed">
                 {s.desc}
@@ -554,22 +554,22 @@ export function Reports({ data, updateData }: ReportsProps) {
 
       {/* Charts Row 2 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 p-6">
           <div className="flex items-center gap-3 mb-8">
             <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
               <TrendingUp size={16} />
             </div>
-            <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight">Sản phẩm lợi nhuận cao</h3>
+            <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-tight">Sản phẩm lợi nhuận cao</h3>
           </div>
           <div className="space-y-4">
             {stats.profitableProducts.map((product, i) => (
-              <div key={product.id} className="flex items-center justify-between p-4 rounded-2xl hover:bg-slate-50 transition-all border border-transparent hover:border-slate-100 group">
+              <div key={product.id} className="flex items-center justify-between p-4 rounded-2xl hover:bg-slate-50 dark:bg-slate-800 transition-all border border-transparent hover:border-slate-100 dark:border-slate-800 group">
                 <div className="flex items-center gap-4">
                   <div className="w-10 h-10 rounded-xl bg-slate-100 text-slate-400 flex items-center justify-center font-black text-sm group-hover:bg-indigo-600 group-hover:text-white transition-colors">
                     {i + 1}
                   </div>
                   <div>
-                    <p className="text-xs font-black text-slate-900 uppercase tracking-tight">{product.name}</p>
+                    <p className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-tight">{product.name}</p>
                     <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Đã bán: {product.quantitySold} cái</p>
                   </div>
                 </div>
@@ -582,12 +582,12 @@ export function Reports({ data, updateData }: ReportsProps) {
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 p-6">
           <div className="flex items-center gap-3 mb-8">
             <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
               <TrendingUp size={16} />
             </div>
-            <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight">Xu hướng doanh thu</h3>
+            <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-tight">Xu hướng doanh thu</h3>
           </div>
           <div className="h-64 w-full">
             <ResponsiveContainer width="100%" height="100%">
@@ -615,8 +615,8 @@ export function Reports({ data, updateData }: ReportsProps) {
               </LineChart>
             </ResponsiveContainer>
           </div>
-          <div className="mt-8 p-5 bg-slate-50 rounded-2xl border border-slate-100 flex items-start gap-4">
-            <div className="p-2 bg-white rounded-xl shadow-sm text-blue-600">
+          <div className="mt-8 p-5 bg-slate-50 dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-800 flex items-start gap-4">
+            <div className="p-2 bg-white dark:bg-slate-900 rounded-xl shadow-sm text-blue-600">
               <PieChartIcon size={18} />
             </div>
             <p className="text-[11px] text-slate-600 font-medium leading-relaxed">
@@ -635,11 +635,11 @@ export function Reports({ data, updateData }: ReportsProps) {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-white rounded-2xl shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden"
+              className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden"
             >
-              <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+              <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-800">
                 <div>
-                  <h2 className="text-lg font-black text-slate-900 uppercase tracking-tight">Chi tiết doanh thu: {selectedChartDetail.name}</h2>
+                  <h2 className="text-lg font-black text-slate-900 dark:text-white uppercase tracking-tight">Chi tiết doanh thu: {selectedChartDetail.name}</h2>
                   <p className="text-xs text-slate-500 font-bold tracking-widest mt-1">Tổng doanh thu: {formatCurrency(selectedChartDetail.revenue)} • Lợi nhuận: {formatCurrency(selectedChartDetail.profit)}</p>
                 </div>
                 <button
@@ -653,15 +653,15 @@ export function Reports({ data, updateData }: ReportsProps) {
               <div className="flex-1 overflow-y-auto p-6 space-y-6">
                 {/* Orders / Items */}
                 <div>
-                  <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight flex items-center gap-2 mb-4">
+                  <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-tight flex items-center gap-2 mb-4">
                     <ShoppingCart size={16} className="text-indigo-600" /> Đơn hàng ({selectedChartDetail.items?.length || 0})
                   </h3>
                   {selectedChartDetail.items?.length > 0 ? (
                     <div className="space-y-3">
                       {selectedChartDetail.items.map((item: any, idx: number) => (
-                        <div key={idx} className="flex justify-between items-center p-4 bg-white border border-slate-100 rounded-xl hover:shadow-sm transition-shadow">
+                        <div key={idx} className="flex justify-between items-center p-4 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-xl hover:shadow-sm transition-shadow">
                           <div>
-                            <p className="text-sm font-bold text-slate-900">{item.name}</p>
+                            <p className="text-sm font-bold text-slate-900 dark:text-white">{item.name}</p>
                             <p className="text-xs text-slate-500 mt-1">Mã HĐ: {item.orderId} • Ngày: {format(parseISO(item.businessDate), 'dd/MM/yyyy')}</p>
                           </div>
                           <div className="text-right">
@@ -678,15 +678,15 @@ export function Reports({ data, updateData }: ReportsProps) {
 
                 {/* Repairs */}
                 <div>
-                  <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight flex items-center gap-2 mb-4">
+                  <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-tight flex items-center gap-2 mb-4">
                     <RefreshCw size={16} className="text-blue-600" /> Sửa chữa ({selectedChartDetail.repairs?.length || 0})
                   </h3>
                   {selectedChartDetail.repairs?.length > 0 ? (
                     <div className="space-y-3">
                       {selectedChartDetail.repairs.map((repair: any, idx: number) => (
-                        <div key={idx} className="flex justify-between items-center p-4 bg-white border border-slate-100 rounded-xl hover:shadow-sm transition-shadow">
+                        <div key={idx} className="flex justify-between items-center p-4 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-xl hover:shadow-sm transition-shadow">
                           <div>
-                            <p className="text-sm font-bold text-slate-900">{repair.deviceName} - {repair.issue}</p>
+                            <p className="text-sm font-bold text-slate-900 dark:text-white">{repair.deviceName} - {repair.issue}</p>
                             <p className="text-xs text-slate-500 mt-1">Khách hàng: {repair.customerName} • Ngày hoàn thành: {repair.returnDate ? format(parseISO(repair.returnDate), 'dd/MM/yyyy') : (repair.receivedDate ? format(parseISO(repair.receivedDate), 'dd/MM/yyyy') : 'N/A')}</p>
                           </div>
                           <div className="text-right">

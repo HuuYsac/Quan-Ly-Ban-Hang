@@ -58,10 +58,144 @@ export function Dashboard({ data, onNavigate, isAdmin }: DashboardProps) {
   const [viewRepair, setViewRepair] = useState<Repair | null>(null);
   const [isPrinting, setIsPrinting] = useState(false);
 
-  const handlePrint = () => {
+  const handlePrint = (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    
+    const printContent = document.querySelector('.print-container');
+    if (!printContent) {
+      try {
+        window.print();
+      } catch (err) {
+        alert('Trình duyệt chặn in trong chế độ xem trước. Vui lòng mở ứng dụng trong thẻ mới (Open in new tab).');
+      }
+      return;
+    }
+
     setIsPrinting(true);
-    setTimeout(() => setIsPrinting(false), 2000);
-    window.print();
+
+    try {
+      const printWindow = document.createElement('iframe');
+      printWindow.style.position = 'absolute';
+      printWindow.style.top = '-1000px';
+      printWindow.style.left = '-1000px';
+      printWindow.style.width = '100%';
+      printWindow.style.height = '100%';
+      document.body.appendChild(printWindow);
+
+      const doc = printWindow.contentWindow?.document;
+      if (doc) {
+        doc.open();
+        doc.write(`
+          <html>
+            <head>
+              <title>In Hóa Đơn</title>
+              <style>
+                @media print {
+                  @page { margin: 0; }
+                  body { margin: 1.6cm; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+                }
+                body { font-family: system-ui, -apple-system, sans-serif; color: #000; }
+                .text-center { text-align: center; }
+                .text-right { text-align: right; }
+                .font-bold { font-weight: bold; }
+                .font-black { font-weight: 900; }
+                .text-xl { font-size: 1.25rem; }
+                .text-2xl { font-size: 1.5rem; }
+                .text-3xl { font-size: 1.875rem; }
+                .text-sm { font-size: 0.875rem; }
+                .text-xs { font-size: 0.75rem; }
+                .text-gray-500 { color: #6b7280; }
+                .text-gray-600 { color: #4b5563; }
+                .text-gray-800 { color: #1f2937; }
+                .text-gray-900 dark:text-white { color: #111827; }
+                .text-blue-600 { color: #2563eb; }
+                .text-blue-700 { color: #1d4ed8; }
+                .text-emerald-600 { color: #059669; }
+                .text-rose-600 { color: #e11d48; }
+                .text-indigo-600 { color: #4f46e5; }
+                .mb-1 { margin-bottom: 0.25rem; }
+                .mb-2 { margin-bottom: 0.5rem; }
+                .mb-4 { margin-bottom: 1rem; }
+                .mb-6 { margin-bottom: 1.5rem; }
+                .mb-8 { margin-bottom: 2rem; }
+                .mt-1 { margin-top: 0.25rem; }
+                .mt-2 { margin-top: 0.5rem; }
+                .mt-8 { margin-top: 2rem; }
+                .mt-12 { margin-top: 3rem; }
+                .pb-6 { padding-bottom: 1.5rem; }
+                .p-4 { padding: 1rem; }
+                .px-4 { padding-left: 1rem; padding-right: 1rem; }
+                .py-3 { padding-top: 0.75rem; padding-bottom: 0.75rem; }
+                .py-4 { padding-top: 1rem; padding-bottom: 1rem; }
+                .flex { display: flex; }
+                .items-center { align-items: center; }
+                .justify-between { justify-content: space-between; }
+                .gap-6 { gap: 1.5rem; }
+                .gap-8 { gap: 2rem; }
+                .grid { display: grid; }
+                .grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+                .w-32 { width: 8rem; }
+                .h-32 { height: 8rem; }
+                .object-contain { object-fit: contain; }
+                .uppercase { text-transform: uppercase; }
+                .tracking-tight { letter-spacing: -0.025em; }
+                .tracking-wider { letter-spacing: 0.05em; }
+                .border-b-2 { border-bottom-width: 2px; }
+                .border-blue-600 { border-color: #2563eb; }
+                .border-b { border-bottom-width: 1px; }
+                .border-t { border-top-width: 1px; }
+                .border-gray-100 dark:border-gray-800 { border-color: #f3f4f6; }
+                .border-gray-200 { border-color: #e5e7eb; }
+                .border-gray-800 { border-color: #1f2937; }
+                .border-dashed { border-style: dashed; }
+                .bg-gray-50 { background-color: #f9fafb; }
+                .rounded-xl { border-radius: 0.75rem; }
+                .italic { font-style: italic; }
+                .w-full { width: 100%; }
+                table { width: 100%; border-collapse: collapse; }
+                th { text-align: left; }
+                .col-span-4 { grid-column: span 4 / span 4; }
+                .min-h-screen { min-height: 100vh; }
+                .table-container table th { border-bottom: 1px solid #e5e7eb; padding: 12px 16px; color: #6b7280; font-size: 0.75rem; text-transform: uppercase; }
+                .table-container table td { border-bottom: 1px dashed #e5e7eb; padding: 12px 16px; }
+                .line-through { text-decoration: line-through; }
+              </style>
+            </head>
+            <body>
+              ${printContent.innerHTML}
+            </body>
+          </html>
+        `);
+        doc.close();
+
+        setTimeout(() => {
+          try {
+            printWindow.contentWindow?.focus();
+            printWindow.contentWindow?.print();
+          } catch (e) {
+            alert('Trình duyệt chặn in trong chế độ xem trước. Vui lòng mở ứng dụng trong thẻ mới (Open in new tab).');
+          }
+          setIsPrinting(false);
+          setTimeout(() => {
+            document.body.removeChild(printWindow);
+          }, 1000);
+        }, 500);
+      } else {
+        window.print();
+        setIsPrinting(false);
+      }
+    } catch (err) {
+      console.error(err);
+      try {
+        window.print();
+      } catch (e) {
+        alert('Trình duyệt chặn in trong chế độ xem trước. Vui lòng mở ứng dụng trong thẻ mới (Open in new tab).');
+      }
+      setIsPrinting(false);
+    }
   };
 
   const stats = useMemo(() => {
@@ -192,13 +326,13 @@ export function Dashboard({ data, onNavigate, isAdmin }: DashboardProps) {
             <Sparkles size={32} className="text-white animate-pulse" />
           </div>
           <div>
-            <h1 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight leading-tight">
+            <h1 className="text-2xl md:text-3xl font-black text-slate-900 dark:text-white tracking-tight leading-tight">
               Chào buổi sáng, <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-blue-600">Hữu!</span>
             </h1>
             <p className="text-slate-500 text-sm font-medium mt-1">Hệ thống đã sẵn sàng. Hôm nay bạn có <span className="text-indigo-600 font-bold">{stats.todayOrdersCount} đơn hàng mới</span>.</p>
           </div>
         </div>
-        <div className="flex items-center gap-3 text-[11px] font-black text-slate-500 bg-white/80 backdrop-blur-md px-5 py-3 rounded-2xl border border-white shadow-xl shadow-slate-200/50">
+        <div className="flex items-center gap-3 text-[11px] font-black text-slate-500 bg-white dark:bg-slate-900/80 backdrop-blur-md px-5 py-3 rounded-2xl border border-white shadow-xl shadow-slate-200/50">
           <Calendar size={16} className="text-indigo-500" />
           <span className="uppercase tracking-widest">{format(new Date(), 'eeee, dd/MM/yyyy', { locale: vi })}</span>
         </div>
@@ -292,7 +426,7 @@ export function Dashboard({ data, onNavigate, isAdmin }: DashboardProps) {
                 <TrendingUp size={20} />
               </div>
               <div>
-                <h3 className="text-lg font-black text-slate-900 tracking-tight">Hiệu suất doanh thu</h3>
+                <h3 className="text-lg font-black text-slate-900 dark:text-white tracking-tight">Hiệu suất doanh thu</h3>
                 <p className="text-xs text-slate-400 font-medium uppercase tracking-widest">Thống kê 7 ngày gần nhất</p>
               </div>
             </div>
@@ -355,7 +489,7 @@ export function Dashboard({ data, onNavigate, isAdmin }: DashboardProps) {
               <Sparkles size={20} />
             </div>
             <div>
-              <h3 className="text-lg font-black text-slate-900 tracking-tight">Thao tác nhanh</h3>
+              <h3 className="text-lg font-black text-slate-900 dark:text-white tracking-tight">Thao tác nhanh</h3>
               <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Lối tắt hệ thống</p>
             </div>
           </div>
@@ -375,9 +509,9 @@ export function Dashboard({ data, onNavigate, isAdmin }: DashboardProps) {
             onClick={() => onNavigate('orders')}
             className="mt-8 p-5 bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl shadow-xl shadow-slate-900/20 cursor-pointer group overflow-hidden relative"
           >
-            <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-white/5 rounded-full blur-2xl group-hover:bg-white/10 transition-colors"></div>
+            <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-white dark:bg-slate-900/5 rounded-full blur-2xl group-hover:bg-white dark:bg-slate-900/10 transition-colors"></div>
             <div className="flex items-center gap-3 mb-3 relative z-10">
-              <div className="w-8 h-8 rounded-xl bg-white/10 flex items-center justify-center text-white group-hover:scale-110 transition-transform">
+              <div className="w-8 h-8 rounded-xl bg-white dark:bg-slate-900/10 flex items-center justify-center text-white group-hover:scale-110 transition-transform">
                 <BarChart2 size={16} />
               </div>
               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Tổng doanh thu hệ thống</span>
@@ -408,7 +542,7 @@ export function Dashboard({ data, onNavigate, isAdmin }: DashboardProps) {
                 <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-500 flex items-center justify-center group-hover:scale-110 transition-transform">
                   <AlertTriangle size={20} />
                 </div>
-                <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest group-hover:text-indigo-600 transition-colors">Sắp hết hàng</h3>
+                <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-widest group-hover:text-indigo-600 transition-colors">Sắp hết hàng</h3>
               </div>
               <span className="bg-amber-100 text-amber-700 text-[10px] font-black px-2 py-1 rounded-lg">
                 {stats.lowStockCount}
@@ -420,13 +554,13 @@ export function Dashboard({ data, onNavigate, isAdmin }: DashboardProps) {
                   whileHover={{ x: 4, backgroundColor: 'rgba(248, 250, 252, 1)' }}
                   key={p.id} 
                   onClick={() => setViewProduct(p)}
-                  className="flex items-center justify-between p-3.5 bg-slate-50/30 rounded-2xl transition-all cursor-pointer group border border-slate-100/50 hover:border-indigo-100"
+                  className="flex items-center justify-between p-3.5 bg-slate-50 dark:bg-slate-800/30 rounded-2xl transition-all cursor-pointer group border border-slate-100 dark:border-slate-800/50 hover:border-indigo-100"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center text-slate-400 group-hover:text-indigo-600 shadow-sm">
+                    <div className="w-8 h-8 rounded-lg bg-white dark:bg-slate-900 flex items-center justify-center text-slate-400 group-hover:text-indigo-600 shadow-sm">
                       <Package size={14} />
                     </div>
-                    <span className="text-xs text-slate-600 font-bold truncate max-w-[140px] group-hover:text-slate-900">{p.name}</span>
+                    <span className="text-xs text-slate-600 font-bold truncate max-w-[140px] group-hover:text-slate-900 dark:text-white">{p.name}</span>
                   </div>
                   <span className="text-[10px] font-black text-rose-600 bg-rose-50 px-2.5 py-1 rounded-lg ring-1 ring-rose-100">Còn {p.stock}</span>
                 </motion.div>
@@ -454,7 +588,7 @@ export function Dashboard({ data, onNavigate, isAdmin }: DashboardProps) {
                 <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-500 flex items-center justify-center group-hover:scale-110 transition-transform">
                   <Wrench size={20} />
                 </div>
-                <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest group-hover:text-indigo-600 transition-colors">Đang sửa chữa</h3>
+                <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-widest group-hover:text-indigo-600 transition-colors">Đang sửa chữa</h3>
               </div>
               <span className="bg-indigo-100 text-indigo-700 text-[10px] font-black px-2 py-1 rounded-lg">
                 {stats.pendingRepairsCount}
@@ -466,14 +600,14 @@ export function Dashboard({ data, onNavigate, isAdmin }: DashboardProps) {
                   whileHover={{ x: 4, backgroundColor: 'rgba(248, 250, 252, 1)' }}
                   key={r.id} 
                   onClick={() => setViewRepair(r)}
-                  className="flex items-center justify-between p-3.5 bg-slate-50/30 rounded-2xl transition-all cursor-pointer group border border-slate-100/50 hover:border-indigo-100"
+                  className="flex items-center justify-between p-3.5 bg-slate-50 dark:bg-slate-800/30 rounded-2xl transition-all cursor-pointer group border border-slate-100 dark:border-slate-800/50 hover:border-indigo-100"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center text-slate-400 group-hover:text-indigo-600 shadow-sm">
+                    <div className="w-8 h-8 rounded-lg bg-white dark:bg-slate-900 flex items-center justify-center text-slate-400 group-hover:text-indigo-600 shadow-sm">
                       <Wrench size={14} />
                     </div>
                     <div className="flex flex-col">
-                      <span className="text-xs text-slate-600 font-bold truncate max-w-[130px] group-hover:text-slate-900">{r.customerName}</span>
+                      <span className="text-xs text-slate-600 font-bold truncate max-w-[130px] group-hover:text-slate-900 dark:text-white">{r.customerName}</span>
                       <span className="text-[9px] text-slate-400 font-bold uppercase tracking-tighter">{r.productName}</span>
                     </div>
                   </div>
@@ -503,7 +637,7 @@ export function Dashboard({ data, onNavigate, isAdmin }: DashboardProps) {
                 <div className="w-10 h-10 rounded-xl bg-rose-50 text-rose-500 flex items-center justify-center group-hover:scale-110 transition-transform">
                   <ShieldAlert size={20} />
                 </div>
-                <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest group-hover:text-indigo-600 transition-colors">Bảo hành sắp hết</h3>
+                <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-widest group-hover:text-indigo-600 transition-colors">Bảo hành sắp hết</h3>
               </div>
               <span className="bg-rose-100 text-rose-700 text-[10px] font-black px-2 py-1 rounded-lg">
                 {stats.expiringWarrantiesCount}
@@ -518,14 +652,14 @@ export function Dashboard({ data, onNavigate, isAdmin }: DashboardProps) {
                     const customer = data.customers?.find(c => c.id === w.customerId);
                     if (customer) setViewCustomer(customer);
                   }}
-                  className="flex items-center justify-between p-3.5 bg-slate-50/30 rounded-2xl transition-all cursor-pointer group border border-slate-100/50 hover:border-indigo-100"
+                  className="flex items-center justify-between p-3.5 bg-slate-50 dark:bg-slate-800/30 rounded-2xl transition-all cursor-pointer group border border-slate-100 dark:border-slate-800/50 hover:border-indigo-100"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center text-slate-400 group-hover:text-indigo-600 shadow-sm">
+                    <div className="w-8 h-8 rounded-lg bg-white dark:bg-slate-900 flex items-center justify-center text-slate-400 group-hover:text-indigo-600 shadow-sm">
                       <ShieldAlert size={14} />
                     </div>
                     <div className="flex flex-col">
-                      <span className="text-xs text-slate-600 font-bold truncate max-w-[130px] group-hover:text-slate-900">{w.customerName}</span>
+                      <span className="text-xs text-slate-600 font-bold truncate max-w-[130px] group-hover:text-slate-900 dark:text-white">{w.customerName}</span>
                       <span className="text-[9px] text-slate-400 font-bold uppercase tracking-tighter">{w.productName}</span>
                     </div>
                   </div>
@@ -553,7 +687,7 @@ export function Dashboard({ data, onNavigate, isAdmin }: DashboardProps) {
               <div className="w-10 h-10 rounded-xl bg-slate-100 text-slate-600 flex items-center justify-center">
                 <Clock size={20} />
               </div>
-              <h2 className="text-lg font-black text-slate-900 tracking-tight">Hoạt động gần đây</h2>
+              <h2 className="text-lg font-black text-slate-900 dark:text-white tracking-tight">Hoạt động gần đây</h2>
             </div>
             <motion.button 
               whileHover={{ x: 3 }}
@@ -571,7 +705,7 @@ export function Dashboard({ data, onNavigate, isAdmin }: DashboardProps) {
                 transition={{ delay: 0.5 + (idx * 0.05) }}
                 key={order.id} 
                 onClick={() => setViewOrder(order)}
-                className="flex items-center gap-4 p-4 hover:bg-slate-50/80 rounded-2xl transition-all group cursor-pointer border border-transparent hover:border-slate-100/50 hover:shadow-sm"
+                className="flex items-center gap-4 p-4 hover:bg-slate-50 dark:bg-slate-800/80 rounded-2xl transition-all group cursor-pointer border border-transparent hover:border-slate-100 dark:border-slate-800/50 hover:shadow-sm"
               >
                 <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 transition-all group-hover:scale-110 group-hover:rotate-3 shadow-sm ${
                   order.paymentStatus === 'Đã thanh toán' ? 'bg-emerald-500 text-white' : 'bg-indigo-500 text-white'
@@ -581,7 +715,7 @@ export function Dashboard({ data, onNavigate, isAdmin }: DashboardProps) {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between mb-1.5">
                     <h4 
-                      className="text-sm font-black text-slate-900 truncate group-hover:text-indigo-600 transition-colors"
+                      className="text-sm font-black text-slate-900 dark:text-white truncate group-hover:text-indigo-600 transition-colors"
                       onClick={(e) => {
                         e.stopPropagation();
                         const customer = data.customers?.find(c => c.id === order.customerId);
@@ -616,10 +750,10 @@ export function Dashboard({ data, onNavigate, isAdmin }: DashboardProps) {
 
       {/* Modals */}
       {viewOrder && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[9999] sm:p-4 print:bg-white print:p-0 print:static print:block">
-          <div className="bg-white sm:rounded-2xl shadow-2xl w-full max-w-3xl h-full sm:h-auto sm:max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-200 print:shadow-none print:max-h-none print:overflow-visible print:w-full print:max-w-none relative">
-            <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between z-30 print:hidden">
-              <h3 className="text-lg font-bold text-gray-900">Chi tiết đơn hàng #{viewOrder.id}</h3>
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[9999] sm:p-4 print:bg-white dark:bg-slate-900 print:p-0 print:static print:block">
+          <div className="bg-white dark:bg-slate-900 sm:rounded-2xl shadow-2xl w-full max-w-3xl h-full sm:h-auto sm:max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-200 print:shadow-none print:max-h-none print:overflow-visible print:w-full print:max-w-none relative">
+            <div className="sticky top-0 bg-white dark:bg-slate-900 border-b border-gray-100 dark:border-gray-800 px-6 py-4 flex items-center justify-between z-30 print:hidden">
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white">Chi tiết đơn hàng #{viewOrder.id}</h3>
               <div className="flex gap-2">
                 <button 
                   type="button"
@@ -641,7 +775,7 @@ export function Dashboard({ data, onNavigate, isAdmin }: DashboardProps) {
             </div>
             <div className="p-6 print:p-0">
               {/* Print Layout (Hidden in UI, visible in print) */}
-              <div className="hidden print:block text-black font-serif p-8 bg-white min-h-screen print-container">
+              <div className="hidden print:block text-black font-serif p-8 bg-white dark:bg-slate-900 min-h-screen print-container">
                 <div className="flex justify-between items-start mb-6">
                   <div className="flex items-start gap-4">
                     <img 
@@ -756,7 +890,7 @@ export function Dashboard({ data, onNavigate, isAdmin }: DashboardProps) {
                       <p className="font-bold">Tên: {data.shopInfo?.taxCode || 'DIEU HUU'}</p>
                       <p className="text-xs text-gray-500 mt-2 italic">* Quét mã để thanh toán nhanh</p>
                     </div>
-                    <div className="bg-white p-1 rounded-lg border border-gray-200">
+                    <div className="bg-white dark:bg-slate-900 p-1 rounded-lg border border-gray-200">
                       <img 
                         src="https://storage.googleapis.com/static.antigravity.dev/dieuhuu1995@gmail.com/610176597039/dieuhuu1995@gmail.com_1742636402000_0.png" 
                         alt="Payment QR" 
@@ -776,11 +910,11 @@ export function Dashboard({ data, onNavigate, isAdmin }: DashboardProps) {
                 <div className="grid grid-cols-2 gap-6 mb-6">
                   <div>
                     <p className="text-sm text-gray-500 mb-1">Khách hàng</p>
-                    <p className="font-medium text-gray-900">{viewOrder.customerName}</p>
+                    <p className="font-medium text-gray-900 dark:text-white">{viewOrder.customerName}</p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-500 mb-1">Ngày đặt hàng</p>
-                    <p className="font-medium text-gray-900">{viewOrder.date} {viewOrder.time}</p>
+                    <p className="font-medium text-gray-900 dark:text-white">{viewOrder.date} {viewOrder.time}</p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-500 mb-1">Trạng thái thanh toán</p>
@@ -792,17 +926,17 @@ export function Dashboard({ data, onNavigate, isAdmin }: DashboardProps) {
                   </div>
                   <div>
                     <p className="text-sm text-gray-500 mb-1">Hình thức thanh toán</p>
-                    <p className="font-medium text-gray-900">{viewOrder.paymentMethod}</p>
+                    <p className="font-medium text-gray-900 dark:text-white">{viewOrder.paymentMethod}</p>
                   </div>
                 </div>
 
-                <div className="border-t border-gray-100 pt-6 mb-6">
-                  <h4 className="text-sm font-bold text-gray-900 mb-4">Sản phẩm</h4>
+                <div className="border-t border-gray-100 dark:border-gray-800 pt-6 mb-6">
+                  <h4 className="text-sm font-bold text-gray-900 dark:text-white mb-4">Sản phẩm</h4>
                   <div className="space-y-3">
                     {(viewOrder.products || []).map((item, idx) => (
-                      <div key={idx} className="flex justify-between items-center p-3 bg-slate-50 rounded-xl">
+                      <div key={idx} className="flex justify-between items-center p-3 bg-slate-50 dark:bg-slate-800 rounded-xl">
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-bold text-gray-900 truncate">{item.name}</p>
+                          <p className="text-sm font-bold text-gray-900 dark:text-white truncate">{item.name}</p>
                           <p className="text-xs text-gray-500">
                             {item.quantity} x {formatCurrency(item.price)}
                             {item.discount && item.discount > 0 && (
@@ -812,7 +946,7 @@ export function Dashboard({ data, onNavigate, isAdmin }: DashboardProps) {
                             )}
                           </p>
                         </div>
-                        <p className="text-sm font-black text-gray-900 ml-4">
+                        <p className="text-sm font-black text-gray-900 dark:text-white ml-4">
                           {formatCurrency(item.subtotal || 0)}
                         </p>
                       </div>
@@ -826,7 +960,7 @@ export function Dashboard({ data, onNavigate, isAdmin }: DashboardProps) {
                     <span className="text-2xl font-black">{formatCurrency(viewOrder.total)}</span>
                   </div>
                   {isAdmin && (
-                    <div className="flex justify-between items-center mb-2 pt-2 border-t border-slate-100">
+                    <div className="flex justify-between items-center mb-2 pt-2 border-t border-slate-100 dark:border-slate-800">
                       <span className="text-emerald-600 text-xs font-bold italic">Lợi nhuận đơn hàng</span>
                       <span className="text-emerald-700 font-bold">
                         {formatCurrency(
@@ -850,9 +984,9 @@ export function Dashboard({ data, onNavigate, isAdmin }: DashboardProps) {
 
       {viewCustomer && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[9999] sm:p-4">
-          <div className="bg-white sm:rounded-2xl shadow-2xl w-full max-w-2xl h-full sm:h-auto sm:max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-200 relative">
-            <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between z-30">
-              <h3 className="text-lg font-bold text-gray-900">Chi tiết khách hàng</h3>
+          <div className="bg-white dark:bg-slate-900 sm:rounded-2xl shadow-2xl w-full max-w-2xl h-full sm:h-auto sm:max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-200 relative">
+            <div className="sticky top-0 bg-white dark:bg-slate-900 border-b border-gray-100 dark:border-gray-800 px-6 py-4 flex items-center justify-between z-30">
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white">Chi tiết khách hàng</h3>
               <button 
                 onClick={() => setViewCustomer(null)}
                 className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
@@ -866,7 +1000,7 @@ export function Dashboard({ data, onNavigate, isAdmin }: DashboardProps) {
                   <Users size={40} />
                 </div>
                 <div>
-                  <h2 className="text-2xl font-black text-gray-900 mb-1">{viewCustomer.name}</h2>
+                  <h2 className="text-2xl font-black text-gray-900 dark:text-white mb-1">{viewCustomer.name}</h2>
                   <div className="flex gap-2">
                     <span className={`px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider ${
                       viewCustomer.type === 'doanh-nghiep' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'
@@ -897,7 +1031,7 @@ export function Dashboard({ data, onNavigate, isAdmin }: DashboardProps) {
                     <span className="text-sm font-medium">{viewCustomer.address || 'Chưa có địa chỉ'}</span>
                   </div>
                 </div>
-                <div className="bg-slate-50 rounded-2xl p-4 flex flex-col justify-center">
+                <div className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-4 flex flex-col justify-center">
                   <p className="text-xs text-gray-500 mb-1">Tổng nợ hiện tại</p>
                   <p className={`text-2xl font-black ${viewCustomer.debt > 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
                     {formatCurrency(viewCustomer.debt)}
@@ -907,22 +1041,22 @@ export function Dashboard({ data, onNavigate, isAdmin }: DashboardProps) {
 
               {viewCustomer.devices && viewCustomer.devices.length > 0 && (
                 <div className="mb-8">
-                  <h4 className="text-sm font-bold text-gray-900 mb-4 flex items-center gap-2">
+                  <h4 className="text-sm font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                     <Laptop size={18} className="text-blue-600" />
                     Thiết bị đang sử dụng
                   </h4>
                   <div className="grid grid-cols-1 gap-3">
                     {(viewCustomer.devices || []).map((device, idx) => (
-                      <div key={idx} className="p-4 bg-slate-50 rounded-xl border border-slate-100">
+                      <div key={idx} className="p-4 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-800">
                         <div className="flex justify-between items-start mb-2">
-                          <p className="font-bold text-gray-900">{device.name}</p>
+                          <p className="font-bold text-gray-900 dark:text-white">{device.name}</p>
                           <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded-md uppercase">
                             {device.serial}
                           </span>
                         </div>
                         <div className="grid grid-cols-2 gap-2 text-xs text-gray-500">
-                          <p>Ngày mua: <span className="text-gray-900 font-medium">{device.purchaseDate}</span></p>
-                          <p>Bảo hành: <span className="text-gray-900 font-medium">{device.warrantyEnd}</span></p>
+                          <p>Ngày mua: <span className="text-gray-900 dark:text-white font-medium">{device.purchaseDate}</span></p>
+                          <p>Bảo hành: <span className="text-gray-900 dark:text-white font-medium">{device.warrantyEnd}</span></p>
                         </div>
                       </div>
                     ))}
@@ -948,7 +1082,7 @@ export function Dashboard({ data, onNavigate, isAdmin }: DashboardProps) {
 
       {viewProduct && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[9999] sm:p-4">
-          <div className="bg-white sm:rounded-2xl shadow-2xl w-full max-w-md h-full sm:h-auto animate-in fade-in zoom-in-95 duration-200 relative">
+          <div className="bg-white dark:bg-slate-900 sm:rounded-2xl shadow-2xl w-full max-w-md h-full sm:h-auto animate-in fade-in zoom-in-95 duration-200 relative">
             <div className="p-6">
               <div className="flex justify-between items-start mb-6">
                 <div className="w-12 h-12 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center">
@@ -961,17 +1095,17 @@ export function Dashboard({ data, onNavigate, isAdmin }: DashboardProps) {
                   <X size={20} />
                 </button>
               </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">{viewProduct.name}</h3>
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">{viewProduct.name}</h3>
               <p className="text-sm text-gray-500 mb-6">{viewProduct.category}</p>
               
               <div className="grid grid-cols-2 gap-4 mb-8">
-                <div className="p-4 bg-slate-50 rounded-xl">
+                <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-xl">
                   <p className="text-xs text-gray-500 mb-1">Tồn kho</p>
                   <p className="text-lg font-bold text-rose-600">{viewProduct.stock}</p>
                 </div>
-                <div className="p-4 bg-slate-50 rounded-xl">
+                <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-xl">
                   <p className="text-xs text-gray-500 mb-1">Giá bán</p>
-                  <p className="text-lg font-bold text-gray-900">{formatCurrency(viewProduct.price)}</p>
+                  <p className="text-lg font-bold text-gray-900 dark:text-white">{formatCurrency(viewProduct.price)}</p>
                 </div>
               </div>
 
@@ -991,7 +1125,7 @@ export function Dashboard({ data, onNavigate, isAdmin }: DashboardProps) {
 
       {viewRepair && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[9999] sm:p-4">
-          <div className="bg-white sm:rounded-2xl shadow-2xl w-full max-w-md h-full sm:h-auto animate-in fade-in zoom-in-95 duration-200 relative">
+          <div className="bg-white dark:bg-slate-900 sm:rounded-2xl shadow-2xl w-full max-w-md h-full sm:h-auto animate-in fade-in zoom-in-95 duration-200 relative">
             <div className="p-6">
               <div className="flex justify-between items-start mb-6">
                 <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
@@ -1004,20 +1138,20 @@ export function Dashboard({ data, onNavigate, isAdmin }: DashboardProps) {
                   <X size={20} />
                 </button>
               </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-1">{viewRepair.productName}</h3>
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-1">{viewRepair.productName}</h3>
               <p className="text-sm text-blue-600 font-medium mb-6">Khách hàng: {viewRepair.customerName}</p>
               
               <div className="space-y-4 mb-8">
-                <div className="p-4 bg-slate-50 rounded-xl">
+                <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-xl">
                   <p className="text-xs text-gray-500 mb-1">Tình trạng máy</p>
-                  <p className="text-sm font-medium text-gray-900">{viewRepair.issue}</p>
+                  <p className="text-sm font-medium text-gray-900 dark:text-white">{viewRepair.issue}</p>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="p-4 bg-slate-50 rounded-xl">
+                  <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-xl">
                     <p className="text-xs text-gray-500 mb-1">Ngày nhận</p>
-                    <p className="text-sm font-bold text-gray-900">{viewRepair.receivedDate}</p>
+                    <p className="text-sm font-bold text-gray-900 dark:text-white">{viewRepair.receivedDate}</p>
                   </div>
-                  <div className="p-4 bg-slate-50 rounded-xl">
+                  <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-xl">
                     <p className="text-xs text-gray-500 mb-1">Trạng thái</p>
                     <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded-md uppercase">
                       {viewRepair.status}
@@ -1070,7 +1204,7 @@ function StatCard({ title, value, icon: Icon, trend, trendUp, color, onClick }: 
       onClick={onClick}
       className={`glass-card p-5 group relative overflow-hidden transition-all duration-300 ${onClick ? 'cursor-pointer hover:shadow-2xl hover:shadow-slate-200' : ''}`}
     >
-      <div className="absolute -right-6 -top-6 w-24 h-24 bg-slate-50/50 rounded-full blur-2xl group-hover:bg-slate-100/50 transition-colors"></div>
+      <div className="absolute -right-6 -top-6 w-24 h-24 bg-slate-50 dark:bg-slate-800/50 rounded-full blur-2xl group-hover:bg-slate-100/50 transition-colors"></div>
       
       <div className="flex items-start justify-between mb-4 relative z-10">
         <div className={`w-11 h-11 rounded-xl flex items-center justify-center shadow-lg transition-all duration-500 group-hover:scale-110 group-hover:rotate-3 ring-4 ring-transparent ${ringColorMap[color] || 'group-hover:ring-slate-100'} ${colorMap[color] || colorMap.blue}`}>
@@ -1084,7 +1218,7 @@ function StatCard({ title, value, icon: Icon, trend, trendUp, color, onClick }: 
       
       <div className="relative z-10">
         <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">{title}</h3>
-        <div className="text-xl font-black text-slate-900 tracking-tight group-hover:text-indigo-600 transition-colors">{value}</div>
+        <div className="text-xl font-black text-slate-900 dark:text-white tracking-tight group-hover:text-indigo-600 transition-colors">{value}</div>
       </div>
       
       <div className="absolute bottom-0 left-0 w-full h-1 bg-slate-100/50 overflow-hidden">
@@ -1115,7 +1249,7 @@ function QuickAction({ icon: Icon, title, color, onClick }: any) {
       onClick={onClick}
       className={`flex flex-col items-center justify-center p-3 rounded-2xl transition-all hover:text-white shadow-sm hover:shadow-xl group border border-transparent hover:border-white/20 ${colorMap[color]}`}
     >
-      <div className="w-9 h-9 rounded-xl flex items-center justify-center mb-2 bg-white/50 group-hover:bg-transparent transition-colors shadow-sm">
+      <div className="w-9 h-9 rounded-xl flex items-center justify-center mb-2 bg-white dark:bg-slate-900/50 group-hover:bg-transparent transition-colors shadow-sm">
         <Icon size={18} className="transition-transform group-hover:scale-110" />
       </div>
       <span className="text-[9px] font-black uppercase tracking-widest text-center leading-tight">{title}</span>

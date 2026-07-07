@@ -136,7 +136,7 @@ export function Auth({ onShowWarrantyCheck }: { onShowWarrantyCheck: () => void 
             <span className="text-white font-bold text-2xl tracking-tight">QLBH</span>
           </div>
         </div>
-        <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+        <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900 dark:text-white">
           {isLogin ? 'Phần mềm quản lý bán hàng' : 'Đăng ký tài khoản mới'}
         </h2>
         <p className="mt-2 text-center text-sm text-gray-600">
@@ -155,7 +155,7 @@ export function Auth({ onShowWarrantyCheck }: { onShowWarrantyCheck: () => void 
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white py-8 px-4 shadow-xl shadow-gray-200/50 sm:rounded-2xl sm:px-10 border border-gray-100">
+        <div className="bg-white dark:bg-slate-900 py-8 px-4 shadow-xl shadow-gray-200/50 sm:rounded-2xl sm:px-10 border border-gray-100 dark:border-gray-800">
           
           {error && (
             <div className="mb-4 bg-red-50 border-l-4 border-red-500 p-4 rounded-md flex items-start gap-3">
@@ -274,7 +274,7 @@ export function Auth({ onShowWarrantyCheck }: { onShowWarrantyCheck: () => void 
                 <div className="w-full border-t border-gray-200"></div>
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-gray-500">Hoặc</span>
+                <span className="px-2 bg-white dark:bg-slate-900 text-gray-500">Hoặc</span>
               </div>
             </div>
 
@@ -283,7 +283,7 @@ export function Auth({ onShowWarrantyCheck }: { onShowWarrantyCheck: () => void 
                 type="button"
                 onClick={handleGoogleAuth}
                 disabled={loading}
-                className="w-full flex justify-center items-center gap-2 py-2.5 px-4 border border-gray-300 rounded-xl shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
+                className="w-full flex justify-center items-center gap-2 py-2.5 px-4 border border-gray-300 rounded-xl shadow-sm text-sm font-medium text-gray-700 bg-white dark:bg-slate-900 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
               >
                 <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="w-5 h-5" />
                 Tiếp tục với Google

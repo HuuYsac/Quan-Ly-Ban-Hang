@@ -26,7 +26,7 @@ interface NotesProps {
 }
 
 const COLORS = [
-  { name: 'Default', class: 'bg-white border-slate-200' },
+  { name: 'Default', class: 'bg-white dark:bg-slate-900 border-slate-200' },
   { name: 'Red', class: 'bg-red-50 border-red-200' },
   { name: 'Orange', class: 'bg-orange-50 border-orange-200' },
   { name: 'Yellow', class: 'bg-yellow-50 border-yellow-200' },
@@ -129,7 +129,7 @@ export function Notes({ data }: NotesProps) {
           <input
             type="text"
             placeholder="Tìm kiếm ghi chú..."
-            className="w-full pl-10 pr-4 py-3 rounded-2xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all bg-white shadow-sm"
+            className="w-full pl-10 pr-4 py-3 rounded-2xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all bg-white dark:bg-slate-900 shadow-sm"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -153,7 +153,7 @@ export function Notes({ data }: NotesProps) {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
               className={cn(
-                "w-full max-w-2xl bg-white rounded-[32px] shadow-2xl overflow-hidden flex flex-col max-h-[90vh] border border-white/20",
+                "w-full max-w-2xl bg-white dark:bg-slate-900 rounded-[32px] shadow-2xl overflow-hidden flex flex-col max-h-[90vh] border border-white/20",
                 getNoteColorClass(isAdding ? newNote.color : editingNote?.color)
               )}
             >
@@ -162,7 +162,7 @@ export function Notes({ data }: NotesProps) {
                   <div className="p-2 bg-black/5 rounded-xl">
                     <Edit3 size={20} className="text-slate-600" />
                   </div>
-                  <h3 className="text-xl font-bold text-slate-900">
+                  <h3 className="text-xl font-bold text-slate-900 dark:text-white">
                     {isAdding ? 'Tạo ghi chú mới' : 'Chỉnh sửa ghi chú'}
                   </h3>
                 </div>
@@ -178,7 +178,7 @@ export function Notes({ data }: NotesProps) {
                 <input
                   type="text"
                   placeholder="Tiêu đề (không bắt buộc)"
-                  className="w-full text-2xl font-black bg-transparent border-none outline-none placeholder:text-slate-400 text-slate-900"
+                  className="w-full text-2xl font-black bg-transparent border-none outline-none placeholder:text-slate-400 text-slate-900 dark:text-white"
                   value={isAdding ? newNote.title : editingNote?.title}
                   onChange={(e) => isAdding ? setNewNote({...newNote, title: e.target.value}) : setEditingNote(prev => prev ? {...prev, title: e.target.value} : null)}
                 />
@@ -213,7 +213,7 @@ export function Notes({ data }: NotesProps) {
                       onClick={() => handleCopyNote(editingNote?.content || '', 'modal')}
                       className={cn(
                         "flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all font-bold",
-                        copiedId === 'modal' ? "bg-emerald-100 text-emerald-700" : "bg-white text-slate-600 hover:bg-slate-50 border border-slate-200 shadow-sm"
+                        copiedId === 'modal' ? "bg-emerald-100 text-emerald-700" : "bg-white dark:bg-slate-900 text-slate-600 hover:bg-slate-50 dark:bg-slate-800 border border-slate-200 shadow-sm"
                       )}
                     >
                       {copiedId === 'modal' ? <CheckCircle2 size={18} /> : <Copy size={18} />}
@@ -267,7 +267,7 @@ export function Notes({ data }: NotesProps) {
                 </div>
 
                 {note.title && (
-                  <h4 className="text-xl font-extrabold text-slate-900 mb-4 pr-10 leading-tight">
+                  <h4 className="text-xl font-extrabold text-slate-900 dark:text-white mb-4 pr-10 leading-tight">
                     {note.title}
                   </h4>
                 )}
@@ -287,7 +287,7 @@ export function Notes({ data }: NotesProps) {
                       onClick={(e) => handleCopyNote(note.content, note.id, e)}
                       className={cn(
                         "p-2.5 rounded-xl transition-all shadow-sm",
-                        copiedId === note.id ? "bg-emerald-500 text-white" : "bg-white/80 hover:bg-white text-slate-600 border border-slate-100"
+                        copiedId === note.id ? "bg-emerald-500 text-white" : "bg-white dark:bg-slate-900/80 hover:bg-white dark:bg-slate-900 text-slate-600 border border-slate-100 dark:border-slate-800"
                       )}
                       title="Sao chép nội dung"
                     >
@@ -317,7 +317,7 @@ export function Notes({ data }: NotesProps) {
             <Notebook size={64} />
           </div>
           <div className="max-w-md space-y-3 px-4">
-            <h3 className="text-2xl font-black text-slate-900">Sổ tay ghi chú đang trống</h3>
+            <h3 className="text-2xl font-black text-slate-900 dark:text-white">Sổ tay ghi chú đang trống</h3>
             <p className="text-slate-500 text-lg font-medium">
               Bạn có thể lưu lại mẫu tin nhắn, địa chỉ hoặc bất kỳ thông tin nào để gửi cho khách nhanh hơn.
             </p>

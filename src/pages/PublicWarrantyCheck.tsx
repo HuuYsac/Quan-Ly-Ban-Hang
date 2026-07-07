@@ -367,7 +367,7 @@ export function PublicWarrantyCheck({ onBack }: { onBack?: () => void }) {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4 sm:p-6 relative overflow-hidden">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-800 flex flex-col items-center justify-center p-4 sm:p-6 relative overflow-hidden">
       {/* Background Decorations */}
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0">
         <div className="absolute -top-24 -left-24 w-96 h-96 bg-indigo-100/50 rounded-full blur-3xl"></div>
@@ -387,7 +387,7 @@ export function PublicWarrantyCheck({ onBack }: { onBack?: () => void }) {
           >
             <ShieldCheck size={40} />
           </motion.div>
-          <h1 className="text-3xl md:text-4xl font-black text-slate-900 tracking-tight">Tra cứu <span className="text-indigo-600">Bảo hành</span></h1>
+          <h1 className="text-3xl md:text-4xl font-black text-slate-900 dark:text-white tracking-tight">Tra cứu <span className="text-indigo-600">Bảo hành</span></h1>
           <p className="text-slate-500 text-sm mt-3 font-medium">Hệ thống kiểm tra thời hạn bảo hành sản phẩm chính hãng</p>
         </div>
 
@@ -405,7 +405,7 @@ export function PublicWarrantyCheck({ onBack }: { onBack?: () => void }) {
                     placeholder="VD: 0912345678"
                     value={formData.phone}
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    className="w-full pl-12 pr-4 py-3.5 bg-slate-50/50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all font-bold text-slate-900"
+                    className="w-full pl-12 pr-4 py-3.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all font-bold text-slate-900 dark:text-white"
                   />
                 </div>
               </div>
@@ -419,7 +419,7 @@ export function PublicWarrantyCheck({ onBack }: { onBack?: () => void }) {
                     placeholder="VD: ABC123XYZ"
                     value={formData.serviceTag}
                     onChange={(e) => setFormData({ ...formData, serviceTag: e.target.value })}
-                    className="w-full pl-12 pr-4 py-3.5 bg-slate-50/50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all font-bold text-slate-900"
+                    className="w-full pl-12 pr-4 py-3.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all font-bold text-slate-900 dark:text-white"
                   />
                 </div>
               </div>
@@ -433,7 +433,7 @@ export function PublicWarrantyCheck({ onBack }: { onBack?: () => void }) {
                     placeholder="VD: Nguyễn Văn A"
                     value={formData.customerName}
                     onChange={(e) => setFormData({ ...formData, customerName: e.target.value })}
-                    className="w-full pl-12 pr-4 py-3.5 bg-slate-50/50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all font-bold text-slate-900"
+                    className="w-full pl-12 pr-4 py-3.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all font-bold text-slate-900 dark:text-white"
                   />
                 </div>
               </div>
@@ -475,11 +475,11 @@ export function PublicWarrantyCheck({ onBack }: { onBack?: () => void }) {
               <motion.div 
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
-                className="border-t border-slate-100 bg-slate-50/30 overflow-hidden"
+                className="border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/30 overflow-hidden"
               >
                 <div className="p-6 md:p-8">
                   <div className="flex items-center justify-between mb-6">
-                    <h3 className="text-sm font-black text-slate-900 flex items-center gap-2 uppercase tracking-tight">
+                    <h3 className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-2 uppercase tracking-tight">
                       <Sparkles className="text-amber-500" size={18} />
                       Kết quả tìm kiếm ({results.length})
                     </h3>
@@ -504,23 +504,23 @@ export function PublicWarrantyCheck({ onBack }: { onBack?: () => void }) {
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 relative z-10">
                           <div className="space-y-1">
                             <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Họ và tên</p>
-                            <p className="text-sm font-black text-slate-900">{res.order.customerName}</p>
+                            <p className="text-sm font-black text-slate-900 dark:text-white">{res.order.customerName}</p>
                           </div>
                           <div className="space-y-1">
                             <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Số điện thoại</p>
-                            <p className="text-sm font-black text-slate-900">{res.order.customerPhone}</p>
+                            <p className="text-sm font-black text-slate-900 dark:text-white">{res.order.customerPhone}</p>
                           </div>
                           {res.order.customerEmail && (
                             <div className="sm:col-span-2 space-y-1">
                               <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Email liên hệ</p>
-                              <p className="text-sm font-black text-slate-900">{res.order.customerEmail}</p>
+                              <p className="text-sm font-black text-slate-900 dark:text-white">{res.order.customerEmail}</p>
                             </div>
                           )}
                         </div>
                       </div>
 
                       {/* Product Info Section */}
-                      <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
+                      <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
                         <div className="flex items-center justify-between mb-3">
                           <div className="flex items-center gap-2 text-slate-400">
                             <Laptop size={14} />
@@ -530,7 +530,7 @@ export function PublicWarrantyCheck({ onBack }: { onBack?: () => void }) {
                             {res.type === 'repair' ? 'Bảo hành sửa chữa' : 'Bảo hành mua máy'}
                           </span>
                         </div>
-                        <h4 className="font-black text-slate-900 text-lg tracking-tight leading-tight mb-3">{res.product.name}</h4>
+                        <h4 className="font-black text-slate-900 dark:text-white text-lg tracking-tight leading-tight mb-3">{res.product.name}</h4>
                         {res.type === 'repair' && res.issue && (
                           <p className="text-xs text-slate-500 mb-3 italic">Lỗi sửa: {res.issue}</p>
                         )}
@@ -545,22 +545,22 @@ export function PublicWarrantyCheck({ onBack }: { onBack?: () => void }) {
                       </div>
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
-                          <div className="w-10 h-10 rounded-xl bg-slate-50 text-slate-400 flex items-center justify-center">
+                        <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
+                          <div className="w-10 h-10 rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-400 flex items-center justify-center">
                             <Calendar size={20} />
                           </div>
                           <div>
                             <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Ngày mua hàng</p>
-                            <p className="text-sm font-black text-slate-900">{res.purchaseDate}</p>
+                            <p className="text-sm font-black text-slate-900 dark:text-white">{res.purchaseDate}</p>
                           </div>
                         </div>
-                        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
-                          <div className="w-10 h-10 rounded-xl bg-slate-50 text-slate-400 flex items-center justify-center">
+                        <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
+                          <div className="w-10 h-10 rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-400 flex items-center justify-center">
                             <ShieldCheck size={20} />
                           </div>
                           <div>
                             <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Ngày hết hạn</p>
-                            <p className="text-sm font-black text-slate-900">{res.expiryDate}</p>
+                            <p className="text-sm font-black text-slate-900 dark:text-white">{res.expiryDate}</p>
                           </div>
                         </div>
                       </div>

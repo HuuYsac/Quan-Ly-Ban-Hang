@@ -32,10 +32,10 @@ export function Inventory({ data, updateData, isAdmin }: InventoryProps) {
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
         {isAdmin && (
-          <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100 flex items-center justify-between border-l-4 border-l-blue-500">
+          <div className="bg-white dark:bg-slate-900 rounded-xl p-5 shadow-sm border border-gray-100 dark:border-gray-800 flex items-center justify-between border-l-4 border-l-blue-500">
             <div>
               <p className="text-sm font-medium text-gray-500 mb-1">Tổng giá trị tồn kho (Ước tính)</p>
-              <h3 className="text-2xl font-bold text-gray-900">{formatCurrency(totalValue)}</h3>
+              <h3 className="text-2xl font-bold text-gray-900 dark:text-white">{formatCurrency(totalValue)}</h3>
             </div>
             <div className="w-12 h-12 bg-blue-50 rounded-full flex items-center justify-center text-blue-600">
               <ClipboardList size={24} />
@@ -43,20 +43,20 @@ export function Inventory({ data, updateData, isAdmin }: InventoryProps) {
           </div>
         )}
         
-        <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100 flex items-center justify-between border-l-4 border-l-amber-500">
+        <div className="bg-white dark:bg-slate-900 rounded-xl p-5 shadow-sm border border-gray-100 dark:border-gray-800 flex items-center justify-between border-l-4 border-l-amber-500">
           <div>
             <p className="text-sm font-medium text-gray-500 mb-1">Sắp hết hàng</p>
-            <h3 className="text-2xl font-bold text-gray-900">{lowStockCount}</h3>
+            <h3 className="text-2xl font-bold text-gray-900 dark:text-white">{lowStockCount}</h3>
           </div>
           <div className="w-12 h-12 bg-amber-50 rounded-full flex items-center justify-center text-amber-600">
             <AlertTriangle size={24} />
           </div>
         </div>
 
-        <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100 flex items-center justify-between border-l-4 border-l-rose-500">
+        <div className="bg-white dark:bg-slate-900 rounded-xl p-5 shadow-sm border border-gray-100 dark:border-gray-800 flex items-center justify-between border-l-4 border-l-rose-500">
           <div>
             <p className="text-sm font-medium text-gray-500 mb-1">Hết hàng</p>
-            <h3 className="text-2xl font-bold text-gray-900">{outOfStockCount}</h3>
+            <h3 className="text-2xl font-bold text-gray-900 dark:text-white">{outOfStockCount}</h3>
           </div>
           <div className="w-12 h-12 bg-rose-50 rounded-full flex items-center justify-center text-rose-600">
             <AlertTriangle size={24} />
@@ -65,8 +65,8 @@ export function Inventory({ data, updateData, isAdmin }: InventoryProps) {
       </div>
 
       {/* Actions & Search */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-        <div className="p-5 border-b border-gray-100 flex flex-col sm:flex-row justify-between items-center gap-4">
+      <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 overflow-hidden">
+        <div className="p-5 border-b border-gray-100 dark:border-gray-800 flex flex-col sm:flex-row justify-between items-center gap-4">
           <div className="relative w-full sm:w-96">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
             <input 
@@ -119,11 +119,11 @@ export function Inventory({ data, updateData, isAdmin }: InventoryProps) {
                   className="hover:bg-gray-50/50 transition-colors cursor-pointer group"
                 >
                   <td className="p-4">
-                    <div className="font-medium text-gray-900">{product.name}</div>
+                    <div className="font-medium text-gray-900 dark:text-white">{product.name}</div>
                     <div className="text-xs text-gray-500 mt-1">{product.id}</div>
                   </td>
                   <td className="p-4 text-sm text-gray-600">{product.category}</td>
-                  <td className="p-4 text-center font-semibold text-gray-900">
+                  <td className="p-4 text-center font-semibold text-gray-900 dark:text-white">
                     {product.stock}
                   </td>
                   <td className="p-4 text-center text-gray-500">
@@ -167,7 +167,7 @@ export function Inventory({ data, updateData, isAdmin }: InventoryProps) {
             >
               <div className="flex justify-between items-start">
                 <div>
-                  <div className="font-bold text-gray-900">{product.name}</div>
+                  <div className="font-bold text-gray-900 dark:text-white">{product.name}</div>
                   <div className="text-xs text-gray-500">{product.id}</div>
                 </div>
                 {product.stock === 0 ? (
@@ -189,7 +189,7 @@ export function Inventory({ data, updateData, isAdmin }: InventoryProps) {
                 <div className="flex items-center gap-4">
                   <div className="text-center">
                     <div className="text-[10px] text-gray-400 uppercase font-bold">Tồn</div>
-                    <div className="font-bold text-gray-900">{product.stock}</div>
+                    <div className="font-bold text-gray-900 dark:text-white">{product.stock}</div>
                   </div>
                   <div className="text-center">
                     <div className="text-[10px] text-gray-400 uppercase font-bold">Tối thiểu</div>
@@ -210,7 +210,7 @@ export function Inventory({ data, updateData, isAdmin }: InventoryProps) {
       {/* Product Detail Modal */}
       {viewProduct && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[9999] sm:p-4">
-          <div className="bg-white sm:rounded-2xl shadow-2xl w-full max-w-md h-full sm:h-auto animate-in fade-in zoom-in-95 duration-200 relative">
+          <div className="bg-white dark:bg-slate-900 sm:rounded-2xl shadow-2xl w-full max-w-md h-full sm:h-auto animate-in fade-in zoom-in-95 duration-200 relative">
             <div className="p-6">
               <div className="flex justify-between items-start mb-6">
                 <div className="w-12 h-12 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center">
@@ -223,27 +223,27 @@ export function Inventory({ data, updateData, isAdmin }: InventoryProps) {
                   <X size={20} />
                 </button>
               </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">{viewProduct.name}</h3>
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">{viewProduct.name}</h3>
               <p className="text-sm text-gray-500 mb-6">{viewProduct.category}</p>
               
               <div className="grid grid-cols-2 gap-4 mb-8">
-                <div className="p-4 bg-slate-50 rounded-xl">
+                <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-xl">
                   <p className="text-xs text-gray-500 mb-1">Tồn kho</p>
                   <p className={`text-lg font-bold ${viewProduct.stock < viewProduct.minStock ? 'text-rose-600' : 'text-emerald-600'}`}>
                     {viewProduct.stock}
                   </p>
                 </div>
-                <div className="p-4 bg-slate-50 rounded-xl">
+                <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-xl">
                   <p className="text-xs text-gray-500 mb-1">Giá bán</p>
-                  <p className="text-lg font-bold text-gray-900">{formatCurrency(viewProduct.price)}</p>
+                  <p className="text-lg font-bold text-gray-900 dark:text-white">{formatCurrency(viewProduct.price)}</p>
                 </div>
-                <div className="p-4 bg-slate-50 rounded-xl">
+                <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-xl">
                   <p className="text-xs text-gray-500 mb-1">Tối thiểu</p>
                   <p className="text-lg font-bold text-gray-500">{viewProduct.minStock}</p>
                 </div>
-                <div className="p-4 bg-slate-50 rounded-xl">
+                <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-xl">
                   <p className="text-xs text-gray-500 mb-1">Mã SP</p>
-                  <p className="text-sm font-mono font-bold text-gray-900">{viewProduct.id}</p>
+                  <p className="text-sm font-mono font-bold text-gray-900 dark:text-white">{viewProduct.id}</p>
                 </div>
               </div>
 

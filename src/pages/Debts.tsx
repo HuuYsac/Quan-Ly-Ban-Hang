@@ -146,10 +146,10 @@ export function Debts({ data, updateData, addItem, updateItem, deleteItem, isAdm
       <div className="animate-in fade-in duration-500">
         {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-        <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100 flex items-center justify-between border-l-4 border-l-emerald-500">
+        <div className="bg-white dark:bg-slate-900 rounded-xl p-5 shadow-sm border border-gray-100 dark:border-gray-800 flex items-center justify-between border-l-4 border-l-emerald-500">
           <div>
             <p className="text-sm font-medium text-gray-500 mb-1">Khách hàng nợ (Phải thu)</p>
-            <h3 className="text-2xl font-bold text-gray-900">{formatCurrency(totalCustomerDebt)}</h3>
+            <h3 className="text-2xl font-bold text-gray-900 dark:text-white">{formatCurrency(totalCustomerDebt)}</h3>
           </div>
           <div className="w-12 h-12 bg-emerald-50 rounded-full flex items-center justify-center text-emerald-600">
             <ArrowDownRight size={24} />
@@ -157,10 +157,10 @@ export function Debts({ data, updateData, addItem, updateItem, deleteItem, isAdm
         </div>
         
         {isAdmin && (
-          <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100 flex items-center justify-between border-l-4 border-l-rose-500">
+          <div className="bg-white dark:bg-slate-900 rounded-xl p-5 shadow-sm border border-gray-100 dark:border-gray-800 flex items-center justify-between border-l-4 border-l-rose-500">
             <div>
               <p className="text-sm font-medium text-gray-500 mb-1">Nợ nhà cung cấp (Phải trả)</p>
-              <h3 className="text-2xl font-bold text-gray-900">{formatCurrency(totalSupplierDebt)}</h3>
+              <h3 className="text-2xl font-bold text-gray-900 dark:text-white">{formatCurrency(totalSupplierDebt)}</h3>
             </div>
             <div className="w-12 h-12 bg-rose-50 rounded-full flex items-center justify-center text-rose-600">
               <ArrowUpRight size={24} />
@@ -170,8 +170,8 @@ export function Debts({ data, updateData, addItem, updateItem, deleteItem, isAdm
       </div>
 
       {/* Actions & Search */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-        <div className="p-5 border-b border-gray-100 flex flex-col sm:flex-row justify-between items-center gap-4">
+      <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 overflow-hidden">
+        <div className="p-5 border-b border-gray-100 dark:border-gray-800 flex flex-col sm:flex-row justify-between items-center gap-4">
           <div className="flex gap-2 w-full sm:w-auto overflow-x-auto pb-2 sm:pb-0">
             <button 
               onClick={() => setActiveTab('customers')}
@@ -220,7 +220,7 @@ export function Debts({ data, updateData, addItem, updateItem, deleteItem, isAdm
                     onClick={() => handleViewDetails(customer, 'customers')}
                   >
                     <td className="p-4">
-                      <div className="font-medium text-gray-900">{customer.name}</div>
+                      <div className="font-medium text-gray-900 dark:text-white">{customer.name}</div>
                       <div className="text-xs text-gray-500 mt-1">{customer.id}</div>
                     </td>
                     <td className="p-4 text-sm text-gray-600">
@@ -284,7 +284,7 @@ export function Debts({ data, updateData, addItem, updateItem, deleteItem, isAdm
                     onClick={() => handleViewDetails(supplier, 'suppliers')}
                   >
                     <td className="p-4">
-                      <div className="font-medium text-gray-900">{supplier.name}</div>
+                      <div className="font-medium text-gray-900 dark:text-white">{supplier.name}</div>
                       <div className="text-xs text-gray-500 mt-1">{supplier.id}</div>
                     </td>
                     <td className="p-4 text-sm text-gray-600">
@@ -338,9 +338,9 @@ export function Debts({ data, updateData, addItem, updateItem, deleteItem, isAdm
       {/* Collect Debt Modal */}
       {isCollectModalOpen && (selectedCustomer || selectedSupplier) && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-200">
-            <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between z-10">
-              <h3 className="text-lg font-bold text-gray-900">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-200">
+            <div className="sticky top-0 bg-white dark:bg-slate-900 border-b border-gray-100 dark:border-gray-800 px-6 py-4 flex items-center justify-between z-10">
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white">
                 {selectedCustomer ? 'Thu nợ khách hàng' : 'Trả nợ nhà cung cấp'}
               </h3>
               <button 
@@ -361,7 +361,7 @@ export function Debts({ data, updateData, addItem, updateItem, deleteItem, isAdm
                   <p className="text-sm text-gray-500 mb-1">
                     {selectedCustomer ? 'Khách hàng' : 'Nhà cung cấp'}
                   </p>
-                  <p className="font-medium text-gray-900">
+                  <p className="font-medium text-gray-900 dark:text-white">
                     {selectedCustomer ? selectedCustomer.name : selectedSupplier?.name}
                   </p>
                 </div>
@@ -384,7 +384,7 @@ export function Debts({ data, updateData, addItem, updateItem, deleteItem, isAdm
                 </div>
               </div>
 
-              <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
+              <div className="flex justify-end gap-3 pt-4 border-t border-gray-100 dark:border-gray-800">
                 <button 
                   type="button"
                   onClick={() => {
@@ -411,9 +411,9 @@ export function Debts({ data, updateData, addItem, updateItem, deleteItem, isAdm
       {/* Edit Debt Modal */}
       {isEditModalOpen && isAdmin && (selectedCustomer || selectedSupplier) && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-200">
-            <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between z-10">
-              <h3 className="text-lg font-bold text-gray-900">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-200">
+            <div className="sticky top-0 bg-white dark:bg-slate-900 border-b border-gray-100 dark:border-gray-800 px-6 py-4 flex items-center justify-between z-10">
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white">
                 Điều chỉnh công nợ
               </h3>
               <button 
@@ -434,7 +434,7 @@ export function Debts({ data, updateData, addItem, updateItem, deleteItem, isAdm
                   <p className="text-sm text-gray-500 mb-1">
                     {selectedCustomer ? 'Khách hàng' : 'Nhà cung cấp'}
                   </p>
-                  <p className="font-medium text-gray-900">
+                  <p className="font-medium text-gray-900 dark:text-white">
                     {selectedCustomer ? selectedCustomer.name : selectedSupplier?.name}
                   </p>
                 </div>
@@ -454,7 +454,7 @@ export function Debts({ data, updateData, addItem, updateItem, deleteItem, isAdm
                 </div>
               </div>
 
-              <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
+              <div className="flex justify-end gap-3 pt-4 border-t border-gray-100 dark:border-gray-800">
                 <button 
                   type="button"
                   onClick={() => {
@@ -481,9 +481,9 @@ export function Debts({ data, updateData, addItem, updateItem, deleteItem, isAdm
       {/* Details Modal */}
       {isDetailModalOpen && (selectedCustomer || selectedSupplier) && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-200">
-            <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between z-10">
-              <h3 className="text-lg font-bold text-gray-900">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-200">
+            <div className="sticky top-0 bg-white dark:bg-slate-900 border-b border-gray-100 dark:border-gray-800 px-6 py-4 flex items-center justify-between z-10">
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white">
                 Chi tiết {selectedCustomer ? 'khách hàng' : 'nhà cung cấp'}
               </h3>
               <button 
@@ -503,7 +503,7 @@ export function Debts({ data, updateData, addItem, updateItem, deleteItem, isAdm
                 <div className="space-y-4">
                   <div>
                     <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Tên</p>
-                    <p className="font-semibold text-gray-900">{selectedCustomer ? selectedCustomer.name : selectedSupplier?.name}</p>
+                    <p className="font-semibold text-gray-900 dark:text-white">{selectedCustomer ? selectedCustomer.name : selectedSupplier?.name}</p>
                   </div>
                   <div>
                     <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Số điện thoại</p>
@@ -534,7 +534,7 @@ export function Debts({ data, updateData, addItem, updateItem, deleteItem, isAdm
                 </div>
               </div>
 
-              <div className="space-y-4 pt-4 border-t border-gray-100">
+              <div className="space-y-4 pt-4 border-t border-gray-100 dark:border-gray-800">
                 <div>
                   <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Địa chỉ</p>
                   <p className="text-gray-700">{selectedCustomer ? selectedCustomer.address : selectedSupplier?.address}</p>
@@ -559,7 +559,7 @@ export function Debts({ data, updateData, addItem, updateItem, deleteItem, isAdm
                 )}
               </div>
 
-              <div className="flex justify-end pt-4 border-t border-gray-100">
+              <div className="flex justify-end pt-4 border-t border-gray-100 dark:border-gray-800">
                 <button 
                   onClick={() => {
                     setIsDetailModalOpen(false);

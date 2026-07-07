@@ -280,13 +280,13 @@ const Warranty: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Quản lý Bảo hành</h2>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Quản lý Bảo hành</h2>
           <p className="text-gray-500 text-sm">Theo dõi và kiểm tra thời hạn bảo hành sản phẩm</p>
         </div>
         <div className="flex items-center gap-2">
           <button 
             onClick={() => setIsSettingsModalOpen(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl font-bold hover:bg-gray-50 transition-all shadow-sm"
+            className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-900 border border-gray-200 text-gray-700 rounded-xl font-bold hover:bg-gray-50 transition-all shadow-sm"
           >
             <SettingsIcon size={18} />
             Cài đặt thông báo
@@ -298,7 +298,7 @@ const Warranty: React.FC = () => {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <button 
           onClick={() => setFilterStatus('all')}
-          className={`p-4 rounded-2xl border transition-all text-left ${filterStatus === 'all' ? 'bg-blue-50 border-blue-200 ring-2 ring-blue-500/20' : 'bg-white border-gray-100 shadow-sm hover:border-blue-200'}`}
+          className={`p-4 rounded-2xl border transition-all text-left ${filterStatus === 'all' ? 'bg-blue-50 border-blue-200 ring-2 ring-blue-500/20' : 'bg-white dark:bg-slate-900 border-gray-100 dark:border-gray-800 shadow-sm hover:border-blue-200'}`}
         >
           <div className="flex items-center gap-3 mb-2">
             <div className={`p-2 rounded-lg ${filterStatus === 'all' ? 'bg-blue-600 text-white' : 'bg-blue-50 text-blue-600'}`}>
@@ -306,11 +306,11 @@ const Warranty: React.FC = () => {
             </div>
             <span className="text-sm font-medium text-gray-500">Tất cả</span>
           </div>
-          <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
+          <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.total}</p>
         </button>
         <button 
           onClick={() => setFilterStatus('active')}
-          className={`p-4 rounded-2xl border transition-all text-left ${filterStatus === 'active' ? 'bg-emerald-50 border-emerald-200 ring-2 ring-emerald-500/20' : 'bg-white border-gray-100 shadow-sm hover:border-emerald-200'}`}
+          className={`p-4 rounded-2xl border transition-all text-left ${filterStatus === 'active' ? 'bg-emerald-50 border-emerald-200 ring-2 ring-emerald-500/20' : 'bg-white dark:bg-slate-900 border-gray-100 dark:border-gray-800 shadow-sm hover:border-emerald-200'}`}
         >
           <div className="flex items-center gap-3 mb-2">
             <div className={`p-2 rounded-lg ${filterStatus === 'active' ? 'bg-emerald-600 text-white' : 'bg-emerald-50 text-emerald-600'}`}>
@@ -322,7 +322,7 @@ const Warranty: React.FC = () => {
         </button>
         <button 
           onClick={() => setFilterStatus('expiring')}
-          className={`p-4 rounded-2xl border transition-all text-left ${filterStatus === 'expiring' ? 'bg-amber-50 border-amber-200 ring-2 ring-amber-500/20' : 'bg-white border-gray-100 shadow-sm hover:border-amber-200'}`}
+          className={`p-4 rounded-2xl border transition-all text-left ${filterStatus === 'expiring' ? 'bg-amber-50 border-amber-200 ring-2 ring-amber-500/20' : 'bg-white dark:bg-slate-900 border-gray-100 dark:border-gray-800 shadow-sm hover:border-amber-200'}`}
         >
           <div className="flex items-center gap-3 mb-2">
             <div className={`p-2 rounded-lg ${filterStatus === 'expiring' ? 'bg-amber-600 text-white' : 'bg-amber-50 text-amber-600'}`}>
@@ -334,7 +334,7 @@ const Warranty: React.FC = () => {
         </button>
         <button 
           onClick={() => setFilterStatus('expired')}
-          className={`p-4 rounded-2xl border transition-all text-left ${filterStatus === 'expired' ? 'bg-rose-50 border-rose-200 ring-2 ring-rose-500/20' : 'bg-white border-gray-100 shadow-sm hover:border-rose-200'}`}
+          className={`p-4 rounded-2xl border transition-all text-left ${filterStatus === 'expired' ? 'bg-rose-50 border-rose-200 ring-2 ring-rose-500/20' : 'bg-white dark:bg-slate-900 border-gray-100 dark:border-gray-800 shadow-sm hover:border-rose-200'}`}
         >
           <div className="flex items-center gap-3 mb-2">
             <div className={`p-2 rounded-lg ${filterStatus === 'expired' ? 'bg-rose-600 text-white' : 'bg-rose-50 text-rose-600'}`}>
@@ -346,10 +346,10 @@ const Warranty: React.FC = () => {
         </button>
         <button 
           onClick={() => setFilterStatus('history')}
-          className={`p-4 rounded-2xl border transition-all text-left ${filterStatus === 'history' ? 'bg-slate-50 border-slate-200 ring-2 ring-slate-500/20' : 'bg-white border-gray-100 shadow-sm hover:border-slate-200'}`}
+          className={`p-4 rounded-2xl border transition-all text-left ${filterStatus === 'history' ? 'bg-slate-50 dark:bg-slate-800 border-slate-200 ring-2 ring-slate-500/20' : 'bg-white dark:bg-slate-900 border-gray-100 dark:border-gray-800 shadow-sm hover:border-slate-200'}`}
         >
           <div className="flex items-center gap-3 mb-2">
-            <div className={`p-2 rounded-lg ${filterStatus === 'history' ? 'bg-slate-600 text-white' : 'bg-slate-50 text-slate-600'}`}>
+            <div className={`p-2 rounded-lg ${filterStatus === 'history' ? 'bg-slate-600 text-white' : 'bg-slate-50 dark:bg-slate-800 text-slate-600'}`}>
               <Clock size={20} />
             </div>
             <span className="text-sm font-medium text-gray-500">Lịch sử gửi</span>
@@ -359,7 +359,7 @@ const Warranty: React.FC = () => {
       </div>
 
       {/* Search and Filters */}
-      <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm">
+      <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
           <input 
@@ -399,7 +399,7 @@ const Warranty: React.FC = () => {
       )}
 
       {/* Warranty List or History */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden">
         {filterStatus === 'history' ? (
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
@@ -416,7 +416,7 @@ const Warranty: React.FC = () => {
                 {(data.warrantyNotifications || []).sort((a, b) => new Date(b.sentAt).getTime() - new Date(a.sentAt).getTime()).map(notif => (
                   <tr key={notif.id} className="hover:bg-gray-50/50 transition-colors">
                     <td className="p-4">
-                      <div className="font-bold text-gray-900">{(data.customers || []).find(c => c.id === notif.customerId)?.name || 'N/A'}</div>
+                      <div className="font-bold text-gray-900 dark:text-white">{(data.customers || []).find(c => c.id === notif.customerId)?.name || 'N/A'}</div>
                     </td>
                     <td className="p-4">
                       <div className="text-sm font-medium text-blue-600">{notif.serviceTag}</div>
@@ -477,7 +477,7 @@ const Warranty: React.FC = () => {
                   <td className="p-4">
                     <div className="flex flex-col">
                       <div className="flex items-center gap-2">
-                        <span className="font-bold text-gray-900">{warranty.customerName}</span>
+                        <span className="font-bold text-gray-900 dark:text-white">{warranty.customerName}</span>
                         <span className={`text-[9px] font-black uppercase px-1.5 py-0.5 rounded-md ${warranty.type === 'repair' ? 'bg-amber-100 text-amber-700 border border-amber-200' : 'bg-blue-100 text-blue-700 border border-blue-200'}`}>
                           {warranty.type === 'repair' ? 'Sửa chữa' : 'Mua máy'}
                         </span>
@@ -499,7 +499,7 @@ const Warranty: React.FC = () => {
                         <Calendar size={12} />
                         <span>Bắt đầu: {new Date(warranty.purchaseDate).toLocaleDateString('vi-VN')}</span>
                       </div>
-                      <div className="flex items-center gap-2 text-gray-900 font-bold">
+                      <div className="flex items-center gap-2 text-gray-900 dark:text-white font-bold">
                         <Clock size={12} />
                         <span>Kết thúc: {warranty.expiryDate.toLocaleDateString('vi-VN')}</span>
                       </div>
@@ -610,11 +610,11 @@ const Warranty: React.FC = () => {
                 setSelectedWarranty(warranty);
                 setIsRepairModalOpen(true);
               }}
-              className="p-4 space-y-3 cursor-pointer hover:bg-gray-50 transition-all border-b border-gray-100"
+              className="p-4 space-y-3 cursor-pointer hover:bg-gray-50 transition-all border-b border-gray-100 dark:border-gray-800"
             >
               <div className="flex justify-between items-start">
                 <div className="space-y-1">
-                  <div className="font-bold text-gray-900">{warranty.customerName}</div>
+                  <div className="font-bold text-gray-900 dark:text-white">{warranty.customerName}</div>
                   <div className="text-xs text-gray-500 flex items-center gap-1">
                     <Phone size={10} /> {warranty.customerPhone}
                   </div>
@@ -687,13 +687,13 @@ const Warranty: React.FC = () => {
       {/* Settings Modal */}
       {isSettingsModalOpen && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-[100] sm:p-4">
-          <div className="bg-white sm:rounded-2xl shadow-xl w-full max-w-2xl h-full sm:h-auto sm:max-h-[90vh] animate-in fade-in zoom-in-95 duration-200 overflow-y-auto">
-            <div className="sticky top-0 bg-white px-6 py-4 border-b border-gray-100 flex items-center justify-between z-10">
+          <div className="bg-white dark:bg-slate-900 sm:rounded-2xl shadow-xl w-full max-w-2xl h-full sm:h-auto sm:max-h-[90vh] animate-in fade-in zoom-in-95 duration-200 overflow-y-auto">
+            <div className="sticky top-0 bg-white dark:bg-slate-900 px-6 py-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between z-10">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-blue-50 text-blue-600 rounded-lg">
                   <Bell size={20} />
                 </div>
-                <h3 className="text-lg font-bold text-gray-900">Cấu hình thông báo tự động</h3>
+                <h3 className="text-lg font-bold text-gray-900 dark:text-white">Cấu hình thông báo tự động</h3>
               </div>
               <button onClick={() => setIsSettingsModalOpen(false)} className="p-2 text-gray-400 hover:text-gray-600 rounded-full">
                 <X size={20} />
@@ -703,7 +703,7 @@ const Warranty: React.FC = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Zalo Settings */}
                 <div className="space-y-4">
-                  <h4 className="text-sm font-bold text-gray-900 flex items-center gap-2">
+                  <h4 className="text-sm font-bold text-gray-900 dark:text-white flex items-center gap-2">
                     <MessageSquare size={16} className="text-blue-600" />
                     Zalo Official Account
                   </h4>
@@ -731,7 +731,7 @@ const Warranty: React.FC = () => {
 
                 {/* SMS Settings */}
                 <div className="space-y-4">
-                  <h4 className="text-sm font-bold text-gray-900 flex items-center gap-2">
+                  <h4 className="text-sm font-bold text-gray-900 dark:text-white flex items-center gap-2">
                     <Smartphone size={16} className="text-emerald-600" />
                     Dịch vụ SMS
                   </h4>
@@ -760,10 +760,10 @@ const Warranty: React.FC = () => {
                 </div>
               </div>
 
-              <div className="border-t border-gray-100 pt-6 space-y-4">
-                <h4 className="text-sm font-bold text-gray-900">Cấu hình nội dung & Thời điểm</h4>
+              <div className="border-t border-gray-100 dark:border-gray-800 pt-6 space-y-4">
+                <h4 className="text-sm font-bold text-gray-900 dark:text-white">Cấu hình nội dung & Thời điểm</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100">
+                  <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100 dark:border-gray-800">
                     <input 
                       type="checkbox"
                       id="autoSend"
@@ -775,7 +775,7 @@ const Warranty: React.FC = () => {
                       Tự động gửi khi sắp hết hạn
                     </label>
                   </div>
-                  <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100">
+                  <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100 dark:border-gray-800">
                     <label className="text-sm font-medium text-gray-700">Gửi trước (ngày):</label>
                     <input 
                       type="number"
@@ -822,9 +822,9 @@ const Warranty: React.FC = () => {
       {/* Repair Modal */}
       {isRepairModalOpen && selectedWarranty && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-[100] sm:p-4">
-          <div className="bg-white sm:rounded-2xl shadow-xl w-full max-w-lg h-full sm:h-auto sm:max-h-[90vh] animate-in fade-in zoom-in-95 duration-200 overflow-y-auto">
-            <div className="sticky top-0 bg-white px-6 py-4 border-b border-gray-100 flex items-center justify-between z-10">
-              <h3 className="text-lg font-bold text-gray-900">Tạo phiếu sửa chữa/bảo hành</h3>
+          <div className="bg-white dark:bg-slate-900 sm:rounded-2xl shadow-xl w-full max-w-lg h-full sm:h-auto sm:max-h-[90vh] animate-in fade-in zoom-in-95 duration-200 overflow-y-auto">
+            <div className="sticky top-0 bg-white dark:bg-slate-900 px-6 py-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between z-10">
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white">Tạo phiếu sửa chữa/bảo hành</h3>
               <button onClick={() => setIsRepairModalOpen(false)} className="p-2 text-gray-400 hover:text-gray-600 rounded-full">
                 <X size={20} />
               </button>
@@ -832,7 +832,7 @@ const Warranty: React.FC = () => {
             <form onSubmit={handleCreateRepair} className="p-4 sm:p-6 space-y-4">
               <div className="bg-blue-50 p-3 rounded-xl border border-blue-100 mb-4">
                 <p className="text-xs font-bold text-blue-600 uppercase mb-1">Thông tin máy</p>
-                <p className="text-sm font-bold text-gray-900">{selectedWarranty.productName}</p>
+                <p className="text-sm font-bold text-gray-900 dark:text-white">{selectedWarranty.productName}</p>
                 <p className="text-xs text-gray-600">S/N: {selectedWarranty.serviceTag}</p>
                 <p className="text-xs text-gray-600">Khách: {selectedWarranty.customerName} - {selectedWarranty.customerPhone}</p>
               </div>

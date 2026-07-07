@@ -155,7 +155,7 @@ export function Profile() {
   return (
     <div className="max-w-4xl mx-auto space-y-8 pb-12">
       <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-black text-gray-900">Thông tin cá nhân</h1>
+        <h1 className="text-2xl font-black text-gray-900 dark:text-white">Thông tin cá nhân</h1>
         <p className="text-gray-500">Quản lý tài khoản và thông tin thanh toán của bạn</p>
       </div>
 
@@ -176,11 +176,11 @@ export function Profile() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
         {/* Left Column: Account Summary */}
         <div className="md:col-span-1 space-y-6">
-          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 text-center">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-800 text-center">
             <div className="w-24 h-24 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4 border-4 border-white shadow-lg">
               <UserIcon size={48} />
             </div>
-            <h2 className="text-lg font-bold text-gray-900 truncate">{userProfile?.email}</h2>
+            <h2 className="text-lg font-bold text-gray-900 dark:text-white truncate">{userProfile?.email}</h2>
             <div className="mt-2 inline-flex items-center gap-1.5 px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-xs font-bold uppercase tracking-wider">
               <Shield size={12} />
               {userProfile?.role === 'admin' ? 'Quản trị viên' : userProfile?.role === 'staff' ? 'Nhân viên' : 'Thành viên'}
@@ -192,8 +192,8 @@ export function Profile() {
             )}
           </div>
 
-          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-            <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-4">Trạng thái</h3>
+          <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-800">
+            <h3 className="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider mb-4">Trạng thái</h3>
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <span className="text-sm text-gray-500">Phê duyệt</span>
@@ -207,7 +207,7 @@ export function Profile() {
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm text-gray-500">Ngày tham gia</span>
-                <span className="text-xs font-bold text-gray-900">
+                <span className="text-xs font-bold text-gray-900 dark:text-white">
                   {userProfile?.createdAt ? new Date(userProfile.createdAt).toLocaleDateString('vi-VN') : 'N/A'}
                 </span>
               </div>
@@ -218,9 +218,9 @@ export function Profile() {
         {/* Right Column: Forms */}
         <div className="md:col-span-2 space-y-8">
           {/* Profile Information */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-50 bg-slate-50/50">
-              <h3 className="font-bold text-gray-900 flex items-center gap-2">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-50 bg-slate-50 dark:bg-slate-800/50">
+              <h3 className="font-bold text-gray-900 dark:text-white flex items-center gap-2">
                 <UserIcon size={18} className="text-blue-600" />
                 Thông tin cá nhân & Ngân hàng
               </h3>
@@ -294,9 +294,9 @@ export function Profile() {
           </div>
 
           {/* Change Password */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-50 bg-slate-50/50">
-              <h3 className="font-bold text-gray-900 flex items-center gap-2">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-50 bg-slate-50 dark:bg-slate-800/50">
+              <h3 className="font-bold text-gray-900 dark:text-white flex items-center gap-2">
                 <Lock size={18} className="text-rose-600" />
                 Đổi mật khẩu
               </h3>

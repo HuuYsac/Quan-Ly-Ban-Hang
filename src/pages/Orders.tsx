@@ -531,10 +531,139 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
       e.preventDefault();
       e.stopPropagation();
     }
+    
+    const printContent = document.querySelector('.print-container');
+    if (!printContent) {
+      try {
+        window.print();
+      } catch (err) {
+        showToast('Trình duyệt chặn in trong chế độ xem trước. Vui lòng mở ứng dụng trong thẻ mới (Open in new tab).', 'error');
+      }
+      return;
+    }
+
     setIsPrinting(true);
-    setTimeout(() => setIsPrinting(false), 2000);
-    window.focus();
-    window.print();
+
+    try {
+      const printWindow = document.createElement('iframe');
+      printWindow.style.position = 'absolute';
+      printWindow.style.top = '-1000px';
+      printWindow.style.left = '-1000px';
+      printWindow.style.width = '100%';
+      printWindow.style.height = '100%';
+      document.body.appendChild(printWindow);
+
+      const doc = printWindow.contentWindow?.document;
+      if (doc) {
+        doc.open();
+        doc.write(`
+          <html>
+            <head>
+              <title>In Hóa Đơn</title>
+              <style>
+                @media print {
+                  @page { margin: 0; }
+                  body { margin: 1.6cm; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+                }
+                body { font-family: system-ui, -apple-system, sans-serif; color: #000; }
+                .text-center { text-align: center; }
+                .text-right { text-align: right; }
+                .font-bold { font-weight: bold; }
+                .font-black { font-weight: 900; }
+                .text-xl { font-size: 1.25rem; }
+                .text-2xl { font-size: 1.5rem; }
+                .text-3xl { font-size: 1.875rem; }
+                .text-sm { font-size: 0.875rem; }
+                .text-xs { font-size: 0.75rem; }
+                .text-gray-500 { color: #6b7280; }
+                .text-gray-600 { color: #4b5563; }
+                .text-gray-800 { color: #1f2937; }
+                .text-gray-900 dark:text-white { color: #111827; }
+                .text-blue-600 { color: #2563eb; }
+                .text-blue-700 { color: #1d4ed8; }
+                .text-emerald-600 { color: #059669; }
+                .text-rose-600 { color: #e11d48; }
+                .text-indigo-600 { color: #4f46e5; }
+                .mb-1 { margin-bottom: 0.25rem; }
+                .mb-2 { margin-bottom: 0.5rem; }
+                .mb-4 { margin-bottom: 1rem; }
+                .mb-6 { margin-bottom: 1.5rem; }
+                .mb-8 { margin-bottom: 2rem; }
+                .mt-1 { margin-top: 0.25rem; }
+                .mt-2 { margin-top: 0.5rem; }
+                .mt-8 { margin-top: 2rem; }
+                .mt-12 { margin-top: 3rem; }
+                .pb-6 { padding-bottom: 1.5rem; }
+                .p-4 { padding: 1rem; }
+                .px-4 { padding-left: 1rem; padding-right: 1rem; }
+                .py-3 { padding-top: 0.75rem; padding-bottom: 0.75rem; }
+                .py-4 { padding-top: 1rem; padding-bottom: 1rem; }
+                .flex { display: flex; }
+                .items-center { align-items: center; }
+                .justify-between { justify-content: space-between; }
+                .gap-6 { gap: 1.5rem; }
+                .gap-8 { gap: 2rem; }
+                .grid { display: grid; }
+                .grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+                .w-32 { width: 8rem; }
+                .h-32 { height: 8rem; }
+                .object-contain { object-fit: contain; }
+                .uppercase { text-transform: uppercase; }
+                .tracking-tight { letter-spacing: -0.025em; }
+                .tracking-wider { letter-spacing: 0.05em; }
+                .border-b-2 { border-bottom-width: 2px; }
+                .border-blue-600 { border-color: #2563eb; }
+                .border-b { border-bottom-width: 1px; }
+                .border-t { border-top-width: 1px; }
+                .border-gray-100 dark:border-gray-800 { border-color: #f3f4f6; }
+                .border-gray-200 { border-color: #e5e7eb; }
+                .border-gray-800 { border-color: #1f2937; }
+                .border-dashed { border-style: dashed; }
+                .bg-gray-50 { background-color: #f9fafb; }
+                .rounded-xl { border-radius: 0.75rem; }
+                .italic { font-style: italic; }
+                .w-full { width: 100%; }
+                table { width: 100%; border-collapse: collapse; }
+                th { text-align: left; }
+                .col-span-4 { grid-column: span 4 / span 4; }
+                .min-h-screen { min-height: 100vh; }
+                .table-container table th { border-bottom: 1px solid #e5e7eb; padding: 12px 16px; color: #6b7280; font-size: 0.75rem; text-transform: uppercase; }
+                .table-container table td { border-bottom: 1px dashed #e5e7eb; padding: 12px 16px; }
+                .line-through { text-decoration: line-through; }
+              </style>
+            </head>
+            <body>
+              ${printContent.innerHTML}
+            </body>
+          </html>
+        `);
+        doc.close();
+
+        setTimeout(() => {
+          try {
+            printWindow.contentWindow?.focus();
+            printWindow.contentWindow?.print();
+          } catch (e) {
+            showToast('Trình duyệt chặn in trong chế độ xem trước. Vui lòng mở ứng dụng trong thẻ mới (Open in new tab).', 'error');
+          }
+          setIsPrinting(false);
+          setTimeout(() => {
+            document.body.removeChild(printWindow);
+          }, 1000);
+        }, 500);
+      } else {
+        window.print();
+        setIsPrinting(false);
+      }
+    } catch (err) {
+      console.error(err);
+      try {
+        window.print();
+      } catch (e) {
+        showToast('Trình duyệt chặn in trong chế độ xem trước. Vui lòng mở ứng dụng trong thẻ mới (Open in new tab).', 'error');
+      }
+      setIsPrinting(false);
+    }
   };
 
   const calculateTotal = () => {
@@ -803,7 +932,7 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
   };
 
   return (
-    <div className="flex-1 flex flex-col min-w-0 bg-slate-50/50 print:bg-white">
+    <div className="flex-1 flex flex-col min-w-0 bg-slate-50 dark:bg-slate-800/50 print:bg-white dark:bg-slate-900">
       <motion.div 
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
@@ -812,7 +941,7 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
         {/* Header Section */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 print:hidden">
           <div>
-            <h1 className="text-3xl font-black text-slate-900 tracking-tight">Quản lý <span className="text-indigo-600">Đơn hàng</span></h1>
+            <h1 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">Quản lý <span className="text-indigo-600">Đơn hàng</span></h1>
             <p className="text-slate-500 text-sm mt-1 font-medium">Theo dõi, xử lý và quản lý lịch sử bán hàng</p>
           </div>
           
@@ -870,7 +999,7 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
                 placeholder="Tìm mã đơn, khách hàng, sản phẩm, serial..." 
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-12 pr-4 py-3 bg-slate-50/50 border border-slate-100 rounded-xl focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all text-sm font-medium"
+                className="w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all text-sm font-medium"
               />
             </div>
             
@@ -912,7 +1041,7 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="bg-slate-50/50 text-slate-400 text-[10px] uppercase font-black tracking-widest border-b border-slate-100">
+                <tr className="bg-slate-50 dark:bg-slate-800/50 text-slate-400 text-[10px] uppercase font-black tracking-widest border-b border-slate-100 dark:border-slate-800">
                   <th className="p-5">Mã đơn</th>
                   <th className="p-5">Khách hàng & Sản phẩm</th>
                   <th className="p-5">Thời gian</th>
@@ -934,15 +1063,15 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
                       className="hover:bg-indigo-50/30 transition-colors cursor-pointer group"
                     >
                       <td className="p-5">
-                        <span className="text-xs font-black text-slate-900 bg-slate-100 px-2 py-1 rounded-lg group-hover:bg-indigo-100 group-hover:text-indigo-700 transition-colors">
+                        <span className="text-xs font-black text-slate-900 dark:text-white bg-slate-100 px-2 py-1 rounded-lg group-hover:bg-indigo-100 group-hover:text-indigo-700 transition-colors">
                           {order.id}
                         </span>
                       </td>
                       <td className="p-5">
-                        <div className="text-sm font-black text-slate-900 mb-1">{order.customerName}</div>
+                        <div className="text-sm font-black text-slate-900 dark:text-white mb-1">{order.customerName}</div>
                         <div className="flex flex-wrap gap-1">
                           {(order.products || []).map((p, i) => (
-                            <span key={i} className="inline-flex items-center gap-1 text-[9px] font-bold text-slate-500 bg-slate-50 px-1.5 py-0.5 rounded border border-slate-100">
+                            <span key={i} className="inline-flex items-center gap-1 text-[9px] font-bold text-slate-500 bg-slate-50 dark:bg-slate-800 px-1.5 py-0.5 rounded border border-slate-100 dark:border-slate-800">
                               {p.name} (x{p.quantity})
                               {p.serviceTag && <span className="text-indigo-600 font-mono">[{p.serviceTag}]</span>}
                             </span>
@@ -1052,7 +1181,7 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
                   <tr>
                     <td colSpan={7} className="p-20 text-center">
                       <div className="flex flex-col items-center gap-4">
-                        <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center text-slate-200">
+                        <div className="w-16 h-16 bg-slate-50 dark:bg-slate-800 rounded-full flex items-center justify-center text-slate-200">
                           <ShoppingCart size={32} />
                         </div>
                         <p className="text-slate-400 font-bold text-sm">Không tìm thấy đơn hàng nào phù hợp</p>
@@ -1068,10 +1197,10 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
 
       {/* View Order Modal */}
       {viewOrder && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[9999] sm:p-4 print:bg-white print:p-0 print:static print:block">
-          <div className="bg-white sm:rounded-2xl shadow-2xl w-full max-w-3xl h-full sm:h-auto sm:max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-200 print:shadow-none print:max-h-none print:overflow-visible print:w-full print:max-w-none relative">
-            <div className="sticky top-0 bg-white border-b border-gray-100 px-4 sm:px-6 py-4 flex items-center justify-between z-30 print:hidden">
-              <h3 className="text-lg font-bold text-gray-900">Chi tiết đơn hàng #{viewOrder.id}</h3>
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[9999] sm:p-4 print:bg-white dark:bg-slate-900 print:p-0 print:static print:block">
+          <div className="bg-white dark:bg-slate-900 sm:rounded-2xl shadow-2xl w-full max-w-3xl h-full sm:h-auto sm:max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-200 print:shadow-none print:max-h-none print:overflow-visible print:w-full print:max-w-none relative">
+            <div className="sticky top-0 bg-white dark:bg-slate-900 border-b border-gray-100 dark:border-gray-800 px-4 sm:px-6 py-4 flex items-center justify-between z-30 print:hidden">
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white">Chi tiết đơn hàng #{viewOrder.id}</h3>
               <div className="flex gap-2">
                 <button 
                   type="button"
@@ -1094,7 +1223,7 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
             </div>
             <div className="p-4 sm:p-6 print:p-0">
               {/* Print Layout (Hidden in UI, visible in print) */}
-              <div className="hidden print:block text-black p-8 bg-white min-h-screen print-container">
+              <div className="hidden print:block text-black p-8 bg-white dark:bg-slate-900 min-h-screen print-container">
                 {/* Header */}
                 <div className="flex justify-between items-center mb-8 border-b-2 border-blue-600 pb-6">
                   <div className="flex items-center gap-6">
@@ -1117,24 +1246,24 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
                     </div>
                   </div>
                   <div className="text-right">
-                    <h2 className="text-3xl font-black text-gray-900 uppercase mb-1">Hóa Đơn Bán Hàng</h2>
+                    <h2 className="text-3xl font-black text-gray-900 dark:text-white uppercase mb-1">Hóa Đơn Bán Hàng</h2>
                     <p className="text-sm text-gray-500">Mã đơn: <span className="font-bold text-black">#{viewOrder.id}</span></p>
                     <p className="text-sm text-gray-500">Ngày lập: <span className="font-bold text-black">{viewOrder.date}</span></p>
                   </div>
                 </div>
 
                 {/* Customer Info */}
-                <div className="grid grid-cols-2 gap-8 mb-8 bg-gray-50 p-4 rounded-xl border border-gray-100">
+                <div className="grid grid-cols-2 gap-8 mb-8 bg-gray-50 p-4 rounded-xl border border-gray-100 dark:border-gray-800">
                   <div>
                     <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Thông tin khách hàng</h3>
-                    <p className="text-base font-bold text-gray-900">{viewOrder.customerName}</p>
+                    <p className="text-base font-bold text-gray-900 dark:text-white">{viewOrder.customerName}</p>
                     <p className="text-sm text-gray-600">{viewOrder.customerPhone}</p>
                     {viewOrder.customerEmail && <p className="text-sm text-gray-600">{viewOrder.customerEmail}</p>}
                     {viewOrder.customerAddress && <p className="text-sm text-gray-600">{viewOrder.customerAddress}</p>}
                   </div>
                   <div className="text-right">
                     <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Hình thức thanh toán</h3>
-                    <p className="text-base font-bold text-gray-900">{viewOrder.paymentMethod}</p>
+                    <p className="text-base font-bold text-gray-900 dark:text-white">{viewOrder.paymentMethod}</p>
                     <p className={`text-sm font-bold ${viewOrder.paymentStatus === 'Đã thanh toán' ? 'text-emerald-600' : 'text-rose-600'}`}>
                       {viewOrder.paymentStatus}
                     </p>
@@ -1157,9 +1286,9 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
                   </thead>
                   <tbody className="divide-y divide-gray-100">
                     {(viewOrder.products || []).map((item, idx) => (
-                      <tr key={idx} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}>
+                      <tr key={idx} className={idx % 2 === 0 ? 'bg-white dark:bg-slate-900' : 'bg-gray-50/50'}>
                         <td className="p-4">
-                          <div className="font-bold text-gray-900 flex items-center gap-2">
+                          <div className="font-bold text-gray-900 dark:text-white flex items-center gap-2">
                             {item.name}
                             {item.isGift && (
                               <span className="px-1.5 py-0.5 bg-rose-100 text-rose-600 text-[8px] uppercase font-black rounded">Quà tặng</span>
@@ -1178,32 +1307,32 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
                             Bảo hành: {item.isGift ? 'Không bảo hành' : `${item.warrantyMonths || 12} tháng`}
                           </div>
                         </td>
-                        <td className="p-4 text-center font-medium text-gray-900">{item.quantity}</td>
-                        <td className="p-4 text-right font-medium text-gray-900">{formatCurrency(item.price).replace('₫', '').trim()}</td>
+                        <td className="p-4 text-center font-medium text-gray-900 dark:text-white">{item.quantity}</td>
+                        <td className="p-4 text-right font-medium text-gray-900 dark:text-white">{formatCurrency(item.price).replace('₫', '').trim()}</td>
                         <td className="p-4 text-right font-medium text-rose-600">
                           {item.discountType === 'amount' 
                             ? formatCurrency(item.discount || 0).replace('₫', '').trim()
                             : `${item.discount || 0}%`}
                         </td>
-                        <td className="p-4 text-right font-bold text-gray-900">{formatCurrency(item.subtotal || 0).replace('₫', '').trim()}</td>
+                        <td className="p-4 text-right font-bold text-gray-900 dark:text-white">{formatCurrency(item.subtotal || 0).replace('₫', '').trim()}</td>
                       </tr>
                     ))}
                   </tbody>
                   <tfoot>
                     {viewOrder.packagingFee > 0 && (
-                      <tr className="border-t border-gray-100">
+                      <tr className="border-t border-gray-100 dark:border-gray-800">
                         <td colSpan={4} className="p-2 text-right text-xs font-bold text-gray-500 uppercase">Phí đóng gói:</td>
-                        <td className="p-2 text-right font-bold text-gray-900">{formatCurrency(viewOrder.packagingFee).replace('₫', '').trim()}</td>
+                        <td className="p-2 text-right font-bold text-gray-900 dark:text-white">{formatCurrency(viewOrder.packagingFee).replace('₫', '').trim()}</td>
                       </tr>
                     )}
                     {viewOrder.shippingFee > 0 && (
-                      <tr className="border-t border-gray-100">
+                      <tr className="border-t border-gray-100 dark:border-gray-800">
                         <td colSpan={4} className="p-2 text-right text-xs font-bold text-gray-500 uppercase">Phí vận chuyển:</td>
-                        <td className="p-2 text-right font-bold text-gray-900">{formatCurrency(viewOrder.shippingFee).replace('₫', '').trim()}</td>
+                        <td className="p-2 text-right font-bold text-gray-900 dark:text-white">{formatCurrency(viewOrder.shippingFee).replace('₫', '').trim()}</td>
                       </tr>
                     )}
                     {viewOrder.commission > 0 && (
-                      <tr className="border-t border-gray-100">
+                      <tr className="border-t border-gray-100 dark:border-gray-800">
                         <td colSpan={4} className="p-2 text-right text-xs font-bold text-gray-500 uppercase">Hoa hồng CTV:</td>
                         <td className="p-2 text-right font-bold text-rose-600">{formatCurrency(viewOrder.commission).replace('₫', '').trim()}</td>
                       </tr>
@@ -1213,7 +1342,7 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
                       <td className="p-4 text-right font-black text-xl text-blue-700">{formatCurrency(viewOrder.total)}</td>
                     </tr>
                     {isAdmin && (
-                      <tr className="border-t border-gray-100">
+                      <tr className="border-t border-gray-100 dark:border-gray-800">
                         <td colSpan={4} className="p-3 text-right text-xs font-bold text-emerald-600 uppercase italic">Lợi nhuận đơn hàng:</td>
                         <td className="p-3 text-right font-bold text-emerald-700">
                           {formatCurrency(viewOrder.profit ?? (
@@ -1239,11 +1368,11 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
                 {/* Signatures */}
                 <div className="grid grid-cols-2 gap-8 text-center mb-20">
                   <div>
-                    <p className="font-bold text-gray-900 mb-20">Người mua hàng</p>
+                    <p className="font-bold text-gray-900 dark:text-white mb-20">Người mua hàng</p>
                     <p className="text-sm text-gray-400 italic">(Ký và ghi rõ họ tên)</p>
                   </div>
                   <div>
-                    <p className="font-bold text-gray-900 mb-20">Người bán hàng</p>
+                    <p className="font-bold text-gray-900 dark:text-white mb-20">Người bán hàng</p>
                     <p className="text-sm text-gray-400 italic">(Ký và ghi rõ họ tên)</p>
                   </div>
                 </div>
@@ -1251,7 +1380,7 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
                 {/* Payment Info & QR */}
                 <div className="flex justify-between items-end pt-8 border-t border-dashed border-gray-200">
                   <div className="flex items-center gap-6 bg-rose-50 p-4 rounded-2xl border border-rose-100">
-                    <div className="bg-white p-2 rounded-xl shadow-sm">
+                    <div className="bg-white dark:bg-slate-900 p-2 rounded-xl shadow-sm">
                       <img 
                         src="/QR Code HLT 01.png" 
                         alt="Payment QR" 
@@ -1261,13 +1390,13 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
                     </div>
                     <div>
                       <p className="text-xs font-bold text-rose-400 uppercase tracking-wider mb-1">Thông tin chuyển khoản</p>
-                      <p className="text-sm font-black text-gray-900">{data.shopInfo?.bankName || 'Techcombank'}</p>
+                      <p className="text-sm font-black text-gray-900 dark:text-white">{data.shopInfo?.bankName || 'Techcombank'}</p>
                       <p className="text-lg font-black text-blue-700">{data.shopInfo?.bankAccount || '95 7777 6789'}</p>
                       <p className="text-sm font-bold text-gray-700">{data.shopInfo?.taxCode || 'DIEU HUU'}</p>
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm font-bold text-gray-900 mb-1">Cảm ơn quý khách!</p>
+                    <p className="text-sm font-bold text-gray-900 dark:text-white mb-1">Cảm ơn quý khách!</p>
                     <p className="text-xs text-gray-400 italic">Hẹn gặp lại quý khách lần sau.</p>
                   </div>
                 </div>
@@ -1278,25 +1407,25 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
                 <div className="grid grid-cols-2 gap-6 mb-6">
                   <div>
                     <p className="text-sm text-gray-500 mb-1">Khách hàng</p>
-                    <p className="font-medium text-gray-900">{viewOrder.customerName}</p>
+                    <p className="font-medium text-gray-900 dark:text-white">{viewOrder.customerName}</p>
                     <p className="text-xs text-gray-500">{viewOrder.customerPhone}</p>
                     {viewOrder.customerAddress && <p className="text-xs text-gray-500">{viewOrder.customerAddress}</p>}
                   </div>
                   <div>
                     <p className="text-sm text-gray-500 mb-1">Thời gian</p>
-                    <p className="font-medium text-gray-900">{viewOrder.date} {viewOrder.time}</p>
+                    <p className="font-medium text-gray-900 dark:text-white">{viewOrder.date} {viewOrder.time}</p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-500 mb-1">Trạng thái</p>
-                    <p className="font-medium text-gray-900">{viewOrder.status}</p>
+                    <p className="font-medium text-gray-900 dark:text-white">{viewOrder.status}</p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-500 mb-1">Thanh toán</p>
-                    <p className="font-medium text-gray-900">{viewOrder.paymentStatus} ({viewOrder.paymentMethod})</p>
+                    <p className="font-medium text-gray-900 dark:text-white">{viewOrder.paymentStatus} ({viewOrder.paymentMethod})</p>
                   </div>
                 </div>
                 
-                <h4 className="font-medium text-gray-900 mb-3">Sản phẩm</h4>
+                <h4 className="font-medium text-gray-900 dark:text-white mb-3">Sản phẩm</h4>
                 <table className="w-full text-left border-collapse mb-6">
                   <thead>
                     <tr className="bg-gray-50 text-gray-500 text-sm">
@@ -1310,7 +1439,7 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
                   <tbody className="divide-y divide-gray-100">
                     {(viewOrder.products || []).map((item, idx) => (
                       <tr key={idx}>
-                        <td className="p-3 text-sm text-gray-900">
+                        <td className="p-3 text-sm text-gray-900 dark:text-white">
                           <div className="font-medium flex items-center gap-2">
                             {item.name}
                             {item.isGift && (
@@ -1330,14 +1459,14 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
                             Bảo hành: {item.isGift ? 'Không bảo hành' : `${item.warrantyMonths || 12} tháng`}
                           </div>
                         </td>
-                        <td className="p-3 text-sm text-gray-900 text-center">{item.quantity}</td>
-                        <td className="p-3 text-sm text-gray-900 text-right">{formatCurrency(item.price)}</td>
-                        <td className="p-3 text-sm text-gray-900 text-center">
+                        <td className="p-3 text-sm text-gray-900 dark:text-white text-center">{item.quantity}</td>
+                        <td className="p-3 text-sm text-gray-900 dark:text-white text-right">{formatCurrency(item.price)}</td>
+                        <td className="p-3 text-sm text-gray-900 dark:text-white text-center">
                           {item.discountType === 'amount' 
                             ? formatCurrency(item.discount || 0) 
                             : `${item.discount || 0}%`}
                         </td>
-                        <td className="p-3 text-sm font-medium text-gray-900 text-right">{formatCurrency(item.subtotal || 0)}</td>
+                        <td className="p-3 text-sm font-medium text-gray-900 dark:text-white text-right">{formatCurrency(item.subtotal || 0)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -1345,17 +1474,17 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
                     {viewOrder.packagingFee > 0 && (
                       <tr>
                         <td colSpan={4} className="p-2 text-right text-sm text-gray-500">Phí đóng gói:</td>
-                        <td className="p-2 text-right text-sm font-medium text-gray-900">{formatCurrency(viewOrder.packagingFee)}</td>
+                        <td className="p-2 text-right text-sm font-medium text-gray-900 dark:text-white">{formatCurrency(viewOrder.packagingFee)}</td>
                       </tr>
                     )}
                     {viewOrder.shippingFee > 0 && (
                       <tr>
                         <td colSpan={4} className="p-2 text-right text-sm text-gray-500">Phí vận chuyển:</td>
-                        <td className="p-2 text-right text-sm font-medium text-gray-900">{formatCurrency(viewOrder.shippingFee)}</td>
+                        <td className="p-2 text-right text-sm font-medium text-gray-900 dark:text-white">{formatCurrency(viewOrder.shippingFee)}</td>
                       </tr>
                     )}
                     <tr>
-                      <td colSpan={4} className="p-3 text-right font-medium text-gray-900">Tổng cộng:</td>
+                      <td colSpan={4} className="p-3 text-right font-medium text-gray-900 dark:text-white">Tổng cộng:</td>
                       <td className="p-3 text-right font-bold text-blue-600 text-lg">{formatCurrency(viewOrder.total)}</td>
                     </tr>
                   </tfoot>
@@ -1364,7 +1493,7 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
                 {viewOrder.notes && (
                   <div>
                     <p className="text-sm text-gray-500 mb-1">Ghi chú</p>
-                    <p className="text-sm text-gray-900 bg-gray-50 p-3 rounded-lg">{viewOrder.notes}</p>
+                    <p className="text-sm text-gray-900 dark:text-white bg-gray-50 p-3 rounded-lg">{viewOrder.notes}</p>
                   </div>
                 )}
               </div>
@@ -1376,9 +1505,9 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
       {/* Add Order Modal */}
       {isAddModalOpen && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-[100] sm:p-4">
-          <div className="bg-white sm:rounded-2xl shadow-xl w-full max-w-5xl h-full sm:h-auto sm:max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-200">
-            <div className="sticky top-0 bg-white border-b border-gray-100 px-4 sm:px-6 py-4 flex items-center justify-between z-10">
-              <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+          <div className="bg-white dark:bg-slate-900 sm:rounded-2xl shadow-xl w-full max-w-5xl h-full sm:h-auto sm:max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-200">
+            <div className="sticky top-0 bg-white dark:bg-slate-900 border-b border-gray-100 dark:border-gray-800 px-4 sm:px-6 py-4 flex items-center justify-between z-10">
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
                 <ShoppingCart className="text-blue-600" size={22} />
                 {editingId ? 'Chỉnh sửa đơn hàng' : 'Tạo đơn hàng mới'}
               </h3>
@@ -1396,12 +1525,12 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
             <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-8">
               {/* General Information Section */}
               <div className="space-y-4">
-                <div className="flex items-center gap-2 pb-2 border-b border-gray-100">
+                <div className="flex items-center gap-2 pb-2 border-b border-gray-100 dark:border-gray-800">
                   <FileText size={18} className="text-blue-500" />
                   <h4 className="font-bold text-gray-800 uppercase text-xs tracking-wider">Thông tin đơn hàng</h4>
                 </div>
                 
-                <div className="grid grid-cols-1 md:grid-cols-6 gap-4 sm:gap-6 bg-gray-50/50 p-4 rounded-2xl border border-gray-100">
+                <div className="grid grid-cols-1 md:grid-cols-6 gap-4 sm:gap-6 bg-gray-50/50 p-4 rounded-2xl border border-gray-100 dark:border-gray-800">
                   <div className="md:col-span-1">
                     <label className="block text-xs font-bold text-gray-500 uppercase mb-1 ml-1">Mã đơn hàng</label>
                     <input 
@@ -1409,7 +1538,7 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
                       value={formData.id}
                       onChange={e => setFormData({...formData, id: e.target.value})}
                       placeholder="Tự động (DH001...)"
-                      className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white shadow-sm transition-all"
+                      className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white dark:bg-slate-900 shadow-sm transition-all"
                     />
                   </div>
                   <div className="md:col-span-4">
@@ -1446,7 +1575,7 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
                       type="date"
                       value={formData.date}
                       onChange={e => setFormData({...formData, date: e.target.value})}
-                      className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white shadow-sm transition-all"
+                      className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white dark:bg-slate-900 shadow-sm transition-all"
                     />
                   </div>
                   
@@ -1457,7 +1586,7 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
                       <select 
                         value={formData.paymentMethod}
                         onChange={e => setFormData({...formData, paymentMethod: e.target.value})}
-                        className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm sm:text-base bg-white shadow-sm transition-all"
+                        className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm sm:text-base bg-white dark:bg-slate-900 shadow-sm transition-all"
                       >
                         <option value="Tiền mặt">Tiền mặt</option>
                         <option value="Chuyển khoản">Chuyển khoản</option>
@@ -1488,7 +1617,7 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
                       type="text"
                       value={formData.notes}
                       onChange={e => setFormData({...formData, notes: e.target.value})}
-                      className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white shadow-sm transition-all"
+                      className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white dark:bg-slate-900 shadow-sm transition-all"
                       placeholder="Ghi chú đơn hàng..."
                     />
                   </div>
@@ -1497,7 +1626,7 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
 
               {/* Fees and Commission Section */}
               <div className="space-y-4">
-                <div className="flex items-center gap-2 pb-2 border-b border-gray-100">
+                <div className="flex items-center gap-2 pb-2 border-b border-gray-100 dark:border-gray-800">
                   <DollarSign size={18} className="text-emerald-500" />
                   <h4 className="font-bold text-gray-800 uppercase text-xs tracking-wider">Phí & Hoa hồng</h4>
                 </div>
@@ -1510,7 +1639,7 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
                         type="number" min="0"
                         value={formData.packagingFee}
                         onChange={e => setFormData({...formData, packagingFee: Number(e.target.value)})}
-                        className="w-full px-3 py-2 border border-emerald-100 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-sm bg-white shadow-sm"
+                        className="w-full px-3 py-2 border border-emerald-100 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-sm bg-white dark:bg-slate-900 shadow-sm"
                         placeholder="0"
                       />
                     </div>
@@ -1521,7 +1650,7 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
                       type="number" min="0"
                       value={formData.shippingFee}
                       onChange={e => setFormData({...formData, shippingFee: Number(e.target.value)})}
-                      className="w-full px-3 py-2 border border-emerald-100 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-sm bg-white shadow-sm"
+                      className="w-full px-3 py-2 border border-emerald-100 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-sm bg-white dark:bg-slate-900 shadow-sm"
                       placeholder="0"
                     />
                   </div>
@@ -1531,7 +1660,7 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
                       type="number" min="0"
                       value={formData.commission}
                       onChange={e => setFormData({...formData, commission: Number(e.target.value)})}
-                      className="w-full px-3 py-2 border border-indigo-100 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-sm bg-white shadow-sm"
+                      className="w-full px-3 py-2 border border-indigo-100 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-sm bg-white dark:bg-slate-900 shadow-sm"
                       placeholder="0"
                     />
                   </div>
@@ -1541,7 +1670,7 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
                       type="text"
                       value={formData.collaboratorName}
                       onChange={e => setFormData({...formData, collaboratorName: e.target.value})}
-                      className="w-full px-3 py-2 border border-indigo-100 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-sm bg-white shadow-sm"
+                      className="w-full px-3 py-2 border border-indigo-100 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-sm bg-white dark:bg-slate-900 shadow-sm"
                       placeholder="Tên CTV..."
                     />
                   </div>
@@ -1550,7 +1679,7 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
 
               {/* Products List Section */}
               <div className="space-y-4">
-                <div className="flex items-center justify-between pb-2 border-b border-gray-100">
+                <div className="flex items-center justify-between pb-2 border-b border-gray-100 dark:border-gray-800">
                   <div className="flex items-center gap-2">
                     <Package size={18} className="text-amber-500" />
                     <h4 className="font-bold text-gray-800 uppercase text-xs tracking-wider">Danh sách sản phẩm</h4>
@@ -1566,7 +1695,7 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
                 
                 <div className="space-y-4">
                   {orderItems.map((item, index) => (
-                    <div key={index} className="bg-white p-4 sm:p-5 rounded-2xl border border-gray-200 shadow-sm hover:border-blue-200 transition-colors space-y-4 relative overflow-hidden group">
+                    <div key={index} className="bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-2xl border border-gray-200 shadow-sm hover:border-blue-200 transition-colors space-y-4 relative overflow-hidden group">
                       {/* Item Number Badge */}
                       <div className="absolute top-0 left-0 bg-gray-100 text-gray-400 text-[10px] font-bold px-2 py-1 rounded-br-lg group-hover:bg-blue-600 group-hover:text-white transition-colors">
                         #{index + 1}
@@ -1663,7 +1792,7 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
                                 onChange={e => handleItemChange(index, 'isGift', e.target.checked)}
                                 className="sr-only peer"
                               />
-                              <div className="w-8 h-4 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-amber-500"></div>
+                              <div className="w-8 h-4 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white dark:bg-slate-900 after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-amber-500"></div>
                             </div>
                           </label>
                           <button 
@@ -1679,7 +1808,7 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
                       </div>
 
                       {/* Specs Row */}
-                      <div className="grid grid-cols-2 sm:grid-cols-6 gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100">
+                      <div className="grid grid-cols-2 sm:grid-cols-6 gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100 dark:border-gray-800">
                         <div className="col-span-2 sm:col-span-1">
                           <label className="block text-[9px] font-bold text-blue-600 uppercase mb-1">S/N</label>
                           <input 
@@ -1687,7 +1816,7 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
                             placeholder={item.isGift ? "S/N" : "S/N *"}
                             value={item.serviceTag}
                             onChange={e => handleItemChange(index, 'serviceTag', e.target.value)}
-                            className={`w-full px-2 py-1.5 border rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-xs font-medium ${item.isGift ? 'border-gray-200 bg-white' : 'border-blue-200 bg-blue-50/50'}`}
+                            className={`w-full px-2 py-1.5 border rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-xs font-medium ${item.isGift ? 'border-gray-200 bg-white dark:bg-slate-900' : 'border-blue-200 bg-blue-50/50'}`}
                           />
                         </div>
                         <div>
@@ -1697,7 +1826,7 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
                             placeholder="CPU"
                             value={item.cpu}
                             onChange={e => handleItemChange(index, 'cpu', e.target.value)}
-                            className="w-full px-2 py-1.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-xs bg-white"
+                            className="w-full px-2 py-1.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-xs bg-white dark:bg-slate-900"
                           />
                         </div>
                         <div>
@@ -1707,7 +1836,7 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
                             placeholder="RAM"
                             value={item.ram}
                             onChange={e => handleItemChange(index, 'ram', e.target.value)}
-                            className="w-full px-2 py-1.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-xs bg-white"
+                            className="w-full px-2 py-1.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-xs bg-white dark:bg-slate-900"
                           />
                         </div>
                         <div>
@@ -1717,7 +1846,7 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
                             placeholder="SSD"
                             value={item.ssd}
                             onChange={e => handleItemChange(index, 'ssd', e.target.value)}
-                            className="w-full px-2 py-1.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-xs bg-white"
+                            className="w-full px-2 py-1.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-xs bg-white dark:bg-slate-900"
                           />
                         </div>
                         <div>
@@ -1727,7 +1856,7 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
                             placeholder="Màn"
                             value={item.screen}
                             onChange={e => handleItemChange(index, 'screen', e.target.value)}
-                            className="w-full px-2 py-1.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-xs bg-white"
+                            className="w-full px-2 py-1.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-xs bg-white dark:bg-slate-900"
                           />
                         </div>
                         <div>
@@ -1736,7 +1865,7 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
                             disabled={item.isGift}
                             value={item.isGift ? 0 : item.warrantyMonths}
                             onChange={e => handleItemChange(index, 'warrantyMonths', Number(e.target.value))}
-                            className={`w-full px-1 py-1.5 border rounded-lg focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-[10px] font-bold ${item.isGift ? 'border-gray-200 bg-gray-100 text-gray-400' : 'border-emerald-200 bg-white text-emerald-700'}`}
+                            className={`w-full px-1 py-1.5 border rounded-lg focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-[10px] font-bold ${item.isGift ? 'border-gray-200 bg-gray-100 text-gray-400' : 'border-emerald-200 bg-white dark:bg-slate-900 text-emerald-700'}`}
                           >
                             {item.isGift && <option value={0}>Không BH</option>}
                             <option value={1}>1T</option>
@@ -1751,7 +1880,7 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
                         </div>
                       </div>
                       
-                      <div className="pt-2 flex justify-between items-center border-t border-gray-100 mt-2">
+                      <div className="pt-2 flex justify-between items-center border-t border-gray-100 dark:border-gray-800 mt-2">
                         <div>
                           {isAdmin && (
                             <div className="flex items-center gap-2">
@@ -1767,7 +1896,7 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
                         </div>
                         <div className="flex items-center gap-2">
                           <span className="text-xs text-gray-400 font-medium uppercase tracking-wider">Thành tiền:</span>
-                          <span className="text-base font-black text-gray-900 bg-gray-100 px-3 py-1 rounded-lg">
+                          <span className="text-base font-black text-gray-900 dark:text-white bg-gray-100 px-3 py-1 rounded-lg">
                             {formatCurrency(
                               item.discountType === 'percent' 
                                 ? item.quantity * item.price * (1 - (item.discount || 0) / 100)
@@ -1782,7 +1911,7 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
               </div>
 
               {/* Footer / Summary Section */}
-              <div className="sticky bottom-0 bg-white pt-6 pb-2 border-t border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-6 z-10">
+              <div className="sticky bottom-0 bg-white dark:bg-slate-900 pt-6 pb-2 border-t border-gray-100 dark:border-gray-800 flex flex-col sm:flex-row items-center justify-between gap-6 z-10">
                 <div className="flex items-center gap-4 bg-blue-50 px-6 py-3 rounded-2xl border border-blue-100 w-full sm:w-auto">
                   <div className="p-2 bg-blue-600 rounded-xl text-white">
                     <ShoppingCart size={24} />
@@ -1820,15 +1949,15 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
       {/* Add Supplier Modal (Nested) */}
       {isAddCategoryModalOpen && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center z-[120] p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md animate-in fade-in zoom-in-95 duration-200">
-            <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-blue-50/50">
-              <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-md animate-in fade-in zoom-in-95 duration-200">
+            <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center bg-blue-50/50">
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
                 <PlusCircle className="text-blue-600" size={20} />
                 Thêm danh mục mới
               </h3>
               <button 
                 onClick={() => setIsAddCategoryModalOpen(false)}
-                className="p-2 hover:bg-white rounded-full text-gray-400 hover:text-gray-600 transition-colors"
+                className="p-2 hover:bg-white dark:bg-slate-900 rounded-full text-gray-400 hover:text-gray-600 transition-colors"
               >
                 <X size={20} />
               </button>
@@ -1860,7 +1989,7 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
                 </select>
               </div>
 
-              <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
+              <div className="flex justify-end gap-3 pt-4 border-t border-gray-100 dark:border-gray-800">
                 <button 
                   type="button"
                   onClick={() => setIsAddCategoryModalOpen(false)}
@@ -1883,15 +2012,15 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
 
       {isAddSupplierModalOpen && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center z-[120] p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-xl max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-200">
-            <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between z-10">
-              <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-xl max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-200">
+            <div className="sticky top-0 bg-white dark:bg-slate-900 border-b border-gray-100 dark:border-gray-800 px-6 py-4 flex items-center justify-between z-10">
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
                 <PlusCircle className="text-blue-600" size={20} />
                 Thêm nhà cung cấp mới
               </h3>
               <button 
                 onClick={() => setIsAddSupplierModalOpen(false)}
-                className="p-2 hover:bg-white rounded-full text-gray-400 hover:text-gray-600 transition-colors"
+                className="p-2 hover:bg-white dark:bg-slate-900 rounded-full text-gray-400 hover:text-gray-600 transition-colors"
               >
                 <X size={20} />
               </button>
@@ -1966,7 +2095,7 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
                 </div>
               </div>
 
-              <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
+              <div className="flex justify-end gap-3 pt-4 border-t border-gray-100 dark:border-gray-800">
                 <button 
                   type="button"
                   onClick={() => setIsAddSupplierModalOpen(false)}
@@ -1995,15 +2124,15 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
       {/* Add Product Modal (Nested) */}
       {isAddProductModalOpen && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center z-[110] p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-xl animate-in fade-in zoom-in-95 duration-200">
-            <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-blue-50/50">
-              <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-xl animate-in fade-in zoom-in-95 duration-200">
+            <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center bg-blue-50/50">
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
                 <PlusCircle className="text-blue-600" size={20} />
                 Thêm sản phẩm mới
               </h3>
               <button 
                 onClick={() => setIsAddProductModalOpen(false)}
-                className="p-2 hover:bg-white rounded-full text-gray-400 hover:text-gray-600 transition-colors"
+                className="p-2 hover:bg-white dark:bg-slate-900 rounded-full text-gray-400 hover:text-gray-600 transition-colors"
               >
                 <X size={20} />
               </button>
@@ -2113,7 +2242,7 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
                 </div>
               </div>
 
-              <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
+              <div className="flex justify-end gap-3 pt-4 border-t border-gray-100 dark:border-gray-800">
                 <button 
                   type="button"
                   onClick={() => setIsAddProductModalOpen(false)}
@@ -2142,9 +2271,9 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
       {/* Add Customer Modal (Nested) */}
       {isAddCustomerModalOpen && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center z-[110] p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-xl animate-in fade-in zoom-in-95 duration-200">
-            <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
-              <h3 className="text-lg font-bold text-gray-900">Thêm khách hàng mới</h3>
+          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-xl animate-in fade-in zoom-in-95 duration-200">
+            <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white">Thêm khách hàng mới</h3>
               <button 
                 onClick={() => setIsAddCustomerModalOpen(false)}
                 className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
@@ -2208,7 +2337,7 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
                 </div>
               </div>
 
-              <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
+              <div className="flex justify-end gap-3 pt-4 border-t border-gray-100 dark:border-gray-800">
                 <button 
                   type="button"
                   onClick={() => setIsAddCustomerModalOpen(false)}

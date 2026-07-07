@@ -195,11 +195,11 @@ export default function Messages() {
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-120px)] bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+    <div className="flex flex-col h-[calc(100vh-120px)] bg-white dark:bg-slate-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden">
       <div className="flex h-full">
         {/* Sidebar */}
-        <div className={`w-full md:w-80 border-r border-gray-100 flex flex-col ${selectedChat ? 'hidden md:flex' : 'flex'}`}>
-          <div className="p-4 border-b border-gray-100">
+        <div className={`w-full md:w-80 border-r border-gray-100 dark:border-gray-800 flex flex-col ${selectedChat ? 'hidden md:flex' : 'flex'}`}>
+          <div className="p-4 border-b border-gray-100 dark:border-gray-800">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-lg font-semibold">Tin nhắn nội bộ</h2>
               {isAdmin && (
@@ -239,7 +239,7 @@ export default function Messages() {
                       <Users className="w-5 h-5" />
                     </div>
                     <div className="flex-1 text-left overflow-hidden">
-                      <p className="font-medium text-sm text-gray-900 truncate">{group.name}</p>
+                      <p className="font-medium text-sm text-gray-900 dark:text-white truncate">{group.name}</p>
                       <p className="text-[10px] text-gray-500">{group.memberIds.length} thành viên</p>
                     </div>
                     {getUnreadCount(group.id, 'group') > 0 && (
@@ -270,7 +270,7 @@ export default function Messages() {
                       {user.email.charAt(0).toUpperCase()}
                     </div>
                     <div className="flex-1 text-left overflow-hidden">
-                      <p className="font-medium text-sm text-gray-900 truncate">{user.email}</p>
+                      <p className="font-medium text-sm text-gray-900 dark:text-white truncate">{user.email}</p>
                       <p className="text-[10px] text-gray-500">{user.role === 'admin' ? 'Quản trị viên' : 'Nhân viên'}</p>
                     </div>
                     {getUnreadCount(user.uid, 'direct') > 0 && (
@@ -290,7 +290,7 @@ export default function Messages() {
           {selectedChat ? (
             <>
               {/* Chat Header */}
-              <div className="p-4 bg-white border-b border-gray-100 flex items-center justify-between">
+              <div className="p-4 bg-white dark:bg-slate-900 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <button 
                     onClick={() => setSelectedChat(null)}
@@ -302,7 +302,7 @@ export default function Messages() {
                     {selectedChat.type === 'group' ? <Users className="w-5 h-5" /> : (selectedUser?.email.charAt(0).toUpperCase())}
                   </div>
                   <div>
-                    <p className="font-semibold text-gray-900 text-sm md:text-base truncate max-w-[120px] md:max-w-none">
+                    <p className="font-semibold text-gray-900 dark:text-white text-sm md:text-base truncate max-w-[120px] md:max-w-none">
                       {selectedChat.type === 'group' ? selectedGroup?.name : selectedUser?.email}
                     </p>
                     <p className="text-[10px] md:text-xs text-green-500">
@@ -354,7 +354,7 @@ export default function Messages() {
                             
                             {msg.type === 'task' && task ? (
                               <div className={`p-3 md:p-4 rounded-2xl border ${
-                                isMe ? 'bg-blue-50 border-blue-100' : 'bg-white border-gray-100'
+                                isMe ? 'bg-blue-50 border-blue-100' : 'bg-white dark:bg-slate-900 border-gray-100 dark:border-gray-800'
                               } shadow-sm min-w-[200px] md:min-w-[240px]`}>
                                 <div className="flex items-start gap-2 md:gap-3">
                                   <button 
@@ -364,7 +364,7 @@ export default function Messages() {
                                     {task.status === 'completed' ? <CheckCircle2 className="w-5 h-5" /> : <Circle className="w-5 h-5" />}
                                   </button>
                                   <div className="flex-1">
-                                    <p className={`font-semibold text-xs md:text-sm ${task.status === 'completed' ? 'line-through text-gray-400' : 'text-gray-900'}`}>
+                                    <p className={`font-semibold text-xs md:text-sm ${task.status === 'completed' ? 'line-through text-gray-400' : 'text-gray-900 dark:text-white'}`}>
                                       {task.title}
                                     </p>
                                     {task.description && (
@@ -389,7 +389,7 @@ export default function Messages() {
                               <div className={`p-3 rounded-2xl text-sm ${
                                 isMe 
                                   ? 'bg-blue-600 text-white rounded-tr-none' 
-                                  : 'bg-white text-gray-800 border border-gray-100 rounded-tl-none shadow-sm'
+                                  : 'bg-white dark:bg-slate-900 text-gray-800 border border-gray-100 dark:border-gray-800 rounded-tl-none shadow-sm'
                               }`}>
                                 {msg.content}
                               </div>
@@ -408,7 +408,7 @@ export default function Messages() {
               </div>
 
               {/* Input Area */}
-              <div className="p-4 bg-white border-t border-gray-100">
+              <div className="p-4 bg-white dark:bg-slate-900 border-t border-gray-100 dark:border-gray-800">
                 <form onSubmit={handleSendMessage} className="flex gap-2">
                   <input
                     type="text"
@@ -432,7 +432,7 @@ export default function Messages() {
               <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mb-4">
                 <MessageSquare className="w-10 h-10 opacity-20" />
               </div>
-              <p className="text-lg font-medium text-gray-900">Chọn cuộc trò chuyện</p>
+              <p className="text-lg font-medium text-gray-900 dark:text-white">Chọn cuộc trò chuyện</p>
               <p className="text-sm">để bắt đầu trao đổi công việc</p>
             </div>
           )}
@@ -442,9 +442,9 @@ export default function Messages() {
       {/* Create Group Modal */}
       {showCreateGroup && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[100] p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 space-y-4 animate-in zoom-in duration-200">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-md p-6 space-y-4 animate-in zoom-in duration-200">
             <div className="flex justify-between items-center">
-              <h3 className="text-lg font-bold text-gray-900">Tạo nhóm mới</h3>
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white">Tạo nhóm mới</h3>
               <button onClick={() => setShowCreateGroup(false)} className="text-gray-400 hover:text-gray-600">
                 <Plus className="w-6 h-6 rotate-45" />
               </button>
@@ -466,7 +466,7 @@ export default function Messages() {
                 <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Chọn thành viên</label>
                 <div className="max-h-48 overflow-y-auto space-y-1 p-1 bg-gray-50 rounded-xl">
                   {otherUsers.map(user => (
-                    <label key={user.uid} className="flex items-center gap-3 p-2 hover:bg-white rounded-lg cursor-pointer transition-colors">
+                    <label key={user.uid} className="flex items-center gap-3 p-2 hover:bg-white dark:bg-slate-900 rounded-lg cursor-pointer transition-colors">
                       <input
                         type="checkbox"
                         className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
@@ -477,7 +477,7 @@ export default function Messages() {
                         }}
                       />
                       <div className="flex-1">
-                        <p className="text-sm font-medium text-gray-900">{user.email}</p>
+                        <p className="text-sm font-medium text-gray-900 dark:text-white">{user.email}</p>
                         <p className="text-[10px] text-gray-500">{user.role === 'admin' ? 'Quản trị viên' : 'Nhân viên'}</p>
                       </div>
                     </label>
@@ -508,9 +508,9 @@ export default function Messages() {
       {/* Create Task Modal */}
       {showCreateTask && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[100] p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 space-y-4 animate-in zoom-in duration-200">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-md p-6 space-y-4 animate-in zoom-in duration-200">
             <div className="flex justify-between items-center">
-              <h3 className="text-lg font-bold text-gray-900">Giao việc mới</h3>
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white">Giao việc mới</h3>
               <button onClick={() => setShowCreateTask(false)} className="text-gray-400 hover:text-gray-600">
                 <Plus className="w-6 h-6 rotate-45" />
               </button>

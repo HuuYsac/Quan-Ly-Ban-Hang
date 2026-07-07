@@ -279,7 +279,7 @@ const Repairs: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Quản lý Sửa chữa</h2>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Quản lý Sửa chữa</h2>
           <p className="text-gray-500 text-sm">Theo dõi tiến độ sửa chữa và bảo hành thiết bị</p>
         </div>
         <button 
@@ -297,16 +297,16 @@ const Repairs: React.FC = () => {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-        <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm">
+        <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm">
           <div className="flex items-center gap-3 mb-2">
             <div className="p-2 bg-blue-50 text-blue-600 rounded-lg">
               <Wrench size={20} />
             </div>
             <span className="text-sm font-medium text-gray-500">Tổng số</span>
           </div>
-          <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
+          <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.total}</p>
         </div>
-        <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm">
+        <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm">
           <div className="flex items-center gap-3 mb-2">
             <div className="p-2 bg-amber-50 text-amber-600 rounded-lg">
               <Clock size={20} />
@@ -315,7 +315,7 @@ const Repairs: React.FC = () => {
           </div>
           <p className="text-2xl font-bold text-amber-600">{stats.inProgress}</p>
         </div>
-        <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm">
+        <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm">
           <div className="flex items-center gap-3 mb-2">
             <div className="p-2 bg-emerald-50 text-emerald-600 rounded-lg">
               <CheckCircle2 size={20} />
@@ -324,7 +324,7 @@ const Repairs: React.FC = () => {
           </div>
           <p className="text-2xl font-bold text-emerald-600">{stats.completed}</p>
         </div>
-        <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm">
+        <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm">
           <div className="flex items-center gap-3 mb-2">
             <div className="p-2 bg-gray-50 text-gray-600 rounded-lg">
               <ExternalLink size={20} />
@@ -333,7 +333,7 @@ const Repairs: React.FC = () => {
           </div>
           <p className="text-2xl font-bold text-gray-600">{stats.returned}</p>
         </div>
-        <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm">
+        <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm">
           <div className="flex items-center gap-3 mb-2">
             <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg">
               <TrendingUpIcon size={20} />
@@ -353,13 +353,13 @@ const Repairs: React.FC = () => {
             placeholder="Tìm theo tên khách, SĐT, Service Tag..." 
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all bg-white"
+            className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all bg-white dark:bg-slate-900"
           />
         </div>
         <select 
           value={filterStatus}
           onChange={(e) => setFilterStatus(e.target.value)}
-          className="px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all bg-white font-medium text-gray-700"
+          className="px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all bg-white dark:bg-slate-900 font-medium text-gray-700"
         >
           <option value="all">Tất cả trạng thái</option>
           <option value="Đang sửa">Đang sửa</option>
@@ -370,7 +370,7 @@ const Repairs: React.FC = () => {
       </div>
 
       {/* Repairs List */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden">
         <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
@@ -391,7 +391,7 @@ const Repairs: React.FC = () => {
                 >
                   <td className="p-4">
                     <div className="flex flex-col">
-                      <span className="font-bold text-gray-900">{repair.customerName}</span>
+                      <span className="font-bold text-gray-900 dark:text-white">{repair.customerName}</span>
                       <span className="text-xs text-gray-500 flex items-center gap-1">
                         <Phone size={10} /> {repair.customerPhone}
                       </span>
@@ -420,13 +420,13 @@ const Repairs: React.FC = () => {
                     <div className="flex flex-col text-xs space-y-1">
                       <div className="flex justify-between gap-4">
                         <span className="text-gray-500">Đối tác:</span>
-                        <span className="font-medium text-gray-900">{formatCurrency(repair.partnerCost || 0)}</span>
+                        <span className="font-medium text-gray-900 dark:text-white">{formatCurrency(repair.partnerCost || 0)}</span>
                       </div>
                       <div className="flex justify-between gap-4">
                         <span className="text-gray-500">Khách:</span>
                         <span className="font-medium text-blue-600">{formatCurrency(repair.customerPrice || 0)}</span>
                       </div>
-                      <div className="flex justify-between gap-4 pt-1 border-t border-gray-100">
+                      <div className="flex justify-between gap-4 pt-1 border-t border-gray-100 dark:border-gray-800">
                         <span className="text-gray-500">Lợi nhuận:</span>
                         <span className="font-bold text-emerald-600">{formatCurrency(repair.profit || 0)}</span>
                       </div>
@@ -498,7 +498,7 @@ const Repairs: React.FC = () => {
             >
               <div className="flex justify-between items-start">
                 <div className="space-y-1">
-                  <div className="font-bold text-gray-900">{repair.customerName}</div>
+                  <div className="font-bold text-gray-900 dark:text-white">{repair.customerName}</div>
                   <div className="text-xs text-gray-500 flex items-center gap-1">
                     <Phone size={10} /> {repair.customerPhone}
                   </div>
@@ -517,10 +517,10 @@ const Repairs: React.FC = () => {
                 <span className="line-clamp-2">{repair.issue}</span>
               </div>
 
-              <div className="grid grid-cols-2 gap-4 py-2 border-y border-gray-100">
+              <div className="grid grid-cols-2 gap-4 py-2 border-y border-gray-100 dark:border-gray-800">
                 <div className="space-y-1">
                   <p className="text-[10px] text-gray-500 uppercase font-bold">Chi phí đối tác</p>
-                  <p className="text-sm font-bold text-gray-900">{formatCurrency(repair.partnerCost || 0)}</p>
+                  <p className="text-sm font-bold text-gray-900 dark:text-white">{formatCurrency(repair.partnerCost || 0)}</p>
                 </div>
                 <div className="space-y-1">
                   <p className="text-[10px] text-gray-500 uppercase font-bold">Báo khách</p>
@@ -572,9 +572,9 @@ const Repairs: React.FC = () => {
       {/* Modal Form */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-[100] sm:p-4">
-          <div className="bg-white sm:rounded-2xl shadow-xl w-full max-w-2xl h-full sm:h-auto sm:max-h-[90vh] animate-in fade-in zoom-in-95 duration-200 overflow-y-auto">
-            <div className="sticky top-0 bg-white px-6 py-4 border-b border-gray-100 flex items-center justify-between z-10">
-              <h3 className="text-lg font-bold text-gray-900">
+          <div className="bg-white dark:bg-slate-900 sm:rounded-2xl shadow-xl w-full max-w-2xl h-full sm:h-auto sm:max-h-[90vh] animate-in fade-in zoom-in-95 duration-200 overflow-y-auto">
+            <div className="sticky top-0 bg-white dark:bg-slate-900 px-6 py-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between z-10">
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white">
                 {editingRepair ? 'Cập nhật phiếu sửa chữa' : 'Tạo phiếu sửa chữa mới'}
               </h3>
               <button onClick={() => setIsModalOpen(false)} className="p-2 text-gray-400 hover:text-gray-600 rounded-full">
@@ -775,7 +775,7 @@ const Repairs: React.FC = () => {
                 </div>
               </div>
 
-              <div className="flex gap-3 pt-4 border-t border-gray-100">
+              <div className="flex gap-3 pt-4 border-t border-gray-100 dark:border-gray-800">
                 <button 
                   type="button"
                   onClick={() => setIsModalOpen(false)}
@@ -797,13 +797,13 @@ const Repairs: React.FC = () => {
       {/* Add Customer Modal */}
       {isAddCustomerModalOpen && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center z-[110] p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md animate-in fade-in zoom-in-95 duration-200">
-            <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-blue-50/50">
-              <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-md animate-in fade-in zoom-in-95 duration-200">
+            <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center bg-blue-50/50">
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
                 <PlusCircle size={20} className="text-blue-600" />
                 Thêm khách hàng mới
               </h3>
-              <button onClick={() => setIsAddCustomerModalOpen(false)} className="p-2 hover:bg-white rounded-full text-gray-400 hover:text-gray-600 transition-colors">
+              <button onClick={() => setIsAddCustomerModalOpen(false)} className="p-2 hover:bg-white dark:bg-slate-900 rounded-full text-gray-400 hover:text-gray-600 transition-colors">
                 <X size={20} />
               </button>
             </div>
@@ -823,7 +823,7 @@ const Repairs: React.FC = () => {
                   <option value="doanh-nghiep">Doanh nghiệp</option>
                 </select>
               </div>
-              <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
+              <div className="flex justify-end gap-3 pt-4 border-t border-gray-100 dark:border-gray-800">
                 <button type="button" onClick={() => setIsAddCustomerModalOpen(false)} className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl font-bold transition-colors">Hủy</button>
                 <button type="submit" disabled={isSubmittingCustomer} className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold transition-all shadow-lg shadow-blue-600/20 disabled:opacity-50">
                   {isSubmittingCustomer ? 'Đang lưu...' : 'Lưu khách hàng'}
@@ -837,13 +837,13 @@ const Repairs: React.FC = () => {
       {/* Add Technician Modal */}
       {isAddTechnicianModalOpen && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center z-[110] p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md animate-in fade-in zoom-in-95 duration-200">
-            <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-blue-50/50">
-              <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-md animate-in fade-in zoom-in-95 duration-200">
+            <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center bg-blue-50/50">
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
                 <PlusCircle size={20} className="text-blue-600" />
                 Thêm thợ / đối tác mới
               </h3>
-              <button onClick={() => setIsAddTechnicianModalOpen(false)} className="p-2 hover:bg-white rounded-full text-gray-400 hover:text-gray-600 transition-colors">
+              <button onClick={() => setIsAddTechnicianModalOpen(false)} className="p-2 hover:bg-white dark:bg-slate-900 rounded-full text-gray-400 hover:text-gray-600 transition-colors">
                 <X size={20} />
               </button>
             </div>
@@ -863,7 +863,7 @@ const Repairs: React.FC = () => {
                   <option value="Đối tác">Đối tác</option>
                 </select>
               </div>
-              <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
+              <div className="flex justify-end gap-3 pt-4 border-t border-gray-100 dark:border-gray-800">
                 <button type="button" onClick={() => setIsAddTechnicianModalOpen(false)} className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl font-bold transition-colors">Hủy</button>
                 <button type="submit" disabled={isSubmittingTechnician} className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold transition-all shadow-lg shadow-blue-600/20 disabled:opacity-50">
                   {isSubmittingTechnician ? 'Đang lưu...' : 'Lưu thợ/đối tác'}

@@ -195,15 +195,15 @@ export function AIAssistant({ data }: AIAssistantProps) {
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-12rem)] max-w-5xl mx-auto bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+    <div className="flex flex-col h-[calc(100vh-12rem)] max-w-5xl mx-auto bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 overflow-hidden">
       {/* Header */}
-      <div className="p-4 border-b border-gray-100 bg-gray-50/50 flex items-center justify-between">
+      <div className="p-4 border-b border-gray-100 dark:border-gray-800 bg-gray-50/50 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white shadow-lg shadow-blue-600/20">
             <Sparkles size={20} />
           </div>
           <div>
-            <h2 className="text-lg font-bold text-gray-900">Trợ lý AI Thông minh</h2>
+            <h2 className="text-lg font-bold text-gray-900 dark:text-white">Trợ lý AI Thông minh</h2>
             <p className="text-xs text-gray-500">Tư vấn sản phẩm & Viết bài bán hàng</p>
           </div>
         </div>
@@ -243,13 +243,13 @@ export function AIAssistant({ data }: AIAssistantProps) {
                         <div 
                           key={p.id}
                           onClick={() => generateFacebookPost(p)}
-                          className="p-3 bg-white border border-gray-200 rounded-xl hover:border-blue-500 hover:shadow-md transition-all cursor-pointer group"
+                          className="p-3 bg-white dark:bg-slate-900 border border-gray-200 rounded-xl hover:border-blue-500 hover:shadow-md transition-all cursor-pointer group"
                         >
                           <div className="flex justify-between items-start mb-1">
                             <span className="text-xs font-bold text-blue-600 uppercase tracking-wider">{p.category}</span>
                             <Sparkles size={14} className="text-gray-300 group-hover:text-blue-500 transition-colors" />
                           </div>
-                          <h4 className="text-sm font-bold text-gray-900 group-hover:text-blue-600 transition-colors">{p.name}</h4>
+                          <h4 className="text-sm font-bold text-gray-900 dark:text-white group-hover:text-blue-600 transition-colors">{p.name}</h4>
                           <p className="text-sm font-bold text-emerald-600 mt-1">{formatCurrency(p.price)}</p>
                           <div className="mt-2 flex items-center gap-1 text-[10px] text-gray-400 font-medium uppercase">
                             <MessageSquare size={10} /> Click để viết bài FB
@@ -275,7 +275,7 @@ export function AIAssistant({ data }: AIAssistantProps) {
           </div>
 
           {/* Input Area */}
-          <div className="p-4 border-t border-gray-100 bg-white">
+          <div className="p-4 border-t border-gray-100 dark:border-gray-800 bg-white dark:bg-slate-900">
             <div className="relative flex items-center gap-2">
               <input
                 type="text"
@@ -319,10 +319,10 @@ export function AIAssistant({ data }: AIAssistantProps) {
               initial={{ x: 300, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
               exit={{ x: 300, opacity: 0 }}
-              className="w-80 border-l border-gray-100 bg-gray-50/30 p-4 overflow-y-auto hidden lg:block"
+              className="w-80 border-l border-gray-100 dark:border-gray-800 bg-gray-50/30 p-4 overflow-y-auto hidden lg:block"
             >
               <div className="flex items-center justify-between mb-4">
-                <h3 className="font-bold text-gray-900 flex items-center gap-2">
+                <h3 className="font-bold text-gray-900 dark:text-white flex items-center gap-2">
                   <Facebook size={18} className="text-blue-600" />
                   Bài đăng FB
                 </h3>
@@ -333,7 +333,7 @@ export function AIAssistant({ data }: AIAssistantProps) {
                   <Copy size={16} onClick={() => copyToClipboard(fbPost)} />
                 </button>
               </div>
-              <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm text-sm whitespace-pre-wrap leading-relaxed relative group">
+              <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-gray-200 shadow-sm text-sm whitespace-pre-wrap leading-relaxed relative group">
                 {fbPost}
                 <button
                   onClick={() => copyToClipboard(fbPost)}
@@ -357,7 +357,7 @@ export function AIAssistant({ data }: AIAssistantProps) {
         <AnimatePresence>
           {isGeneratingPost && (
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/20 backdrop-blur-sm">
-              <div className="bg-white p-6 rounded-2xl shadow-xl flex flex-col items-center gap-4">
+              <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl shadow-xl flex flex-col items-center gap-4">
                 <Loader2 size={32} className="animate-spin text-blue-600" />
                 <p className="text-sm font-medium text-gray-600">Đang sáng tạo nội dung bài viết...</p>
               </div>

@@ -238,20 +238,20 @@ export function Products({ data, updateData, addItem, updateItem, deleteItem, is
       <div className="animate-in fade-in duration-500">
         {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-        <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100 flex items-center justify-between border-l-4 border-l-blue-500">
+        <div className="bg-white dark:bg-slate-900 rounded-xl p-5 shadow-sm border border-gray-100 dark:border-gray-800 flex items-center justify-between border-l-4 border-l-blue-500">
           <div>
             <p className="text-sm font-medium text-gray-500 mb-1">Tổng sản phẩm</p>
-            <h3 className="text-2xl font-bold text-gray-900">{data.products.length}</h3>
+            <h3 className="text-2xl font-bold text-gray-900 dark:text-white">{data.products.length}</h3>
           </div>
           <div className="w-12 h-12 bg-blue-50 rounded-full flex items-center justify-center text-blue-600">
             <Package size={24} />
           </div>
         </div>
         
-        <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100 flex items-center justify-between border-l-4 border-l-amber-500">
+        <div className="bg-white dark:bg-slate-900 rounded-xl p-5 shadow-sm border border-gray-100 dark:border-gray-800 flex items-center justify-between border-l-4 border-l-amber-500">
           <div>
             <p className="text-sm font-medium text-gray-500 mb-1">Sắp hết hàng</p>
-            <h3 className="text-2xl font-bold text-gray-900">{lowStockCount}</h3>
+            <h3 className="text-2xl font-bold text-gray-900 dark:text-white">{lowStockCount}</h3>
           </div>
           <div className="w-12 h-12 bg-amber-50 rounded-full flex items-center justify-center text-amber-600">
             <AlertTriangle size={24} />
@@ -260,8 +260,8 @@ export function Products({ data, updateData, addItem, updateItem, deleteItem, is
       </div>
 
       {/* Actions & Search */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-        <div className="p-5 border-b border-gray-100 flex flex-col lg:flex-row justify-between items-center gap-4">
+      <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 overflow-hidden">
+        <div className="p-5 border-b border-gray-100 dark:border-gray-800 flex flex-col lg:flex-row justify-between items-center gap-4">
           <div className="flex flex-col sm:flex-row gap-4 w-full lg:w-auto flex-1">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
@@ -352,7 +352,7 @@ export function Products({ data, updateData, addItem, updateItem, deleteItem, is
                         <Package size={20} />
                       </div>
                       <div>
-                        <div className="font-medium text-gray-900">{product.name}</div>
+                        <div className="font-medium text-gray-900 dark:text-white">{product.name}</div>
                         <div className="text-xs text-gray-500">{product.id}</div>
                       </div>
                     </div>
@@ -364,7 +364,7 @@ export function Products({ data, updateData, addItem, updateItem, deleteItem, is
                       {product.importPrice ? formatCurrency(product.importPrice) : 'N/A'}
                     </td>
                   )}
-                  <td className="p-4 text-sm font-semibold text-gray-900 text-right">
+                  <td className="p-4 text-sm font-semibold text-gray-900 dark:text-white text-right">
                     {formatCurrency(product.price)}
                   </td>
                   <td className="p-4 text-center">
@@ -419,7 +419,7 @@ export function Products({ data, updateData, addItem, updateItem, deleteItem, is
                     <Package size={20} />
                   </div>
                   <div>
-                    <div className="font-medium text-gray-900">{product.name}</div>
+                    <div className="font-medium text-gray-900 dark:text-white">{product.name}</div>
                     <div className="text-xs text-gray-500">{product.id}</div>
                   </div>
                 </div>
@@ -490,13 +490,13 @@ export function Products({ data, updateData, addItem, updateItem, deleteItem, is
     {/* Add Category Modal */}
     {isAddCategoryModalOpen && (
       <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center z-[110] p-4">
-        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md animate-in fade-in zoom-in-95 duration-200">
-          <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-blue-50/50">
-            <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-md animate-in fade-in zoom-in-95 duration-200">
+          <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center bg-blue-50/50">
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
               <Plus size={20} className="text-blue-600" />
               Thêm danh mục mới
             </h3>
-            <button onClick={() => setIsAddCategoryModalOpen(false)} className="p-2 hover:bg-white rounded-full text-gray-400 hover:text-gray-600 transition-colors">
+            <button onClick={() => setIsAddCategoryModalOpen(false)} className="p-2 hover:bg-white dark:bg-slate-900 rounded-full text-gray-400 hover:text-gray-600 transition-colors">
               <X size={20} />
             </button>
           </div>
@@ -512,7 +512,7 @@ export function Products({ data, updateData, addItem, updateItem, deleteItem, is
                 {data.categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
             </div>
-            <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
+            <div className="flex justify-end gap-3 pt-4 border-t border-gray-100 dark:border-gray-800">
               <button type="button" onClick={() => setIsAddCategoryModalOpen(false)} className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium transition-colors">Hủy</button>
               <button type="submit" disabled={isSubmittingCategory} className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold transition-all shadow-lg shadow-blue-600/20 disabled:opacity-50">
                 {isSubmittingCategory ? 'Đang lưu...' : 'Lưu danh mục'}
@@ -526,13 +526,13 @@ export function Products({ data, updateData, addItem, updateItem, deleteItem, is
     {/* Add Supplier Modal */}
     {isAddSupplierModalOpen && (
       <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center z-[110] p-4">
-        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-xl animate-in fade-in zoom-in-95 duration-200">
-          <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-blue-50/50">
-            <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-xl animate-in fade-in zoom-in-95 duration-200">
+          <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center bg-blue-50/50">
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
               <Plus size={20} className="text-blue-600" />
               Thêm nhà cung cấp mới
             </h3>
-            <button onClick={() => setIsAddSupplierModalOpen(false)} className="p-2 hover:bg-white rounded-full text-gray-400 hover:text-gray-600 transition-colors">
+            <button onClick={() => setIsAddSupplierModalOpen(false)} className="p-2 hover:bg-white dark:bg-slate-900 rounded-full text-gray-400 hover:text-gray-600 transition-colors">
               <X size={20} />
             </button>
           </div>
@@ -555,7 +555,7 @@ export function Products({ data, updateData, addItem, updateItem, deleteItem, is
                 <input type="text" value={supplierFormData.address} onChange={e => setSupplierFormData({...supplierFormData, address: e.target.value})} className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" placeholder="Số 123, Đường..." />
               </div>
             </div>
-            <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
+            <div className="flex justify-end gap-3 pt-4 border-t border-gray-100 dark:border-gray-800">
               <button type="button" onClick={() => setIsAddSupplierModalOpen(false)} className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium transition-colors">Hủy</button>
               <button type="submit" disabled={isSubmittingSupplier} className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold transition-all shadow-lg shadow-blue-600/20 disabled:opacity-50">
                 {isSubmittingSupplier ? 'Đang lưu...' : 'Lưu nhà cung cấp'}
@@ -569,9 +569,9 @@ export function Products({ data, updateData, addItem, updateItem, deleteItem, is
     {/* Add Product Modal */}
     {isAddModalOpen && (
       <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-[100] sm:p-4">
-        <div className="bg-white sm:rounded-2xl shadow-xl w-full max-w-2xl h-full sm:h-auto sm:max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-200">
-          <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between z-10">
-            <h3 className="text-lg font-bold text-gray-900">
+        <div className="bg-white dark:bg-slate-900 sm:rounded-2xl shadow-xl w-full max-w-2xl h-full sm:h-auto sm:max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-200">
+          <div className="sticky top-0 bg-white dark:bg-slate-900 border-b border-gray-100 dark:border-gray-800 px-6 py-4 flex items-center justify-between z-10">
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white">
               {editingId ? 'Chỉnh sửa sản phẩm' : 'Thêm sản phẩm mới'}
             </h3>
             <button 
@@ -702,7 +702,7 @@ export function Products({ data, updateData, addItem, updateItem, deleteItem, is
                 </div>
               </div>
 
-              <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
+              <div className="flex justify-end gap-3 pt-4 border-t border-gray-100 dark:border-gray-800">
                 <button 
                   type="button"
                   onClick={() => {

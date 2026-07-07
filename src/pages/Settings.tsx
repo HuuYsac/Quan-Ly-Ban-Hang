@@ -242,9 +242,9 @@ export function Settings({ data, updateData, resetDatabase, isAdmin }: SettingsP
 
   return (
     <div className="animate-in fade-in duration-500 max-w-4xl mx-auto">
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-        <div className="p-6 border-b border-gray-100 bg-gray-50/50">
-          <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+      <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 overflow-hidden">
+        <div className="p-6 border-b border-gray-100 dark:border-gray-800 bg-gray-50/50">
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
             <SettingsIcon className="text-blue-600" size={24} />
             Cài đặt hệ thống
           </h2>
@@ -253,7 +253,7 @@ export function Settings({ data, updateData, resetDatabase, isAdmin }: SettingsP
           </p>
         </div>
 
-        <div className="flex border-b border-gray-100 overflow-x-auto">
+        <div className="flex border-b border-gray-100 dark:border-gray-800 overflow-x-auto">
           {tabs.map(tab => {
             const Icon = tab.icon;
             return (
@@ -279,7 +279,7 @@ export function Settings({ data, updateData, resetDatabase, isAdmin }: SettingsP
             <form onSubmit={handleSubmit} className="space-y-8">
             {/* General Settings */}
             <div>
-              <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wider mb-4 pb-2 border-b border-gray-100">
+              <h3 className="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wider mb-4 pb-2 border-b border-gray-100 dark:border-gray-800">
                 Cấu hình chung
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -318,7 +318,7 @@ export function Settings({ data, updateData, resetDatabase, isAdmin }: SettingsP
               </div>
             </div>
 
-              <div className="pt-6 border-t border-gray-100 flex justify-end">
+              <div className="pt-6 border-t border-gray-100 dark:border-gray-800 flex justify-end">
                 <button 
                   type="submit"
                   disabled={isSaving}
@@ -337,7 +337,7 @@ export function Settings({ data, updateData, resetDatabase, isAdmin }: SettingsP
 
           {activeTab === 'appearance' && (
             <div className="space-y-6">
-              <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wider mb-4 pb-2 border-b border-gray-100">
+              <h3 className="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wider mb-4 pb-2 border-b border-gray-100 dark:border-gray-800">
                 Giao diện ứng dụng
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -375,7 +375,7 @@ export function Settings({ data, updateData, resetDatabase, isAdmin }: SettingsP
           {activeTab === 'system' && isAdmin && (
             <div className="space-y-8">
               <div>
-                <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wider mb-4 pb-2 border-b border-gray-100 flex items-center gap-2">
+                <h3 className="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wider mb-4 pb-2 border-b border-gray-100 dark:border-gray-800 flex items-center gap-2">
                   <UsersIcon size={18} className="text-blue-600" />
                   Quản lý thành viên
                 </h3>
@@ -400,7 +400,7 @@ export function Settings({ data, updateData, resetDatabase, isAdmin }: SettingsP
                           <tbody className="divide-y divide-gray-100">
                             {users.map(u => (
                               <tr key={u.id} className="hover:bg-gray-50 transition-colors">
-                                <td className="p-3 text-sm font-medium text-gray-900">{u.email}</td>
+                                <td className="p-3 text-sm font-medium text-gray-900 dark:text-white">{u.email}</td>
                                 <td className="p-3 text-sm text-gray-600">{u.phone}</td>
                                 <td className="p-3">
                                   <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${u.approved ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}`}>
@@ -438,10 +438,10 @@ export function Settings({ data, updateData, resetDatabase, isAdmin }: SettingsP
                       {/* Card View (Mobile) */}
                       <div className="md:hidden space-y-4">
                         {users.map(u => (
-                          <div key={u.id} className="bg-gray-50 p-4 rounded-xl border border-gray-100 space-y-3">
+                          <div key={u.id} className="bg-gray-50 p-4 rounded-xl border border-gray-100 dark:border-gray-800 space-y-3">
                             <div className="flex justify-between items-start">
                               <div className="flex flex-col">
-                                <span className="text-sm font-bold text-gray-900 truncate max-w-[200px]">{u.email}</span>
+                                <span className="text-sm font-bold text-gray-900 dark:text-white truncate max-w-[200px]">{u.email}</span>
                                 <span className="text-xs text-gray-500">{u.phone}</span>
                               </div>
                               <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${u.approved ? 'bg-emerald-100 text-emerald-600' : 'bg-amber-100 text-amber-600'}`}>
@@ -481,7 +481,7 @@ export function Settings({ data, updateData, resetDatabase, isAdmin }: SettingsP
           {activeTab === 'backup' && isAdmin && (
             <div className="space-y-8">
               <div>
-                <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wider mb-4 pb-2 border-b border-gray-100 flex items-center gap-2">
+                <h3 className="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wider mb-4 pb-2 border-b border-gray-100 dark:border-gray-800 flex items-center gap-2">
                   <Database size={18} className="text-blue-600" />
                   Sao lưu & Xuất dữ liệu
                 </h3>
@@ -504,7 +504,7 @@ export function Settings({ data, updateData, resetDatabase, isAdmin }: SettingsP
                         Tải về file Excel
                       </button>
 
-                      <label className="flex items-center gap-2 px-6 py-3 bg-white border-2 border-blue-600 text-blue-600 hover:bg-blue-50 rounded-xl text-sm font-bold transition-all cursor-pointer active:scale-95">
+                      <label className="flex items-center gap-2 px-6 py-3 bg-white dark:bg-slate-900 border-2 border-blue-600 text-blue-600 hover:bg-blue-50 rounded-xl text-sm font-bold transition-all cursor-pointer active:scale-95">
                         {isImporting ? (
                           <RefreshCw className="animate-spin" size={18} />
                         ) : (
@@ -526,7 +526,7 @@ export function Settings({ data, updateData, resetDatabase, isAdmin }: SettingsP
                   </div>
 
                   <div className="p-6 bg-gray-50 rounded-2xl border border-gray-200">
-                    <h4 className="font-bold text-gray-900 flex items-center gap-2 mb-2">
+                    <h4 className="font-bold text-gray-900 dark:text-white flex items-center gap-2 mb-2">
                       <HardDrive size={18} />
                       Thông tin lưu trữ
                     </h4>
