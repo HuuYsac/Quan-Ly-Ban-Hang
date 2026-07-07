@@ -343,7 +343,7 @@ export default function App() {
   const { title, subtitle } = getPageTitle();
 
   return (
-    <div className="flex min-h-screen bg-slate-50 text-gray-900 overflow-x-hidden">
+    <div className="flex min-h-screen bg-slate-50 dark:bg-slate-900 text-gray-900 dark:text-slate-100 overflow-x-hidden transition-colors duration-200">
       <Sidebar 
         activePage={activePage} 
         setActivePage={(page) => {

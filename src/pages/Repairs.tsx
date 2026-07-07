@@ -110,7 +110,7 @@ const Repairs: React.FC = () => {
 
     try {
       if (editingRepair) {
-        await updateItem('repairs', editingRepair.id, { ...formData, profit });
+        await updateItem('repairs', editingRepair.id, JSON.parse(JSON.stringify({ ...formData, profit })));
         
         // Notify if status changed to "Đã xong"
         if (formData.status === 'Đã xong' && editingRepair.status !== 'Đã xong') {
@@ -134,7 +134,7 @@ const Repairs: React.FC = () => {
           id: `RP${Date.now()}`,
           createdAt: new Date().toISOString()
         };
-        await addItem('repairs', newRepair);
+        await addItem('repairs', JSON.parse(JSON.stringify(newRepair)));
 
         // Notify new repair
         try {

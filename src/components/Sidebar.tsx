@@ -97,19 +97,19 @@ export function Sidebar({ activePage, setActivePage, data, isAdmin, isApproved, 
       </AnimatePresence>
 
       <div className={cn(
-        "w-64 bg-white border-r border-slate-100 flex flex-col fixed h-screen z-50 print:hidden transition-transform duration-300 ease-in-out lg:translate-x-0",
+        "w-64 bg-white dark:bg-slate-900 border-r border-slate-100 dark:border-slate-800 flex flex-col fixed h-screen z-50 print:hidden transition-transform duration-300 ease-in-out lg:translate-x-0",
         isOpen ? "translate-x-0" : "-translate-x-full"
       )}>
-        <div className="p-6 border-b border-slate-50 relative bg-slate-50/50">
+        <div className="p-6 border-b border-slate-50 dark:border-slate-800 relative bg-slate-50/50 dark:bg-slate-900/50">
           <button 
             onClick={onClose}
-            className="absolute top-4 right-4 lg:hidden p-2 hover:bg-slate-200 rounded-full transition-colors text-slate-500"
+            className="absolute top-4 right-4 lg:hidden p-2 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-full transition-colors text-slate-500 dark:text-slate-400"
           >
             <X size={18} />
           </button>
           
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-200">
+            <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-200 dark:shadow-none">
               {data.shopInfo?.logo ? (
                 <img 
                   src={data.shopInfo.logo} 
@@ -122,20 +122,20 @@ export function Sidebar({ activePage, setActivePage, data, isAdmin, isApproved, 
               )}
             </div>
             <div className="flex-1 min-w-0">
-              <h1 className="text-sm font-bold text-slate-900 truncate tracking-tight">
+              <h1 className="text-sm font-bold text-slate-900 dark:text-white truncate tracking-tight">
                 {data.shopInfo?.name || 'Hữu Laptop'}
               </h1>
-              <p className="text-[10px] font-semibold text-indigo-600 uppercase tracking-widest opacity-80">
+              <p className="text-[10px] font-semibold text-indigo-600 dark:text-indigo-400 uppercase tracking-widest opacity-80">
                 Management System
               </p>
             </div>
           </div>
         </div>
 
-        <nav className="flex-1 p-4 overflow-y-auto space-y-6 scrollbar-thin scrollbar-thumb-slate-200">
+        <nav className="flex-1 p-4 overflow-y-auto space-y-6 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-700">
           {sections.map(section => (
             <div key={section} className="space-y-1">
-              <h3 className="text-[10px] font-bold text-slate-400 mb-2 px-3 uppercase tracking-[0.2em]">
+              <h3 className="text-[10px] font-bold text-slate-400 dark:text-slate-500 mb-2 px-3 uppercase tracking-[0.2em]">
                 {section}
               </h3>
               {filteredNavItems.filter(item => item.section === section).map(item => {
@@ -152,20 +152,20 @@ export function Sidebar({ activePage, setActivePage, data, isAdmin, isApproved, 
                     className={cn(
                       "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 text-sm font-medium group relative",
                       isActive 
-                        ? "bg-indigo-50 text-indigo-700 shadow-sm shadow-indigo-100" 
-                        : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                        ? "bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 shadow-sm shadow-indigo-100 dark:shadow-none" 
+                        : "text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white"
                     )}
                   >
                     <div className={cn(
                       "w-8 h-8 rounded-lg flex items-center justify-center transition-colors",
-                      isActive ? "bg-indigo-600 text-white" : "bg-slate-100 text-slate-500 group-hover:bg-slate-200"
+                      isActive ? "bg-indigo-600 text-white" : "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 group-hover:bg-slate-200 dark:group-hover:bg-slate-700"
                     )}>
                       <Icon size={16} />
                     </div>
                     <span className="flex-1 text-left truncate">{item.label}</span>
                     
                     {unreadCount > 0 && (
-                      <span className="w-5 h-5 bg-rose-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center border-2 border-white shadow-sm">
+                      <span className="w-5 h-5 bg-rose-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center border-2 border-white dark:border-slate-900 shadow-sm">
                         {unreadCount}
                       </span>
                     )}
@@ -173,7 +173,7 @@ export function Sidebar({ activePage, setActivePage, data, isAdmin, isApproved, 
                     {isActive && (
                       <motion.div 
                         layoutId="active-indicator"
-                        className="absolute right-2 w-1 h-4 bg-indigo-600 rounded-full"
+                        className="absolute right-2 w-1 h-4 bg-indigo-600 dark:bg-indigo-500 rounded-full"
                       />
                     )}
                   </button>
@@ -183,12 +183,12 @@ export function Sidebar({ activePage, setActivePage, data, isAdmin, isApproved, 
           ))}
         </nav>
 
-        <div className="p-4 border-t border-slate-50 bg-slate-50/30">
+        <div className="p-4 border-t border-slate-50 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-900/30">
           <button
             onClick={handleLogout}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 text-sm font-medium text-slate-500 hover:bg-rose-50 hover:text-rose-600 group"
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 text-sm font-medium text-slate-500 dark:text-slate-400 hover:bg-rose-50 dark:hover:bg-rose-900/30 hover:text-rose-600 dark:hover:text-rose-400 group"
           >
-            <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center group-hover:bg-rose-100 transition-colors">
+            <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center group-hover:bg-rose-100 dark:group-hover:bg-rose-900/50 transition-colors">
               <LogOut size={16} />
             </div>
             <span>Đăng xuất</span>

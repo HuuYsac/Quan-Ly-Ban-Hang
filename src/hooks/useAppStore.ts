@@ -252,7 +252,7 @@ export function useAppStore() {
           // Set/Update new and existing items
           newItems.forEach(item => {
             const itemRef = doc(db, collectionName, item.id);
-            batch.set(itemRef, item);
+            batch.set(itemRef, JSON.parse(JSON.stringify(item)));
           });
           
           // Delete removed items
@@ -291,7 +291,7 @@ export function useAppStore() {
   const addItem = async (collectionName: string, item: any) => {
     if (!user) return;
     try {
-      await setDoc(doc(db, collectionName, item.id), item);
+      await setDoc(doc(db, collectionName, item.id), JSON.parse(JSON.stringify(item)));
     } catch (error) {
       handleFirestoreError(error, OperationType.WRITE, collectionName, user);
       throw error;
@@ -301,7 +301,7 @@ export function useAppStore() {
   const updateItem = async (collectionName: string, id: string, item: any) => {
     if (!user) return;
     try {
-      await updateDoc(doc(db, collectionName, id), item);
+      await updateDoc(doc(db, collectionName, id), JSON.parse(JSON.stringify(item)));
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, collectionName, user);
       throw error;

@@ -1,7 +1,8 @@
 import React, { useMemo, useState } from 'react';
 import { AppData } from '../types';
-import { BarChart3, TrendingUp, DollarSign, Package, ArrowUpRight, ArrowDownRight, PieChart as PieChartIcon, Calendar, Lightbulb, Target, Zap } from 'lucide-react';
+import { BarChart3, TrendingUp, DollarSign, Package, ArrowUpRight, ArrowDownRight, PieChart as PieChartIcon, Calendar, Lightbulb, Target, Zap, X, ShoppingCart, RefreshCw } from 'lucide-react';
 import { formatCurrency } from '../lib/utils';
+import { motion, AnimatePresence } from 'motion/react';
 import { 
   BarChart, 
   Bar, 
@@ -31,6 +32,7 @@ export function Reports({ data, updateData }: ReportsProps) {
   const [timeFilter, setTimeFilter] = useState<TimeFilter>('month');
   const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth());
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
+  const [selectedChartDetail, setSelectedChartDetail] = useState<any>(null);
 
   // Helper to get import price for profit calculation
   const getImportPrice = (productId: string, itemImportPrice?: number | null) => {
@@ -201,7 +203,7 @@ export function Reports({ data, updateData }: ReportsProps) {
                         dayRepairs.reduce((sum, r) => sum + (r.customerPrice || 0), 0);
         const cost = dayItems.reduce((sum, item) => sum + (getImportPrice(item.productId, item.importPrice) * item.quantity), 0) +
                      dayRepairs.reduce((sum, r) => sum + (r.partnerCost || 0), 0);
-        return { name: dayLabel, revenue, profit: revenue - cost };
+        return { name: dayLabel, revenue, profit: revenue - cost, items: dayItems, repairs: dayRepairs };
       });
     } else if (timeFilter === 'month') {
       chartData = Array.from({ length: 4 }).map((_, i) => {
@@ -222,7 +224,7 @@ export function Reports({ data, updateData }: ReportsProps) {
                         weekRepairs.reduce((sum, r) => sum + (r.customerPrice || 0), 0);
         const cost = weekItems.reduce((sum, item) => sum + (getImportPrice(item.productId, item.importPrice) * item.quantity), 0) +
                      weekRepairs.reduce((sum, r) => sum + (r.partnerCost || 0), 0);
-        return { name: weekLabel, revenue, profit: revenue - cost };
+        return { name: weekLabel, revenue, profit: revenue - cost, items: weekItems, repairs: weekRepairs };
       });
     } else {
       chartData = Array.from({ length: 12 }).map((_, i) => {
@@ -244,7 +246,7 @@ export function Reports({ data, updateData }: ReportsProps) {
                         monthRepairs.reduce((sum, r) => sum + (r.customerPrice || 0), 0);
         const cost = monthItems.reduce((sum, item) => sum + (getImportPrice(item.productId, item.importPrice) * item.quantity), 0) +
                      monthRepairs.reduce((sum, r) => sum + (r.partnerCost || 0), 0);
-        return { name: monthLabel, revenue, profit: revenue - cost };
+        return { name: monthLabel, revenue, profit: revenue - cost, items: monthItems, repairs: monthRepairs };
       });
     }
 
@@ -474,8 +476,8 @@ export function Reports({ data, updateData }: ReportsProps) {
                   labelStyle={{ fontWeight: 900, marginBottom: '4px', color: '#0f172a' }}
                 />
                 <Legend iconType="circle" wrapperStyle={{ fontSize: '10px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.05em', paddingTop: '20px' }} />
-                <Bar name="Doanh thu" dataKey="revenue" fill="#3b82f6" radius={[6, 6, 0, 0]} barSize={30} />
-                <Bar name="Lợi nhuận" dataKey="profit" fill="#10b981" radius={[6, 6, 0, 0]} barSize={30} />
+                <Bar name="Doanh thu" dataKey="revenue" fill="#3b82f6" radius={[6, 6, 0, 0]} barSize={30} onClick={(data) => setSelectedChartDetail(data.payload || data)} cursor="pointer" />
+                <Bar name="Lợi nhuận" dataKey="profit" fill="#10b981" radius={[6, 6, 0, 0]} barSize={30} onClick={(data) => setSelectedChartDetail(data.payload || data)} cursor="pointer" />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -624,6 +626,85 @@ export function Reports({ data, updateData }: ReportsProps) {
           </div>
         </div>
       </div>
+
+      {/* Chart Detail Modal */}
+      <AnimatePresence>
+        {selectedChartDetail && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-white rounded-2xl shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden"
+            >
+              <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+                <div>
+                  <h2 className="text-lg font-black text-slate-900 uppercase tracking-tight">Chi tiết doanh thu: {selectedChartDetail.name}</h2>
+                  <p className="text-xs text-slate-500 font-bold tracking-widest mt-1">Tổng doanh thu: {formatCurrency(selectedChartDetail.revenue)} • Lợi nhuận: {formatCurrency(selectedChartDetail.profit)}</p>
+                </div>
+                <button
+                  onClick={() => setSelectedChartDetail(null)}
+                  className="p-2 hover:bg-slate-200 rounded-full transition-colors"
+                >
+                  <X size={20} className="text-slate-500" />
+                </button>
+              </div>
+              
+              <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                {/* Orders / Items */}
+                <div>
+                  <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight flex items-center gap-2 mb-4">
+                    <ShoppingCart size={16} className="text-indigo-600" /> Đơn hàng ({selectedChartDetail.items?.length || 0})
+                  </h3>
+                  {selectedChartDetail.items?.length > 0 ? (
+                    <div className="space-y-3">
+                      {selectedChartDetail.items.map((item: any, idx: number) => (
+                        <div key={idx} className="flex justify-between items-center p-4 bg-white border border-slate-100 rounded-xl hover:shadow-sm transition-shadow">
+                          <div>
+                            <p className="text-sm font-bold text-slate-900">{item.name}</p>
+                            <p className="text-xs text-slate-500 mt-1">Mã HĐ: {item.orderId} • Ngày: {format(parseISO(item.businessDate), 'dd/MM/yyyy')}</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-sm font-black text-emerald-600">{formatCurrency(item.subtotal || 0)}</p>
+                            <p className="text-xs text-slate-500 mt-1">SL: {item.quantity}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-slate-400 text-sm font-medium border border-dashed border-slate-200 rounded-xl">Không có đơn hàng nào</div>
+                  )}
+                </div>
+
+                {/* Repairs */}
+                <div>
+                  <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight flex items-center gap-2 mb-4">
+                    <RefreshCw size={16} className="text-blue-600" /> Sửa chữa ({selectedChartDetail.repairs?.length || 0})
+                  </h3>
+                  {selectedChartDetail.repairs?.length > 0 ? (
+                    <div className="space-y-3">
+                      {selectedChartDetail.repairs.map((repair: any, idx: number) => (
+                        <div key={idx} className="flex justify-between items-center p-4 bg-white border border-slate-100 rounded-xl hover:shadow-sm transition-shadow">
+                          <div>
+                            <p className="text-sm font-bold text-slate-900">{repair.deviceName} - {repair.issue}</p>
+                            <p className="text-xs text-slate-500 mt-1">Khách hàng: {repair.customerName} • Ngày hoàn thành: {repair.returnDate ? format(parseISO(repair.returnDate), 'dd/MM/yyyy') : (repair.receivedDate ? format(parseISO(repair.receivedDate), 'dd/MM/yyyy') : 'N/A')}</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-sm font-black text-emerald-600">{formatCurrency(repair.customerPrice || 0)}</p>
+                            <p className="text-xs text-rose-500 mt-1">Vốn: {formatCurrency(repair.partnerCost || 0)}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-slate-400 text-sm font-medium border border-dashed border-slate-200 rounded-xl">Không có sửa chữa nào</div>
+                  )}
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

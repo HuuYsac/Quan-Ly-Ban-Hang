@@ -186,17 +186,17 @@ export function Header({ title, subtitle, onNavigate, onToggleSidebar, data, cur
   };
 
   return (
-    <header className="bg-white/80 backdrop-blur-md px-4 md:px-8 py-4 border-b border-slate-100 flex justify-between items-center sticky top-0 z-40 print:hidden">
+    <header className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md px-4 md:px-8 py-4 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center sticky top-0 z-40 print:hidden transition-colors duration-200">
       <div className="flex items-center gap-4">
         <motion.button 
           whileTap={{ scale: 0.95 }}
           onClick={onToggleSidebar}
-          className="lg:hidden p-2.5 hover:bg-slate-100 rounded-xl text-slate-600 transition-colors border border-slate-200"
+          className="lg:hidden p-2.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl text-slate-600 dark:text-slate-400 transition-colors border border-slate-200 dark:border-slate-700"
         >
           <Menu size={20} />
         </motion.button>
         <div>
-          <h1 className="text-lg md:text-xl font-bold text-slate-900 tracking-tight leading-tight">{title}</h1>
+          <h1 className="text-lg md:text-xl font-bold text-slate-900 dark:text-white tracking-tight leading-tight">{title}</h1>
           <p className="text-[10px] md:text-xs font-medium text-slate-400 mt-0.5 uppercase tracking-wider">{subtitle}</p>
         </div>
       </div>

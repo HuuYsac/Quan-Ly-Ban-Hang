@@ -4,16 +4,19 @@ import {
   createUserWithEmailAndPassword, 
   signInWithEmailAndPassword, 
   sendEmailVerification,
-  sendPasswordResetEmail
+  sendPasswordResetEmail,
+  GoogleAuthProvider,
+  signInWithPopup
 } from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore';
-import { LogIn, UserPlus, Mail, Lock, Phone, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { doc, setDoc, getDoc } from 'firebase/firestore';
+import { LogIn, UserPlus, Mail, Lock, Phone, AlertCircle, CheckCircle2, Eye, EyeOff } from 'lucide-react';
 
 export function Auth({ onShowWarrantyCheck }: { onShowWarrantyCheck: () => void }) {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [phone, setPhone] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
@@ -91,6 +94,37 @@ export function Auth({ onShowWarrantyCheck }: { onShowWarrantyCheck: () => void 
       setError('');
     } catch (err: any) {
       setError('Không thể gửi email khôi phục: ' + err.message);
+    }
+  };
+
+  const handleGoogleAuth = async () => {
+    try {
+      setLoading(true);
+      setError('');
+      const provider = new GoogleAuthProvider();
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+      
+      // Check if user exists in Firestore
+      const userDoc = await getDoc(doc(db, 'users', user.uid));
+      if (!userDoc.exists()) {
+        const ownerEmail = 'dieuhuu1995@gmail.com';
+        const isAdmin = user.email === ownerEmail;
+        await setDoc(doc(db, 'users', user.uid), {
+          uid: user.uid,
+          email: user.email,
+          phone: user.phoneNumber || '',
+          role: isAdmin ? 'admin' : 'user',
+          position: isAdmin ? 'Quản trị viên hệ thống' : '',
+          approved: isAdmin,
+          createdAt: new Date().toISOString()
+        });
+      }
+    } catch (err: any) {
+      console.error(err);
+      setError('Đăng nhập bằng Google thất bại: ' + err.message);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -187,13 +221,20 @@ export function Auth({ onShowWarrantyCheck }: { onShowWarrantyCheck: () => void 
                   <Lock className="h-5 w-5 text-gray-400" />
                 </div>
                 <input
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="block w-full pl-10 pr-3 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors sm:text-sm"
+                  className="block w-full pl-10 pr-10 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors sm:text-sm"
                   placeholder="••••••••"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 focus:outline-none"
+                >
+                  {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                </button>
               </div>
             </div>
 
@@ -237,7 +278,17 @@ export function Auth({ onShowWarrantyCheck }: { onShowWarrantyCheck: () => void 
               </div>
             </div>
 
-            <div>
+            <div className="space-y-3">
+              <button
+                type="button"
+                onClick={handleGoogleAuth}
+                disabled={loading}
+                className="w-full flex justify-center items-center gap-2 py-2.5 px-4 border border-gray-300 rounded-xl shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
+              >
+                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="w-5 h-5" />
+                Tiếp tục với Google
+              </button>
+
               <button
                 type="button"
                 onClick={onShowWarrantyCheck}

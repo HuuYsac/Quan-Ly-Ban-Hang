@@ -654,7 +654,7 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
         }
 
         // 3. Update order
-        await updateItem('orders', editingId, {
+        const updatedOrder = {
           ...oldOrder,
           id: formData.id || editingId,
           customerId: customer.id,
@@ -675,7 +675,8 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
           collaboratorName: formData.collaboratorName,
           notes: formData.notes,
           updatedAt: new Date().toISOString()
-        });
+        };
+        await updateItem('orders', editingId, JSON.parse(JSON.stringify(updatedOrder)));
 
       } else {
         const now = new Date();
@@ -744,7 +745,7 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
           }
         }
 
-        await addItem('orders', newOrder);
+        await addItem('orders', JSON.parse(JSON.stringify(newOrder)));
 
         // Add real-time notification
         try {
