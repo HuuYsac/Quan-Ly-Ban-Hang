@@ -156,6 +156,7 @@ export interface ShopInfo {
   bankAccount: string;
   bankName: string;
   logo?: string;
+  qrCode?: string;
 }
 
 export interface Settings {

@@ -607,6 +607,8 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
                 .grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
                 .w-32 { width: 8rem; }
                 .h-32 { height: 8rem; }
+                .w-24 { width: 6rem; }
+                .h-24 { height: 6rem; }
                 .object-contain { object-fit: contain; }
                 .uppercase { text-transform: uppercase; }
                 .tracking-tight { letter-spacing: -0.025em; }
@@ -1373,7 +1375,7 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
                   <div className="flex items-center gap-6 bg-rose-50 p-4 rounded-2xl border border-rose-100">
                     <div className="bg-white dark:bg-slate-900 p-2 rounded-xl shadow-sm">
                       <img 
-                        src="/QR Code HLT 01.png" 
+                        src={data.shopInfo?.qrCode || "/QR Code HLT 01.png"} 
                         alt="Payment QR" 
                         className="w-24 h-24 object-contain"
                         referrerPolicy="no-referrer"
@@ -1383,7 +1385,7 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
                       <p className="text-xs font-bold text-rose-400 uppercase tracking-wider mb-1">Thông tin chuyển khoản</p>
                       <p className="text-sm font-black text-gray-900 dark:text-white">{data.shopInfo?.bankName || 'Techcombank'}</p>
                       <p className="text-lg font-black text-blue-700">{data.shopInfo?.bankAccount || '95 7777 6789'}</p>
-                      <p className="text-sm font-bold text-gray-700">{data.shopInfo?.taxCode || 'DIEU HUU'}</p>
+                      <p className="text-sm font-bold text-gray-700">{data.shopInfo?.name || 'DIEU HUU'}</p>
                     </div>
                   </div>
                   <div className="text-right">

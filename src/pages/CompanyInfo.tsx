@@ -18,7 +18,8 @@ export function CompanyInfo({ data, updateData }: CompanyInfoProps) {
       website: '',
       bankAccount: '',
       bankName: '',
-      logo: ''
+      logo: '',
+      qrCode: ''
     }
   );
   const [isSaving, setIsSaving] = useState(false);
@@ -35,7 +36,8 @@ export function CompanyInfo({ data, updateData }: CompanyInfoProps) {
         website: data.shopInfo.website || '',
         bankAccount: data.shopInfo.bankAccount || '',
         bankName: data.shopInfo.bankName || '',
-        logo: data.shopInfo.logo || ''
+        logo: data.shopInfo.logo || '',
+        qrCode: data.shopInfo.qrCode || ''
       });
     }
   }, [data.shopInfo]);
@@ -62,6 +64,25 @@ export function CompanyInfo({ data, updateData }: CompanyInfoProps) {
 
   const removeLogo = () => {
     setFormData(prev => ({ ...prev, logo: '' }));
+  };
+
+  const handleQrCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 1024 * 1024) {
+        alert('Kích thước mã QR quá lớn. Vui lòng chọn file dưới 1MB.');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFormData(prev => ({ ...prev, qrCode: reader.result as string }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const removeQrCode = () => {
+    setFormData(prev => ({ ...prev, qrCode: '' }));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -95,43 +116,84 @@ export function CompanyInfo({ data, updateData }: CompanyInfoProps) {
         </div>
 
         <form onSubmit={handleSubmit} className="p-6">
-          <div className="mb-8 flex flex-col items-center justify-center p-6 border-2 border-dashed border-gray-200 rounded-xl bg-gray-50/30">
-            <div className="relative group">
-              {formData.logo ? (
-                <div className="relative">
-                  <img 
-                    src={formData.logo} 
-                    alt="Shop Logo" 
-                    className="w-32 h-32 object-contain rounded-lg border border-gray-200 bg-white dark:bg-slate-900 shadow-sm"
-                    referrerPolicy="no-referrer"
+          <div className="mb-8 grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <div className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-gray-200 rounded-xl bg-gray-50/30">
+              <div className="relative group">
+                {formData.logo ? (
+                  <div className="relative">
+                    <img 
+                      src={formData.logo} 
+                      alt="Shop Logo" 
+                      className="w-32 h-32 object-contain rounded-lg border border-gray-200 bg-white dark:bg-slate-900 shadow-sm"
+                      referrerPolicy="no-referrer"
+                    />
+                    <button
+                      type="button"
+                      onClick={removeLogo}
+                      className="absolute -top-2 -right-2 p-1.5 bg-rose-500 text-white rounded-full shadow-md hover:bg-rose-600 transition-colors opacity-0 group-hover:opacity-100"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="w-32 h-32 flex flex-col items-center justify-center bg-white dark:bg-slate-900 border border-gray-200 rounded-lg text-gray-400">
+                    <Building size={40} strokeWidth={1.5} />
+                    <span className="text-[10px] mt-2 font-medium uppercase tracking-wider">Chưa có logo</span>
+                  </div>
+                )}
+                <label className="absolute bottom-0 right-0 p-2 bg-blue-600 text-white rounded-full shadow-lg cursor-pointer hover:bg-blue-700 transition-all hover:scale-110">
+                  <Upload size={16} />
+                  <input 
+                    type="file" 
+                    className="hidden" 
+                    accept="image/*"
+                    onChange={handleLogoChange}
                   />
-                  <button
-                    type="button"
-                    onClick={removeLogo}
-                    className="absolute -top-2 -right-2 p-1.5 bg-rose-500 text-white rounded-full shadow-md hover:bg-rose-600 transition-colors opacity-0 group-hover:opacity-100"
-                  >
-                    <X size={14} />
-                  </button>
-                </div>
-              ) : (
-                <div className="w-32 h-32 flex flex-col items-center justify-center bg-white dark:bg-slate-900 border border-gray-200 rounded-lg text-gray-400">
-                  <Building size={40} strokeWidth={1.5} />
-                  <span className="text-[10px] mt-2 font-medium uppercase tracking-wider">Chưa có logo</span>
-                </div>
-              )}
-              <label className="absolute bottom-0 right-0 p-2 bg-blue-600 text-white rounded-full shadow-lg cursor-pointer hover:bg-blue-700 transition-all hover:scale-110">
-                <Upload size={16} />
-                <input 
-                  type="file" 
-                  className="hidden" 
-                  accept="image/*"
-                  onChange={handleLogoChange}
-                />
-              </label>
+                </label>
+              </div>
+              <div className="mt-4 text-center">
+                <h4 className="text-sm font-semibold text-gray-900 dark:text-white">Logo cửa hàng</h4>
+                <p className="text-xs text-gray-500 mt-1">Định dạng: JPG, PNG. Max: 1MB</p>
+              </div>
             </div>
-            <div className="mt-4 text-center">
-              <h4 className="text-sm font-semibold text-gray-900 dark:text-white">Logo cửa hàng</h4>
-              <p className="text-xs text-gray-500 mt-1">Định dạng: JPG, PNG. Dung lượng tối đa: 1MB</p>
+
+            <div className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-gray-200 rounded-xl bg-gray-50/30">
+              <div className="relative group">
+                {formData.qrCode ? (
+                  <div className="relative">
+                    <img 
+                      src={formData.qrCode} 
+                      alt="Mã QR Thanh toán" 
+                      className="w-32 h-32 object-contain rounded-lg border border-gray-200 bg-white dark:bg-slate-900 shadow-sm"
+                      referrerPolicy="no-referrer"
+                    />
+                    <button
+                      type="button"
+                      onClick={removeQrCode}
+                      className="absolute -top-2 -right-2 p-1.5 bg-rose-500 text-white rounded-full shadow-md hover:bg-rose-600 transition-colors opacity-0 group-hover:opacity-100"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="w-32 h-32 flex flex-col items-center justify-center bg-white dark:bg-slate-900 border border-gray-200 rounded-lg text-gray-400">
+                    <span className="text-[10px] font-medium uppercase tracking-wider">Mã QR</span>
+                  </div>
+                )}
+                <label className="absolute bottom-0 right-0 p-2 bg-blue-600 text-white rounded-full shadow-lg cursor-pointer hover:bg-blue-700 transition-all hover:scale-110">
+                  <Upload size={16} />
+                  <input 
+                    type="file" 
+                    className="hidden" 
+                    accept="image/*"
+                    onChange={handleQrCodeChange}
+                  />
+                </label>
+              </div>
+              <div className="mt-4 text-center">
+                <h4 className="text-sm font-semibold text-gray-900 dark:text-white">QR Code Chuyển Khoản</h4>
+                <p className="text-xs text-gray-500 mt-1">In trên hóa đơn. Max: 1MB</p>
+              </div>
             </div>
           </div>
 
