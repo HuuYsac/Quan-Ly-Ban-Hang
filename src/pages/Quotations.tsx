@@ -166,6 +166,33 @@ export function Quotations({ data, updateData, addItem, updateItem, deleteItem, 
 5. Thời hạn bảo hành: Đảm bảo theo chính sách bảo hành chính hãng của cửa hàng đối với từng sản phẩm.`;
   };
 
+  const sanitizeNotes = (text: string) => {
+    if (!text) return '';
+    return text
+      .replace(/Hộ\s+Kinh\s+Doanh\s+Hữu\s+Laptop/gi, 'HỮU LAPTOP')
+      .replace(/Hữu\s+Laptop/gi, 'HỮU LAPTOP')
+      .replace(/Nguyễn\s+Đức\s+Hữu/gi, 'Điểu Hữu')
+      .replace(/Nguyện\s+Đức\s+Hữu/gi, 'Điểu Hữu')
+      .replace(/nội\s+thành\s+Hà\s+Nội/gi, 'nội thành Hồ Chí Minh')
+      .replace(/Tạm\s+ứng\s+30%/gi, 'Tạm ứng 100-500K')
+      .replace(/Thanh\s+toán\s+70%\s+còn\s+lại\s+ngay\s+khi/gi, 'Thanh toán phần còn lại sau khi')
+      .replace(/Thanh\s+toán\s+70%\s+còn\s+lại/gi, 'Thanh toán phần còn lại')
+      .replace(/Chủ\s+tài\s+khoản:\s*(NGUYỄN ĐỨC HỮU|Nguyễn Đức Hữu|Nguyện Đức Hữu)/gi, 'Chủ tài khoản: Điểu Hữu')
+      .replace(/Số\s+tài\s+khoản:\s*\d+\s*-\s*Ngân\s+hàng\s+Quân\s+Đội\s*\(MB\s+Bank\)/gi, 'Số tài khoản: 95 7777 6789 - Ngân hàng Techcombank')
+      .replace(/1234567890\s*-\s*Ngân\s+hàng\s+Quân\s+Đội\s*\(MB\s+Bank\)/gi, '95 7777 6789 - Ngân hàng Techcombank')
+      .replace(/Ngân\s+hàng\s+Quân\s+Đội\s*\(MB\s+Bank\)/gi, 'Ngân hàng Techcombank')
+      .replace(/1234567890/g, '95 7777 6789');
+  };
+
+  const sanitizeText = (text: string) => {
+    if (!text) return '';
+    return text
+      .replace(/Nguyễn Đức Hữu/gi, 'Điểu Hữu')
+      .replace(/Nguyện Đức Hữu/gi, 'Điểu Hữu')
+      .replace(/Hộ\s+Kinh\s+Doanh\s+Hữu\s+Laptop/gi, 'HỮU LAPTOP')
+      .replace(/Hữu\s+Laptop/gi, 'HỮU LAPTOP');
+  };
+
   const handleCreateNew = () => {
     setCustomerId('');
     setCustomerName('');
@@ -201,7 +228,7 @@ export function Quotations({ data, updateData, addItem, updateItem, deleteItem, 
     setDiscount(quote.discount || 0);
     setDiscountType(quote.discountType || 'amount');
     setVatPercent(quote.vatPercent ?? 0);
-    setNotes(quote.notes || '');
+    setNotes(sanitizeNotes(quote.notes || ''));
     setViewMode('edit');
   };
 
@@ -228,7 +255,7 @@ export function Quotations({ data, updateData, addItem, updateItem, deleteItem, 
     setDiscount(quote.discount || 0);
     setDiscountType(quote.discountType || 'amount');
     setVatPercent(quote.vatPercent ?? 0);
-    setNotes(quote.notes || '');
+    setNotes(sanitizeNotes(quote.notes || ''));
     setViewMode('create');
     showToast('Đã sao chép cấu hình báo giá cũ!', 'success');
   };
@@ -1247,7 +1274,7 @@ export function Quotations({ data, updateData, addItem, updateItem, deleteItem, 
                     {selectedQuotation.status}
                   </span>
                 </div>
-                <p className="text-xs text-slate-500 mt-1">Lập bởi: {selectedQuotation.createdByName || 'Nhân viên HỮU LAPTOP'}</p>
+                <p className="text-xs text-slate-500 mt-1">Lập bởi: {sanitizeText(selectedQuotation.createdByName || 'Nhân viên HỮU LAPTOP')}</p>
               </div>
             </div>
 
@@ -1383,7 +1410,7 @@ export function Quotations({ data, updateData, addItem, updateItem, deleteItem, 
                   <div className="space-y-1.5">
                     <div className="flex"><span className="font-semibold text-slate-500 w-28">Đơn vị lập:</span> <span>HỮU LAPTOP</span></div>
                     <div className="flex"><span className="font-semibold text-slate-500 w-28">Người đại diện:</span> <span>Điểu Hữu</span></div>
-                    <div className="flex"><span className="font-semibold text-slate-500 w-28">Nhân viên lập:</span> <span>{selectedQuotation.createdByName}</span></div>
+                    <div className="flex"><span className="font-semibold text-slate-500 w-28">Nhân viên lập:</span> <span>{sanitizeText(selectedQuotation.createdByName)}</span></div>
                     <div className="flex"><span className="font-semibold text-slate-500 w-28">Ngày phát hành:</span> <span>{formatDate(selectedQuotation.date)}</span></div>
                     <div className="flex"><span className="font-semibold text-slate-500 w-28 text-rose-600">Hiệu lực đến:</span> <span className="font-bold text-rose-600">{formatDate(selectedQuotation.validUntil)}</span></div>
                   </div>
@@ -1505,7 +1532,7 @@ export function Quotations({ data, updateData, addItem, updateItem, deleteItem, 
                 <div className="mb-8">
                   <h4 className="text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-2">Điều kiện thương mại & Ghi chú đi kèm:</h4>
                   <div className="text-xs text-slate-600 dark:text-slate-400 whitespace-pre-wrap leading-relaxed font-medium bg-slate-50/50 dark:bg-slate-800/10 p-4 rounded-xl border border-slate-150 dark:border-slate-800">
-                    {selectedQuotation.notes}
+                    {sanitizeNotes(selectedQuotation.notes)}
                   </div>
                 </div>
               )}
