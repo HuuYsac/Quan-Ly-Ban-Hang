@@ -515,65 +515,33 @@ export function Quotations({ data, updateData, addItem, updateItem, deleteItem, 
               <title>Báo giá ${quote.id}</title>
               <style>
                 @media print {
-                  @page { size: A4 portrait; margin: 1.5cm 1.2cm; }
+                  @page { size: A4 portrait; margin: 1.2cm; }
                   body { margin: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
                 }
-                body { font-family: "system-ui", -apple-system, "Segoe UI", Roboto, sans-serif; font-size: 13px; color: #1e293b; line-height: 1.5; }
-                .text-center { text-align: center; }
-                .text-right { text-align: right; }
-                .font-bold { font-weight: bold; }
-                .uppercase { text-transform: uppercase; }
-                .w-full { width: 100%; }
-                .border-collapse { border-collapse: collapse; }
-                
-                .header-table { width: 100%; margin-bottom: 24px; }
-                .company-logo { max-width: 90px; max-height: 90px; object-fit: contain; }
-                .company-title { font-size: 18px; font-weight: 800; color: #3b82f6; text-transform: uppercase; margin: 0 0 4px 0; }
-                .company-info { font-size: 11px; color: #64748b; margin: 2px 0; }
-                
-                .doc-title { font-size: 22px; font-weight: 900; color: #1e3a8a; text-align: center; text-transform: uppercase; margin: 15px 0 5px 0; letter-spacing: 1px; }
-                .doc-subtitle { font-size: 11px; color: #64748b; text-align: center; margin-bottom: 20px; }
-                
-                .info-grid { display: grid; grid-template-columns: 55% 45%; gap: 15px; margin-bottom: 24px; }
-                .info-card { border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; background-color: #f8fafc; }
-                .info-card-title { font-size: 11px; font-weight: bold; text-transform: uppercase; color: #3b82f6; margin-bottom: 8px; border-b: 1px solid #e2e8f0; padding-bottom: 4px; }
-                .info-row { font-size: 11.5px; margin: 4px 0; display: flex; }
-                .info-label { font-weight: 600; color: #475569; width: 110px; flex-shrink: 0; }
-                .info-value { color: #0f172a; flex-grow: 1; }
-                
-                .products-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
-                .products-table th { background-color: #3b82f6; color: white; padding: 10px 8px; font-size: 11px; font-weight: bold; text-transform: uppercase; text-align: left; border: 1px solid #2563eb; }
-                .products-table td { padding: 10px 8px; border: 1px solid #cbd5e1; font-size: 11.5px; vertical-align: top; }
-                .product-name { font-weight: bold; color: #0f172a; font-size: 12px; margin-bottom: 3px; }
-                .product-spec { font-size: 10px; color: #64748b; margin: 2px 0; }
-                .product-warranty { font-size: 9.5px; color: #10b981; font-weight: 500; margin-top: 3px; }
-                .gift-badge { background-color: #ffe4e6; color: #e11d48; font-size: 8px; font-weight: 900; padding: 1px 4px; border-radius: 3px; text-transform: uppercase; display: inline-block; margin-left: 5px; }
-                
-                .summary-table { width: 45%; margin-left: auto; margin-bottom: 24px; border-collapse: collapse; }
-                .summary-table td { padding: 6px 8px; border-bottom: 1px solid #e2e8f0; font-size: 12px; }
-                .summary-label { color: #475569; font-weight: 500; }
-                .summary-value { text-align: right; font-weight: 600; color: #0f172a; }
-                .summary-total { font-size: 14px; font-weight: bold; color: #2563eb; border-top: 2px solid #3b82f6; background-color: #eff6ff; }
-                
-                .words-summary { border: 1px dashed #cbd5e1; padding: 10px 12px; font-style: italic; font-size: 11px; margin-bottom: 24px; border-radius: 6px; background-color: #f8fafc; }
-                
-                .terms-section { margin-bottom: 24px; }
-                .terms-title { font-size: 11px; font-weight: bold; text-transform: uppercase; color: #1e3a8a; margin-bottom: 6px; }
-                .terms-content { font-size: 10.5px; color: #475569; white-space: pre-wrap; line-height: 1.6; }
-                
-                .signature-section { display: grid; grid-template-columns: 50% 50%; text-align: center; margin-top: 35px; page-break-inside: avoid; }
-                .signature-title { font-size: 11px; font-weight: bold; text-transform: uppercase; color: #475569; margin-bottom: 60px; }
-                .signature-name { font-size: 12px; font-weight: bold; color: #0f172a; }
-                .signature-sub { font-size: 9.5px; color: #64748b; font-style: italic; }
+                body { 
+                  font-family: "system-ui", -apple-system, "Segoe UI", Roboto, sans-serif; 
+                  background-color: white !important;
+                  color: #1e293b !important;
+                }
               </style>
             </head>
-            <body>
-              ${printContent.innerHTML}
+            <body class="bg-white text-slate-900">
+              <div class="w-full">
+                ${printContent.innerHTML}
+              </div>
             </body>
           </html>
         `);
+
+        // Copy all style & link tags to iframe head to maintain perfect layout
+        const stylesheets = Array.from(document.querySelectorAll('link[rel="stylesheet"], style'));
+        stylesheets.forEach((style) => {
+          doc.head.appendChild(style.cloneNode(true));
+        });
+
         doc.close();
 
+        // Add a slight delay to allow styles and image sources to bind correctly in the DOM
         setTimeout(() => {
           try {
             printWindow.contentWindow?.focus();
@@ -583,9 +551,11 @@ export function Quotations({ data, updateData, addItem, updateItem, deleteItem, 
             window.print();
           }
           setTimeout(() => {
-            document.body.removeChild(printWindow);
-          }, 1000);
-        }, 500);
+            if (document.body.contains(printWindow)) {
+              document.body.removeChild(printWindow);
+            }
+          }, 1500);
+        }, 600);
       } else {
         window.print();
       }
