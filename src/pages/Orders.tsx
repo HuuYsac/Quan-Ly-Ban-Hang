@@ -1314,13 +1314,17 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
                           </div>
                         </td>
                         <td className="p-4 text-center font-medium text-gray-900 dark:text-white">{item.quantity}</td>
-                        <td className="p-4 text-right font-medium text-gray-900 dark:text-white">{formatCurrency(item.price).replace('₫', '').trim()}</td>
-                        <td className="p-4 text-right font-medium text-rose-600">
-                          {item.discountType === 'amount' 
-                            ? formatCurrency(item.discount || 0).replace('₫', '').trim()
-                            : `${item.discount || 0}%`}
+                        <td className="p-4 text-right font-medium text-gray-900 dark:text-white">
+                          {item.isGift ? 'Quà Tặng' : formatCurrency(item.price).replace('₫', '').trim()}
                         </td>
-                        <td className="p-4 text-right font-bold text-gray-900 dark:text-white">{formatCurrency(item.subtotal || 0).replace('₫', '').trim()}</td>
+                        <td className="p-4 text-right font-medium text-rose-600">
+                          {item.isGift ? '' : (item.discountType === 'amount' 
+                            ? formatCurrency(item.discount || 0).replace('₫', '').trim()
+                            : `${item.discount || 0}%`)}
+                        </td>
+                        <td className="p-4 text-right font-bold text-gray-900 dark:text-white">
+                          {item.isGift ? '0' : formatCurrency(item.subtotal || 0).replace('₫', '').trim()}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -1453,13 +1457,17 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
                           </div>
                         </td>
                         <td className="p-3 text-sm text-gray-900 dark:text-white text-center">{item.quantity}</td>
-                        <td className="p-3 text-sm text-gray-900 dark:text-white text-right">{formatCurrency(item.price)}</td>
-                        <td className="p-3 text-sm text-gray-900 dark:text-white text-center">
-                          {item.discountType === 'amount' 
-                            ? formatCurrency(item.discount || 0) 
-                            : `${item.discount || 0}%`}
+                        <td className="p-3 text-sm text-gray-900 dark:text-white text-right">
+                          {item.isGift ? 'Quà Tặng' : formatCurrency(item.price)}
                         </td>
-                        <td className="p-3 text-sm font-medium text-gray-900 dark:text-white text-right">{formatCurrency(item.subtotal || 0)}</td>
+                        <td className="p-3 text-sm text-gray-900 dark:text-white text-center">
+                          {item.isGift ? '' : (item.discountType === 'amount' 
+                            ? formatCurrency(item.discount || 0) 
+                            : `${item.discount || 0}%`)}
+                        </td>
+                        <td className="p-3 text-sm font-medium text-gray-900 dark:text-white text-right">
+                          {item.isGift ? '0 ₫' : formatCurrency(item.subtotal || 0)}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
