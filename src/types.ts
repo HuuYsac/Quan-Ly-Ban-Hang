@@ -137,6 +137,32 @@ export interface Order {
   updatedAt?: string;
 }
 
+export interface Quotation {
+  id: string;
+  customerId: string;
+  customerName: string;
+  customerPhone?: string;
+  customerEmail?: string;
+  customerAddress?: string;
+  companyName?: string;
+  taxCode?: string;
+  date: string;
+  validUntil: string;
+  products: OrderItem[];
+  subtotal: number;
+  discount: number;
+  discountType: 'percent' | 'amount';
+  vatPercent: number;
+  vatAmount: number;
+  total: number;
+  status: 'Nháp' | 'Đã gửi' | 'Đã duyệt' | 'Từ chối' | 'Hết hạn';
+  notes?: string;
+  createdByUid?: string;
+  createdByName?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 export interface Sale {
   id: string;
   date: string;
@@ -332,6 +358,7 @@ export interface AppData {
   products: Product[];
   categories: Category[];
   orders: Order[];
+  quotations?: Quotation[];
   repairs: Repair[];
   leads: Lead[];
   careTasks: CareTask[];

@@ -23,7 +23,8 @@ import {
   MessageCircle,
   Sparkles,
   ChevronRight,
-  StickyNote
+  StickyNote,
+  FileText
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { auth } from '../firebase';
@@ -56,6 +57,7 @@ export function Sidebar({ activePage, setActivePage, data, isAdmin, isApproved, 
     { id: 'inventory', label: 'Kho hàng', icon: ClipboardList, section: 'Quản lý cơ bản', allowedRoles: ['admin', 'staff', 'user'] },
     { id: 'debts', label: 'Công nợ', icon: CreditCard, section: 'Nghiệp vụ', allowedRoles: ['admin', 'staff', 'user'] },
     { id: 'orders', label: 'Quản lý đơn hàng', icon: ShoppingCart, section: 'Nghiệp vụ', allowedRoles: ['admin', 'staff', 'user'] },
+    { id: 'quotations', label: 'Quản lý báo giá', icon: FileText, section: 'Nghiệp vụ', allowedRoles: ['admin', 'staff', 'user'] },
     { id: 'warranty', label: 'Quản lý bảo hành', icon: ShieldCheck, section: 'Nghiệp vụ', allowedRoles: ['admin', 'staff', 'user'] },
     { id: 'repairs', label: 'Quản lý sửa chữa', icon: Wrench, section: 'Nghiệp vụ', allowedRoles: ['admin', 'staff', 'user'] },
     { id: 'crm', label: 'Quản lý CRM', icon: HeartHandshake, section: 'Nghiệp vụ', allowedRoles: ['admin', 'staff', 'user'] },

@@ -97,6 +97,37 @@
       },
       "required": ["id", "customerId", "customerName", "date", "time", "products", "total", "status", "paymentMethod", "paymentStatus"]
     },
+    "Quotation": {
+      "title": "Quotation",
+      "description": "Sales quotation",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "customerId": { "type": "string" },
+        "customerName": { "type": "string" },
+        "customerPhone": { "type": "string" },
+        "customerEmail": { "type": "string" },
+        "customerAddress": { "type": "string" },
+        "companyName": { "type": "string" },
+        "taxCode": { "type": "string" },
+        "date": { "type": "string" },
+        "validUntil": { "type": "string" },
+        "products": { "type": "array", "items": { "type": "object" } },
+        "subtotal": { "type": "number" },
+        "discount": { "type": "number" },
+        "discountType": { "type": "string", "enum": ["percent", "amount"] },
+        "vatPercent": { "type": "number" },
+        "vatAmount": { "type": "number" },
+        "total": { "type": "number" },
+        "status": { "type": "string", "enum": ["Nháp", "Đã gửi", "Đã duyệt", "Từ chối", "Hết hạn"] },
+        "notes": { "type": "string" },
+        "createdByUid": { "type": "string" },
+        "createdByName": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "customerId", "customerName", "date", "validUntil", "products", "subtotal", "total", "status"]
+    },
     "ShopInfo": {
       "title": "ShopInfo",
       "description": "Shop information",
@@ -300,6 +331,10 @@
     "orders/{orderId}": {
       "schema": { "$ref": "#/entities/Order" },
       "description": "Sales orders"
+    },
+    "quotations/{quotationId}": {
+      "schema": { "$ref": "#/entities/Quotation" },
+      "description": "Sales quotations"
     },
     "repairs/{repairId}": {
       "schema": { "type": "object" },

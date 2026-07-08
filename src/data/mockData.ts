@@ -19,6 +19,7 @@ export const initialData: AppData = {
   products: [],
   categories: [],
   orders: [],
+  quotations: [],
   sales: [],
   shopInfo: {
     name: 'Hữu Laptop',

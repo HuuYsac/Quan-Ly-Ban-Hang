@@ -9,6 +9,7 @@ import { Header } from './components/Header';
 import { Dashboard } from './pages/Dashboard';
 import { Products } from './pages/Products';
 import { Orders } from './pages/Orders';
+import { Quotations } from './pages/Quotations';
 import { Customers } from './pages/Customers';
 import { Suppliers } from './pages/Suppliers';
 import { Categories } from './pages/Categories';
@@ -257,6 +258,7 @@ export default function App() {
       case 'inventory': return { title: 'Quản lý Kho hàng', subtitle: 'Kiểm kê và nhập xuất kho' };
       case 'debts': return { title: 'Quản lý Công nợ', subtitle: 'Theo dõi công nợ khách hàng và nhà cung cấp' };
       case 'orders': return { title: 'Quản lý Đơn hàng', subtitle: 'Danh sách và xử lý đơn hàng' };
+      case 'quotations': return { title: 'Quản lý Báo giá', subtitle: 'Lập và quản lý báo giá chuyên nghiệp' };
       case 'reports': return { title: 'Báo cáo', subtitle: 'Thống kê doanh thu và hoạt động' };
       case 'crm': return { title: 'Quản lý quan hệ khách hàng (CRM)', subtitle: 'Quản lý tiềm năng, chăm sóc khách hàng và khuyến mãi' };
       case 'notes': return { title: 'Ghi chú cá nhân', subtitle: 'Lưu trữ thông tin và ý tưởng công việc' };
@@ -303,6 +305,9 @@ export default function App() {
       case 'orders':
         if (!isStaffOrAdmin) return <AccessDenied />;
         return <Orders data={data} updateData={updateData} addItem={addItem} updateItem={updateItem} deleteItem={deleteItem} isAdmin={isAdmin} />;
+      case 'quotations':
+        if (!isStaffOrAdmin) return <AccessDenied />;
+        return <Quotations data={data} updateData={updateData} addItem={addItem} updateItem={updateItem} deleteItem={deleteItem} isAdmin={isAdmin} onNavigate={setActivePage} />;
       case 'reports':
         if (!isAdmin) return <AccessDenied />;
         return <Reports data={data} updateData={updateData} />;

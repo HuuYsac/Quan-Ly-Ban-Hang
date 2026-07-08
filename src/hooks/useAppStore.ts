@@ -132,6 +132,7 @@ export function useAppStore() {
         ['products', 'products'],
         ['categories', 'categories'],
         ['orders', 'orders'],
+        ['quotations', 'quotations'],
         ['repairs', 'repairs'],
         ['leads', 'leads'],
         ['careTasks', 'careTasks'],
@@ -270,6 +271,7 @@ export function useAppStore() {
       await syncCollection('products', 'products');
       await syncCollection('categories', 'categories');
       await syncCollection('orders', 'orders');
+      await syncCollection('quotations', 'quotations');
       await syncCollection('repairs', 'repairs');
       await syncCollection('leads', 'leads');
       await syncCollection('careTasks', 'careTasks');
