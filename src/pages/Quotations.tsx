@@ -523,6 +523,10 @@ export function Quotations({ data, updateData, addItem, updateItem, deleteItem, 
                   background-color: white !important;
                   color: #1e293b !important;
                 }
+                * {
+                  -webkit-print-color-adjust: exact !important;
+                  print-color-adjust: exact !important;
+                }
               </style>
             </head>
             <body class="bg-white text-slate-900">
@@ -541,21 +545,47 @@ export function Quotations({ data, updateData, addItem, updateItem, deleteItem, 
 
         doc.close();
 
-        // Add a slight delay to allow styles and image sources to bind correctly in the DOM
-        setTimeout(() => {
-          try {
-            printWindow.contentWindow?.focus();
-            printWindow.contentWindow?.print();
-          } catch (e) {
-            console.error('Print blocked by iframe settings', e);
-            window.print();
-          }
+        // Wait for all images and stylesheets to fully load to prevent unstyled printing or missing logo
+        const images = Array.from(doc.querySelectorAll('img')) as HTMLImageElement[];
+        const links = Array.from(doc.querySelectorAll('link[rel="stylesheet"]')) as HTMLLinkElement[];
+
+        const imagePromises = images.map((img) => {
+          if (img.complete) return Promise.resolve();
+          return new Promise<void>((resolve) => {
+            img.onload = () => resolve();
+            img.onerror = () => resolve();
+          });
+        });
+
+        const linkPromises = links.map((link) => {
+          return new Promise<void>((resolve) => {
+            link.onload = () => resolve();
+            link.onerror = () => resolve();
+          });
+        });
+
+        const loadTimeout = new Promise<void>((resolve) => setTimeout(resolve, 1200));
+
+        Promise.race([
+          Promise.all([...imagePromises, ...linkPromises]),
+          loadTimeout
+        ]).then(() => {
+          // Add a short delay for CSS rendering calculations
           setTimeout(() => {
-            if (document.body.contains(printWindow)) {
-              document.body.removeChild(printWindow);
+            try {
+              printWindow.contentWindow?.focus();
+              printWindow.contentWindow?.print();
+            } catch (e) {
+              console.error('Print blocked by iframe settings', e);
+              window.print();
             }
-          }, 1500);
-        }, 600);
+            setTimeout(() => {
+              if (document.body.contains(printWindow)) {
+                document.body.removeChild(printWindow);
+              }
+            }, 1500);
+          }, 300);
+        });
       } else {
         window.print();
       }
@@ -1320,24 +1350,24 @@ export function Quotations({ data, updateData, addItem, updateItem, deleteItem, 
             <div id="printable-quote-a4" className="w-full">
               
               {/* 1. Header Information (Shop details) */}
-              <div className="flex flex-col md:flex-row justify-between items-start border-b-2 border-blue-600 pb-5 gap-6">
+              <div className="flex flex-row justify-between items-start border-b-2 border-blue-600 pb-5 gap-6">
                 <div className="flex-1">
                   <h1 className="text-xl font-extrabold text-blue-600 dark:text-blue-400 uppercase tracking-tight">HỮU LAPTOP</h1>
                   <p className="text-xs text-slate-500 mt-1.5 font-medium">Hệ thống phân phối Laptop, Linh phụ kiện chính hãng & Sửa chữa phần cứng</p>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-1 mt-3 text-xs text-slate-600 dark:text-slate-400">
+                  <div className="grid grid-cols-2 gap-x-6 gap-y-1 mt-3 text-xs text-slate-600 dark:text-slate-400">
                     <div><span className="font-bold">Địa chỉ:</span> {data.shopInfo?.address || '123 Đường Láng, Đống Đa, Hà Nội'}</div>
                     <div><span className="font-bold">Hotline:</span> {data.shopInfo?.phone || '0988.888.888'}</div>
                     <div><span className="font-bold">Email:</span> {data.shopInfo?.email || 'huulaptop@gmail.com'}</div>
                     <div><span className="font-bold">Website:</span> {data.shopInfo?.website || 'huulaptop.vn'}</div>
                     {data.shopInfo?.taxCode && (
-                      <div className="md:col-span-2"><span className="font-bold">Mã số thuế:</span> {data.shopInfo?.taxCode}</div>
+                      <div className="col-span-2"><span className="font-bold">Mã số thuế:</span> {data.shopInfo?.taxCode}</div>
                     )}
                   </div>
                 </div>
 
                 {data.shopInfo?.logo && (
-                  <div className="w-24 h-24 bg-white rounded-xl border border-slate-150 p-2 flex items-center justify-center shadow-inner self-center md:self-start">
+                  <div className="w-24 h-24 bg-white rounded-xl border border-slate-150 p-2 flex items-center justify-center shadow-inner flex-shrink-0">
                     <img src={data.shopInfo.logo} alt="Shop Logo" className="max-w-full max-h-full object-contain" referrerPolicy="no-referrer" />
                   </div>
                 )}
@@ -1350,7 +1380,7 @@ export function Quotations({ data, updateData, addItem, updateItem, deleteItem, 
               </div>
 
               {/* 3. Customer & Quote metadata GRID */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 text-xs">
+              <div className="grid grid-cols-2 gap-6 mb-8 text-xs">
                 {/* Client Information */}
                 <div className="border border-slate-150 dark:border-slate-800 rounded-xl p-4 bg-slate-50/50 dark:bg-slate-800/10">
                   <h3 className="font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider mb-2.5 border-b border-slate-150 dark:border-slate-800 pb-1.5">Thông tin khách hàng</h3>
@@ -1446,7 +1476,7 @@ export function Quotations({ data, updateData, addItem, updateItem, deleteItem, 
               </div>
 
               {/* 5. Summary calculations */}
-              <div className="flex flex-col md:flex-row justify-between items-start gap-6 mb-8 text-xs">
+              <div className="flex flex-row justify-between items-start gap-6 mb-8 text-xs">
                 {/* Space holder or terms overview */}
                 <div className="flex-1 border border-slate-150 dark:border-slate-800 rounded-xl p-4 bg-slate-50/50 dark:bg-slate-800/10">
                   <div className="font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">Thanh toán & Giao dịch</div>
@@ -1455,7 +1485,7 @@ export function Quotations({ data, updateData, addItem, updateItem, deleteItem, 
                   </p>
                 </div>
 
-                <div className="w-full md:w-80">
+                <div className="w-80 flex-shrink-0">
                   <table className="w-full text-xs">
                     <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                       <tr>
