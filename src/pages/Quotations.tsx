@@ -21,8 +21,10 @@ import {
   Eye, 
   FileSpreadsheet, 
   ExternalLink,
-  Briefcase
+  Briefcase,
+  Download
 } from 'lucide-react';
+import html2canvas from 'html2canvas';
 import { useAppStore } from '../hooks/useAppStore';
 import { Quotation, OrderItem, Customer, Product, Order } from '../types';
 import { formatCurrency, formatDate, numberToVietnameseWords } from '../lib/utils';
@@ -485,6 +487,129 @@ export function Quotations({ data, updateData, addItem, updateItem, deleteItem, 
       } catch (err) {
         console.error(err);
         showToast('Có lỗi xảy ra khi chuyển đổi thành đơn hàng.', 'error');
+      }
+    }
+  };
+
+  // Helper to temporarily sanitize modern CSS oklab/oklch colors that cause html2canvas to crash
+  const sanitizeStylesheets = () => {
+    const restores: (() => void)[] = [];
+
+    try {
+      // 1. Handle inline <style> tags
+      const styleTags = Array.from(document.querySelectorAll('style'));
+      styleTags.forEach((tag) => {
+        const originalText = tag.textContent || '';
+        if (originalText.includes('oklch') || originalText.includes('oklab')) {
+          const sanitized = originalText
+            .replace(/oklch\([^)]+\)/gi, 'rgb(59, 130, 246)')
+            .replace(/oklab\([^)]+\)/gi, 'rgb(59, 130, 246)');
+          tag.textContent = sanitized;
+          restores.push(() => {
+            tag.textContent = originalText;
+          });
+        }
+      });
+
+      // 2. Handle external <link rel="stylesheet"> tags
+      const linkTags = Array.from(document.querySelectorAll('link[rel="stylesheet"]')) as HTMLLinkElement[];
+      linkTags.forEach((link) => {
+        try {
+          const sheet = link.sheet;
+          if (sheet) {
+            const rules = Array.from(sheet.cssRules || sheet.rules || []);
+            let cssText = rules.map(rule => rule.cssText).join('\n');
+            
+            if (cssText.includes('oklch') || cssText.includes('oklab')) {
+              const sanitized = cssText
+                .replace(/oklch\([^)]+\)/gi, 'rgb(59, 130, 246)')
+                .replace(/oklab\([^)]+\)/gi, 'rgb(59, 130, 246)');
+                
+              // Create a temporary style tag
+              const tempStyle = document.createElement('style');
+              tempStyle.setAttribute('data-temp-sanitized', 'true');
+              tempStyle.textContent = sanitized;
+              document.head.appendChild(tempStyle);
+              
+              // Disable original link tag
+              link.disabled = true;
+              
+              restores.push(() => {
+                if (tempStyle.parentNode) {
+                  tempStyle.parentNode.removeChild(tempStyle);
+                }
+                link.disabled = false;
+              });
+            }
+          }
+        } catch (linkError) {
+          console.warn('Could not read or sanitize link stylesheet rules:', linkError);
+        }
+      });
+    } catch (err) {
+      console.error('Error during style sanitization:', err);
+    }
+
+    return () => {
+      // Execute all restore functions in reverse order
+      for (let i = restores.length - 1; i >= 0; i--) {
+        try {
+          restores[i]();
+        } catch (restoreError) {
+          console.error('Error restoring stylesheet:', restoreError);
+        }
+      }
+    };
+  };
+
+  // Custom JPG Downloader using html2canvas
+  const handleDownloadJpg = async (quote: Quotation) => {
+    const element = document.getElementById('printable-quote-a4');
+    if (!element) {
+      showToast('Không tìm thấy nội dung báo giá', 'error');
+      return;
+    }
+
+    const isDark = document.documentElement.classList.contains('dark');
+    if (isDark) {
+      document.documentElement.classList.remove('dark');
+      document.documentElement.classList.add('light');
+    }
+
+    // Temporarily replace oklch/oklab to avoid html2canvas crash
+    const restoreStyles = sanitizeStylesheets();
+
+    try {
+      // Allow minor delay for layout recalculation to light mode colors
+      await new Promise((resolve) => setTimeout(resolve, 250));
+
+      const canvas = await html2canvas(element, {
+        scale: 2, // Double quality for crystal-clear text/shapes
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: '#ffffff',
+        logging: false,
+      });
+
+      const imgData = canvas.toDataURL('image/jpeg', 0.95);
+      
+      const link = document.createElement('a');
+      link.href = imgData;
+      link.download = `BaoGia_${quote.id}.jpg`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      showToast('Đã tải xuống file ảnh JPG thành công!', 'success');
+    } catch (error) {
+      console.error('Lỗi khi xuất ảnh JPG:', error);
+      showToast('Lỗi khi xuất ảnh JPG', 'error');
+    } finally {
+      // Restore styles and dark mode status
+      restoreStyles();
+      if (isDark) {
+        document.documentElement.classList.remove('light');
+        document.documentElement.classList.add('dark');
       }
     }
   };
@@ -1286,6 +1411,15 @@ export function Quotations({ data, updateData, addItem, updateItem, deleteItem, 
               >
                 <Printer size={15} />
                 In / Xuất PDF báo giá
+              </button>
+
+              {/* Download JPG Button */}
+              <button
+                onClick={() => handleDownloadJpg(selectedQuotation)}
+                className="flex items-center gap-2 px-4 py-2.5 bg-sky-600 hover:bg-sky-700 text-white rounded-xl text-xs font-bold shadow-lg shadow-sky-100 dark:shadow-none transition-all active:scale-95"
+              >
+                <Download size={15} />
+                Tải ảnh JPG
               </button>
 
               {/* Edit Button */}
