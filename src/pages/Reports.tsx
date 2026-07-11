@@ -117,13 +117,11 @@ export function Reports({ data, updateData }: ReportsProps) {
       return isWithinInterval(oDate, { start: prevStartDate, end: prevEndDate });
     });
 
-    const orderRevenue = currentPeriodItems.reduce((sum, item) => sum + (item.subtotal || 0), 0) + 
-                         currentPeriodOrders.reduce((sum, o) => sum + (o.packagingFee || 0) + (o.shippingFee || 0), 0);
+    const orderRevenue = currentPeriodItems.reduce((sum, item) => sum + (item.subtotal || 0), 0);
     const repairRevenue = currentPeriodRepairs.reduce((sum, r) => sum + (r.customerPrice || 0), 0);
     const totalRevenue = orderRevenue + repairRevenue;
 
-    const prevOrderRevenue = prevPeriodItems.reduce((sum, item) => sum + (item.subtotal || 0), 0) +
-                             prevPeriodOrders.reduce((sum, o) => sum + (o.packagingFee || 0) + (o.shippingFee || 0), 0);
+    const prevOrderRevenue = prevPeriodItems.reduce((sum, item) => sum + (item.subtotal || 0), 0);
     const prevRepairRevenue = prevPeriodRepairs.reduce((sum, r) => sum + (r.customerPrice || 0), 0);
     const prevRevenue = prevOrderRevenue + prevRepairRevenue;
     

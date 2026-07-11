@@ -679,7 +679,7 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
       }
       return sum + subtotal;
     }, 0);
-    return itemsTotal + (Number(formData.packagingFee) || 0) + (Number(formData.shippingFee) || 0);
+    return itemsTotal;
   };
 
   const handleEdit = (order: Order) => {
@@ -733,8 +733,6 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
       const shippingFee = Number(formData.shippingFee) || 0;
       const commission = Number(formData.commission) || 0;
 
-      total += packagingFee + shippingFee;
-      
       const totalCost = totalProductCost + packagingFee + shippingFee + commission;
       const profit = total - totalCost;
 
@@ -1329,24 +1327,6 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
                     ))}
                   </tbody>
                   <tfoot>
-                    {viewOrder.packagingFee > 0 && (
-                      <tr className="border-t border-gray-100 dark:border-gray-800">
-                        <td colSpan={4} className="p-2 text-right text-xs font-bold text-gray-500 uppercase">Phí đóng gói:</td>
-                        <td className="p-2 text-right font-bold text-gray-900 dark:text-white">{formatCurrency(viewOrder.packagingFee).replace('₫', '').trim()}</td>
-                      </tr>
-                    )}
-                    {viewOrder.shippingFee > 0 && (
-                      <tr className="border-t border-gray-100 dark:border-gray-800">
-                        <td colSpan={4} className="p-2 text-right text-xs font-bold text-gray-500 uppercase">Phí vận chuyển:</td>
-                        <td className="p-2 text-right font-bold text-gray-900 dark:text-white">{formatCurrency(viewOrder.shippingFee).replace('₫', '').trim()}</td>
-                      </tr>
-                    )}
-                    {viewOrder.commission > 0 && (
-                      <tr className="border-t border-gray-100 dark:border-gray-800">
-                        <td colSpan={4} className="p-2 text-right text-xs font-bold text-gray-500 uppercase">Hoa hồng CTV:</td>
-                        <td className="p-2 text-right font-bold text-rose-600">{formatCurrency(viewOrder.commission).replace('₫', '').trim()}</td>
-                      </tr>
-                    )}
                     <tr className="bg-gray-50 border-t-2 border-gray-200">
                       <td colSpan={4} className="p-4 text-right font-bold text-gray-600 uppercase">Tổng cộng:</td>
                       <td className="p-4 text-right font-black text-xl text-blue-700">{formatCurrency(viewOrder.total)}</td>
@@ -1472,18 +1452,6 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
                     ))}
                   </tbody>
                   <tfoot>
-                    {viewOrder.packagingFee > 0 && (
-                      <tr>
-                        <td colSpan={4} className="p-2 text-right text-sm text-gray-500">Phí đóng gói:</td>
-                        <td className="p-2 text-right text-sm font-medium text-gray-900 dark:text-white">{formatCurrency(viewOrder.packagingFee)}</td>
-                      </tr>
-                    )}
-                    {viewOrder.shippingFee > 0 && (
-                      <tr>
-                        <td colSpan={4} className="p-2 text-right text-sm text-gray-500">Phí vận chuyển:</td>
-                        <td className="p-2 text-right text-sm font-medium text-gray-900 dark:text-white">{formatCurrency(viewOrder.shippingFee)}</td>
-                      </tr>
-                    )}
                     <tr>
                       <td colSpan={4} className="p-3 text-right font-medium text-gray-900 dark:text-white">Tổng cộng:</td>
                       <td className="p-3 text-right font-bold text-blue-600 text-lg">{formatCurrency(viewOrder.total)}</td>
@@ -1492,11 +1460,39 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
                 </table>
                 
                 {viewOrder.notes && (
-                  <div>
+                  <div className="mb-6">
                     <p className="text-sm text-gray-500 mb-1">Ghi chú</p>
                     <p className="text-sm text-gray-900 dark:text-white bg-gray-50 p-3 rounded-lg">{viewOrder.notes}</p>
                   </div>
                 )}
+
+                {/* Internal Costs & Profit Details for the Store */}
+                <div className="mt-6 pt-6 border-t border-gray-100 dark:border-gray-800">
+                  <h5 className="text-sm font-bold text-gray-900 dark:text-white mb-3 uppercase tracking-wider text-[11px]">Thông tin chi phí & Lợi nhuận (Nội bộ)</h5>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-100 dark:border-slate-800">
+                    <div>
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Phí đóng gói</p>
+                      <p className="font-bold text-sm text-gray-900 dark:text-white">{formatCurrency(viewOrder.packagingFee || 0)}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Phí vận chuyển</p>
+                      <p className="font-bold text-sm text-gray-900 dark:text-white">{formatCurrency(viewOrder.shippingFee || 0)}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Hoa hồng CTV</p>
+                      <p className="font-bold text-sm text-rose-600">
+                        {formatCurrency(viewOrder.commission || 0)}
+                        {viewOrder.collaboratorName && <span className="text-xs text-gray-500 block">({viewOrder.collaboratorName})</span>}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Lợi nhuận ròng</p>
+                      <p className={`font-black text-sm ${(viewOrder.profit ?? 0) >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                        {formatCurrency(viewOrder.profit ?? (viewOrder.total - (viewOrder.totalCost ?? 0)))}
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
