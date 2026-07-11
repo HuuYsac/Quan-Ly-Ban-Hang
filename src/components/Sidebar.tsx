@@ -74,7 +74,15 @@ export function Sidebar({ activePage, setActivePage, data, isAdmin, isApproved, 
     return isApproved;
   });
 
-  const sections = Array.from(new Set(filteredNavItems.map(item => item.section)));
+  const sectionOrder = ['Tổng quan', 'Nghiệp vụ', 'Quản lý cơ bản', 'Báo cáo', 'Hệ thống'];
+  const sections = Array.from(new Set(filteredNavItems.map(item => item.section)))
+    .sort((a, b) => {
+      const indexA = sectionOrder.indexOf(a);
+      const indexB = sectionOrder.indexOf(b);
+      const orderA = indexA === -1 ? 999 : indexA;
+      const orderB = indexB === -1 ? 999 : indexB;
+      return orderA - orderB;
+    });
 
   const handleLogout = async () => {
     setShowLogoutConfirm(true);
