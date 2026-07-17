@@ -44,6 +44,7 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
     commission: 0,
     packagingFee: 0,
     shippingFee: 0,
+    deposit: 0,
     collaboratorId: '',
     collaboratorName: '',
     notes: ''
@@ -157,9 +158,10 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
       if (orderToDelete.paymentStatus === 'Công nợ') {
         const customer = (data.customers || []).find(c => c.id === orderToDelete.customerId);
         if (customer) {
+          const netDebt = (orderToDelete.total || 0) - (orderToDelete.deposit || 0);
           await updateItem('customers', customer.id, {
             ...customer,
-            debt: (customer.debt || 0) - (orderToDelete.total || 0)
+            debt: (customer.debt || 0) - netDebt
           });
         }
       }
@@ -184,7 +186,8 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
       // Update debt
       const customer = (data.customers || []).find(c => c.id === order.customerId);
       if (customer) {
-        const debtChange = newPaymentStatus === 'Công nợ' ? (order.total || 0) : -(order.total || 0);
+        const orderNetDebt = (order.total || 0) - (order.deposit || 0);
+        const debtChange = newPaymentStatus === 'Công nợ' ? orderNetDebt : -orderNetDebt;
         await updateItem('customers', customer.id, {
           ...customer,
           debt: (customer.debt || 0) + debtChange
@@ -693,6 +696,7 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
       commission: order.commission || 0,
       packagingFee: order.packagingFee || 0,
       shippingFee: order.shippingFee || 0,
+      deposit: order.deposit || 0,
       collaboratorId: order.collaboratorId || '',
       collaboratorName: order.collaboratorName || '',
       notes: order.notes || ''
@@ -764,10 +768,10 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
         // 2. Consolidate debt updates
         const debtChanges: Record<string, number> = {};
         if (oldOrder.paymentStatus === 'Công nợ') {
-          debtChanges[oldOrder.customerId] = (debtChanges[oldOrder.customerId] || 0) - (oldOrder.total || 0);
+          debtChanges[oldOrder.customerId] = (debtChanges[oldOrder.customerId] || 0) - (oldOrder.total - (oldOrder.deposit || 0));
         }
         if (formData.paymentStatus === 'Công nợ') {
-          debtChanges[customer.id] = (debtChanges[customer.id] || 0) + total;
+          debtChanges[customer.id] = (debtChanges[customer.id] || 0) + (total - (Number(formData.deposit) || 0));
         }
 
         for (const [customerId, change] of Object.entries(debtChanges)) {
@@ -800,6 +804,7 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
           commission: Number(formData.commission) || 0,
           packagingFee: Number(formData.packagingFee) || 0,
           shippingFee: Number(formData.shippingFee) || 0,
+          deposit: Number(formData.deposit) || 0,
           collaboratorId: formData.collaboratorId,
           collaboratorName: formData.collaboratorName,
           notes: formData.notes,
@@ -838,6 +843,7 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
           commission: Number(formData.commission) || 0,
           packagingFee: Number(formData.packagingFee) || 0,
           shippingFee: Number(formData.shippingFee) || 0,
+          deposit: Number(formData.deposit) || 0,
           collaboratorId: formData.collaboratorId,
           collaboratorName: formData.collaboratorName,
           notes: formData.notes,
@@ -869,7 +875,7 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
           if (currentCustomer) {
             await updateItem('customers', currentCustomer.id, {
               ...currentCustomer,
-              debt: (currentCustomer.debt || 0) + total
+              debt: (currentCustomer.debt || 0) + (total - (Number(formData.deposit) || 0))
             });
           }
         }
@@ -905,6 +911,7 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
         commission: 0,
         packagingFee: 0,
         shippingFee: 0,
+        deposit: 0,
         collaboratorId: '',
         collaboratorName: '',
         notes: '' 
@@ -959,6 +966,7 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
                 commission: 0,
                 packagingFee: 0,
                 shippingFee: 0,
+                deposit: 0,
                 collaboratorId: '',
                 collaboratorName: '',
                 notes: '' 
@@ -1084,6 +1092,16 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
                       </td>
                       <td className="p-5 text-right">
                         <div className="text-sm font-black text-indigo-600">{formatCurrency(order.total)}</div>
+                        {(order.deposit || 0) > 0 && (
+                          <div className="flex flex-col items-end mt-1 space-y-0.5">
+                            <div className="text-[9px] font-bold text-amber-600 bg-amber-50/50 dark:bg-amber-950/20 px-1 py-0.5 rounded border border-amber-100 dark:border-amber-900/50">
+                              T.Ứng: {formatCurrency(order.deposit)}
+                            </div>
+                            <div className="text-[9px] font-black text-emerald-600 bg-emerald-50/50 dark:bg-emerald-950/20 px-1 py-0.5 rounded border border-emerald-100 dark:border-emerald-900/50">
+                              Còn: {formatCurrency(Math.max(0, order.total - (order.deposit || 0)))}
+                            </div>
+                          </div>
+                        )}
                       </td>
                       <td className="p-5">
                         <div className="flex flex-col items-center gap-1.5">
@@ -1331,6 +1349,18 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
                       <td colSpan={4} className="p-4 text-right font-bold text-gray-600 uppercase">Tổng cộng:</td>
                       <td className="p-4 text-right font-black text-xl text-blue-700">{formatCurrency(viewOrder.total)}</td>
                     </tr>
+                    {(viewOrder.deposit || 0) > 0 && (
+                      <>
+                        <tr className="border-t border-gray-100">
+                          <td colSpan={4} className="p-3 text-right font-bold text-amber-600 uppercase text-xs">Khách đã tạm ứng:</td>
+                          <td className="p-3 text-right font-bold text-amber-600 text-lg">{formatCurrency(viewOrder.deposit || 0)}</td>
+                        </tr>
+                        <tr className="border-t border-gray-100 bg-emerald-50/20">
+                          <td colSpan={4} className="p-3 text-right font-black text-emerald-600 uppercase text-xs">Còn lại cần thanh toán:</td>
+                          <td className="p-3 text-right font-black text-emerald-600 text-xl">{formatCurrency(Math.max(0, viewOrder.total - (viewOrder.deposit || 0)))}</td>
+                        </tr>
+                      </>
+                    )}
                   </tfoot>
                 </table>
 
@@ -1456,6 +1486,18 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
                       <td colSpan={4} className="p-3 text-right font-medium text-gray-900 dark:text-white">Tổng cộng:</td>
                       <td className="p-3 text-right font-bold text-blue-600 text-lg">{formatCurrency(viewOrder.total)}</td>
                     </tr>
+                    {(viewOrder.deposit || 0) > 0 && (
+                      <>
+                        <tr className="border-t border-gray-100 dark:border-gray-800">
+                          <td colSpan={4} className="p-2 text-right text-sm text-amber-600">Khách đã tạm ứng:</td>
+                          <td className="p-2 text-right text-sm font-bold text-amber-600">{formatCurrency(viewOrder.deposit || 0)}</td>
+                        </tr>
+                        <tr className="border-t border-gray-100 dark:border-gray-800 bg-emerald-50/10">
+                          <td colSpan={4} className="p-2 text-right text-sm font-bold text-emerald-600">Số tiền còn lại:</td>
+                          <td className="p-2 text-right text-sm font-black text-emerald-600">{formatCurrency(Math.max(0, viewOrder.total - (viewOrder.deposit || 0)))}</td>
+                        </tr>
+                      </>
+                    )}
                   </tfoot>
                 </table>
                 
@@ -1625,10 +1667,10 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
               <div className="space-y-4">
                 <div className="flex items-center gap-2 pb-2 border-b border-gray-100 dark:border-gray-800">
                   <DollarSign size={18} className="text-emerald-500" />
-                  <h4 className="font-bold text-gray-800 uppercase text-xs tracking-wider">Phí & Hoa hồng</h4>
+                  <h4 className="font-bold text-gray-800 uppercase text-xs tracking-wider">Phí, Hoa hồng & Tạm ứng</h4>
                 </div>
                 
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-5 bg-emerald-50/30 rounded-2xl border border-emerald-100/50">
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-4 p-5 bg-emerald-50/30 rounded-2xl border border-emerald-100/50">
                   <div>
                     <label className="block text-[10px] font-bold text-emerald-600 uppercase mb-1 ml-1">Phí đóng gói</label>
                     <div className="relative">
@@ -1669,6 +1711,16 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
                       onChange={e => setFormData({...formData, collaboratorName: e.target.value})}
                       className="w-full px-3 py-2 border border-indigo-100 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-sm bg-white dark:bg-slate-900 shadow-sm"
                       placeholder="Tên CTV..."
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-blue-600 uppercase mb-1 ml-1">Tạm ứng</label>
+                    <input 
+                      type="number" min="0"
+                      value={formData.deposit}
+                      onChange={e => setFormData({...formData, deposit: Number(e.target.value)})}
+                      className="w-full px-3 py-2 border border-blue-100 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm bg-white dark:bg-slate-900 shadow-sm font-bold text-blue-600"
+                      placeholder="0"
                     />
                   </div>
                 </div>
@@ -1909,13 +1961,29 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
 
               {/* Footer / Summary Section */}
               <div className="sticky bottom-0 bg-white dark:bg-slate-900 pt-6 pb-2 border-t border-gray-100 dark:border-gray-800 flex flex-col sm:flex-row items-center justify-between gap-6 z-10">
-                <div className="flex items-center gap-4 bg-blue-50 px-6 py-3 rounded-2xl border border-blue-100 w-full sm:w-auto">
-                  <div className="p-2 bg-blue-600 rounded-xl text-white">
+                <div className="flex flex-wrap items-center gap-4 bg-blue-50/50 dark:bg-blue-950/20 px-6 py-3 rounded-2xl border border-blue-100 dark:border-blue-900/50 w-full sm:w-auto">
+                  <div className="p-2 bg-blue-600 rounded-xl text-white hidden sm:block">
                     <ShoppingCart size={24} />
                   </div>
-                  <div>
-                    <p className="text-[10px] font-bold text-blue-600 uppercase tracking-widest">Tổng thanh toán</p>
-                    <p className="text-2xl font-black text-blue-700 leading-none">{formatCurrency(calculateTotal())}</p>
+                  <div className="flex gap-6">
+                    <div>
+                      <p className="text-[10px] font-bold text-blue-500 uppercase tracking-wider">Tổng đơn hàng</p>
+                      <p className="text-xl font-black text-blue-600 leading-none mt-1">{formatCurrency(calculateTotal())}</p>
+                    </div>
+                    {Number(formData.deposit) > 0 && (
+                      <>
+                        <div className="border-l border-blue-200 dark:border-blue-800 h-8 self-center"></div>
+                        <div>
+                          <p className="text-[10px] font-bold text-amber-600 uppercase tracking-wider">Khách tạm ứng</p>
+                          <p className="text-xl font-black text-amber-600 leading-none mt-1">{formatCurrency(Number(formData.deposit))}</p>
+                        </div>
+                        <div className="border-l border-blue-200 dark:border-blue-800 h-8 self-center"></div>
+                        <div>
+                          <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider">Còn lại cần thanh toán</p>
+                          <p className="text-xl font-black text-emerald-600 leading-none mt-1">{formatCurrency(Math.max(0, calculateTotal() - Number(formData.deposit)))}</p>
+                        </div>
+                      </>
+                    )}
                   </div>
                 </div>
                 

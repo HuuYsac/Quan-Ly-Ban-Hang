@@ -130,6 +130,7 @@ export interface Order {
   commission?: number;
   packagingFee?: number;
   shippingFee?: number;
+  deposit?: number;
   collaboratorId?: string;
   collaboratorName?: string;
   notes?: string;
