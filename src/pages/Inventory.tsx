@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { AppData } from '../types';
 import { ClipboardList, Search, AlertTriangle, CheckCircle2, X } from 'lucide-react';
 import { formatCurrency } from '../lib/utils';
+import { useEscapeKey } from '../hooks/useEscapeKey';
 
 interface InventoryProps {
   data: AppData;
@@ -13,6 +14,8 @@ export function Inventory({ data, updateData, isAdmin }: InventoryProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [filter, setFilter] = useState<'all' | 'low' | 'out'>('all');
   const [viewProduct, setViewProduct] = useState<any | null>(null);
+
+  useEscapeKey(() => setViewProduct(null), !!viewProduct);
 
   const filteredProducts = data.products.filter(p => {
     const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase()) || p.id.toLowerCase().includes(searchTerm.toLowerCase());

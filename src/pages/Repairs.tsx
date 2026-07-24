@@ -25,7 +25,8 @@ import {
 import { Repair, Customer, Technician } from '../types';
 import { formatCurrency } from '../lib/utils';
 import { SearchableSelect } from '../components/SearchableSelect';
-import { Toast, ToastType } from '../components/Notification';
+import { Toast, ToastType, ConfirmModal, UnsavedModal } from '../components/Notification';
+import { useEscapeKey } from '../hooks/useEscapeKey';
 
 const Repairs: React.FC = () => {
   const { data, addItem, updateItem, deleteItem } = useAppStore();
@@ -40,6 +41,11 @@ const Repairs: React.FC = () => {
   const [isAddTechnicianModalOpen, setIsAddTechnicianModalOpen] = useState(false);
   const [isSubmittingCustomer, setIsSubmittingCustomer] = useState(false);
   const [isSubmittingTechnician, setIsSubmittingTechnician] = useState(false);
+
+  // Unsaved Prompts & Draft State
+  const [showUnsavedRepairPrompt, setShowUnsavedRepairPrompt] = useState(false);
+  const [showUnsavedCustomerPrompt, setShowUnsavedCustomerPrompt] = useState(false);
+  const [hasDraftRepair, setHasDraftRepair] = useState(() => !!localStorage.getItem('repair_draft_v1'));
 
   const [customerFormData, setCustomerFormData] = useState({
     name: '',
@@ -76,6 +82,77 @@ const Repairs: React.FC = () => {
     customerPrice: 0,
     profit: 0
   });
+
+  // Check if repair form is dirty
+  const isRepairFormDirty = useMemo(() => {
+    return !!formData.customerName || !!formData.customerPhone || !!formData.productName || !!formData.issue || !!formData.notes || (Number(formData.customerPrice) > 0);
+  }, [formData]);
+
+  const handleCloseRepairModalAttempt = () => {
+    if (isRepairFormDirty) {
+      setShowUnsavedRepairPrompt(true);
+    } else {
+      setIsModalOpen(false);
+      setEditingRepair(null);
+      resetForm();
+    }
+  };
+
+  const handleSaveRepairDraft = () => {
+    localStorage.setItem('repair_draft_v1', JSON.stringify(formData));
+    showToast('Đã lưu bản nháp phiếu sửa!');
+    setShowUnsavedRepairPrompt(false);
+    setIsModalOpen(false);
+    setEditingRepair(null);
+    resetForm();
+    setHasDraftRepair(true);
+  };
+
+  const handleRestoreRepairDraft = () => {
+    const draftStr = localStorage.getItem('repair_draft_v1');
+    if (draftStr) {
+      try {
+        const draft = JSON.parse(draftStr);
+        setFormData(draft);
+        showToast('Đã khôi phục bản nháp phiếu sửa!');
+      } catch (e) {
+        console.error(e);
+      }
+    }
+  };
+
+  const handleClearRepairDraft = () => {
+    localStorage.removeItem('repair_draft_v1');
+    setHasDraftRepair(false);
+    showToast('Đã xóa bản nháp phiếu sửa');
+  };
+
+  const handleDiscardRepairChanges = () => {
+    setShowUnsavedRepairPrompt(false);
+    setIsModalOpen(false);
+    setEditingRepair(null);
+    resetForm();
+  };
+
+  // Keyboard Escape listeners
+  useEscapeKey(
+    handleCloseRepairModalAttempt,
+    isModalOpen && !isAddCustomerModalOpen && !isAddTechnicianModalOpen && !showUnsavedRepairPrompt
+  );
+  useEscapeKey(
+    () => {
+      if (customerFormData.name || customerFormData.phone) {
+        setShowUnsavedCustomerPrompt(true);
+      } else {
+        setIsAddCustomerModalOpen(false);
+      }
+    },
+    isAddCustomerModalOpen && !showUnsavedCustomerPrompt
+  );
+  useEscapeKey(
+    () => setIsAddTechnicianModalOpen(false),
+    isAddTechnicianModalOpen
+  );
 
   const filteredRepairs = useMemo(() => {
     return data.repairs.filter(r => {
@@ -512,9 +589,16 @@ const Repairs: React.FC = () => {
                 </span>
               </div>
               
-              <div className="bg-gray-50 p-2 rounded-lg text-sm text-gray-700 flex items-start gap-2">
-                <AlertCircle size={14} className="text-rose-500 mt-0.5 shrink-0" />
-                <span className="line-clamp-2">{repair.issue}</span>
+              <div className="bg-gray-50 p-2 rounded-lg text-sm text-gray-700 flex flex-col gap-1">
+                <div className="flex items-start gap-2">
+                  <AlertCircle size={14} className="text-rose-500 mt-0.5 shrink-0" />
+                  <span className="line-clamp-2">{repair.issue}</span>
+                </div>
+                {repair.technician && (
+                  <div className="text-xs text-blue-600 font-bold flex items-center gap-1 pl-5">
+                    <User size={12} /> Thợ: {repair.technician}
+                  </div>
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-4 py-2 border-y border-gray-100 dark:border-gray-800">
@@ -577,10 +661,32 @@ const Repairs: React.FC = () => {
               <h3 className="text-lg font-bold text-gray-900 dark:text-white">
                 {editingRepair ? 'Cập nhật phiếu sửa chữa' : 'Tạo phiếu sửa chữa mới'}
               </h3>
-              <button onClick={() => setIsModalOpen(false)} className="p-2 text-gray-400 hover:text-gray-600 rounded-full">
+              <button type="button" onClick={handleCloseRepairModalAttempt} className="p-2 text-gray-400 hover:text-gray-600 rounded-full">
                 <X size={20} />
               </button>
             </div>
+
+            {hasDraftRepair && !editingRepair && (
+              <div className="mx-4 sm:mx-6 mt-4 p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50 rounded-xl flex items-center justify-between text-xs text-amber-800 dark:text-amber-300">
+                <span className="font-semibold">Bán có 1 bản nháp phiếu sửa chưa tạo xong.</span>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={handleRestoreRepairDraft}
+                    className="px-3 py-1 bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-bold"
+                  >
+                    Khôi phục
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleClearRepairDraft}
+                    className="px-2 py-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 underline"
+                  >
+                    Xóa nháp
+                  </button>
+                </div>
+              </div>
+            )}
             <form onSubmit={handleSubmit} className="p-4 sm:p-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                 {/* Customer Info */}
@@ -664,23 +770,24 @@ const Repairs: React.FC = () => {
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Thợ / Đối tác nhận</label>
+                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Thợ / Đối tác nhận *</label>
                     <div className="flex gap-2">
                       <SearchableSelect 
                         className="flex-1"
+                        allowCustomValue={true}
                         options={(data.technicians || []).map(t => ({
-                          id: t.name, // Use name as ID for simplicity if technician is just a string in Repair
+                          id: t.name,
                           label: t.name,
                           sublabel: t.type + (t.phone ? ` - ${t.phone}` : '')
                         }))}
                         value={formData.technician || ''}
                         onChange={(val) => setFormData({...formData, technician: val})}
-                        placeholder="Chọn thợ..."
+                        placeholder="Chọn hoặc tự nhập tên thợ..."
                         onAddNew={(q) => {
                           if (q) setTechnicianFormData(prev => ({ ...prev, name: q }));
                           setIsAddTechnicianModalOpen(true);
                         }}
-                        addNewLabel="Thêm thợ mới"
+                        addNewLabel="Thêm thợ mới vào danh sách"
                       />
                       <button 
                         type="button"
@@ -781,7 +888,7 @@ const Repairs: React.FC = () => {
               <div className="flex gap-3 pt-4 border-t border-gray-100 dark:border-gray-800">
                 <button 
                   type="button"
-                  onClick={() => setIsModalOpen(false)}
+                  onClick={handleCloseRepairModalAttempt}
                   className="flex-1 px-4 py-2.5 border border-gray-200 text-gray-600 rounded-xl font-bold hover:bg-gray-50 transition-all"
                 >
                   Hủy
@@ -876,6 +983,28 @@ const Repairs: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Unsaved Changes Modals */}
+      <UnsavedModal
+        isOpen={showUnsavedRepairPrompt}
+        title="Cảnh báo: Phiếu sửa chưa lưu"
+        message="Bạn đang có thông tin sửa chữa chưa lưu. Bạn muốn lưu nháp để tiếp tục sau hay bỏ thay đổi?"
+        onKeepEditing={() => setShowUnsavedRepairPrompt(false)}
+        onDiscard={handleDiscardRepairChanges}
+        onSaveDraft={handleSaveRepairDraft}
+        saveDraftText="Lưu nháp phiếu sửa"
+      />
+
+      <UnsavedModal
+        isOpen={showUnsavedCustomerPrompt}
+        title="Thông tin khách hàng chưa lưu"
+        message="Thông tin khách hàng mới đang nhập dở sẽ bị mất nếu bạn đóng."
+        onKeepEditing={() => setShowUnsavedCustomerPrompt(false)}
+        onDiscard={() => {
+          setShowUnsavedCustomerPrompt(false);
+          setIsAddCustomerModalOpen(false);
+        }}
+      />
 
       {toast && (
         <Toast 

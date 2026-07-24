@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { AppData, Supplier } from '../types';
 import { Building2, Search, Plus, Edit, Trash2, X } from 'lucide-react';
+import { UnsavedModal } from '../components/Notification';
+import { useEscapeKey } from '../hooks/useEscapeKey';
 
 interface SuppliersProps {
   data: AppData;
@@ -23,6 +25,21 @@ export function Suppliers({ data, updateData, addItem, updateItem, deleteItem, i
     products: '',
     notes: ''
   });
+
+  const [showUnsavedPrompt, setShowUnsavedPrompt] = useState(false);
+
+  const isFormDirty = !!formData.name || !!formData.phone;
+
+  const handleCloseAttempt = () => {
+    if (isFormDirty) {
+      setShowUnsavedPrompt(true);
+    } else {
+      setIsAddModalOpen(false);
+      setEditingId(null);
+    }
+  };
+
+  useEscapeKey(handleCloseAttempt, isAddModalOpen && !showUnsavedPrompt);
 
   const filteredSuppliers = data.suppliers.filter(s => 
     s.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -281,10 +298,8 @@ export function Suppliers({ data, updateData, addItem, updateItem, deleteItem, i
               {editingId ? 'Chỉnh sửa nhà cung cấp' : 'Thêm nhà cung cấp mới'}
             </h3>
             <button 
-              onClick={() => {
-                setIsAddModalOpen(false);
-                setEditingId(null);
-              }}
+              type="button"
+              onClick={handleCloseAttempt}
               className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
             >
               <X size={20} />
@@ -363,10 +378,7 @@ export function Suppliers({ data, updateData, addItem, updateItem, deleteItem, i
               <div className="flex justify-end gap-3 pt-4 border-t border-gray-100 dark:border-gray-800">
                 <button 
                   type="button"
-                  onClick={() => {
-                    setIsAddModalOpen(false);
-                    setEditingId(null);
-                  }}
+                  onClick={handleCloseAttempt}
                   className="px-5 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium transition-colors"
                 >
                   Hủy
@@ -382,6 +394,18 @@ export function Suppliers({ data, updateData, addItem, updateItem, deleteItem, i
           </div>
         </div>
       )}
+      {/* Unsaved Changes Modal */}
+      <UnsavedModal
+        isOpen={showUnsavedPrompt}
+        title="Thông tin nhà cung cấp chưa lưu"
+        message="Thông tin nhà cung cấp đang nhập dở sẽ bị mất nếu bạn thoát."
+        onKeepEditing={() => setShowUnsavedPrompt(false)}
+        onDiscard={() => {
+          setShowUnsavedPrompt(false);
+          setIsAddModalOpen(false);
+          setEditingId(null);
+        }}
+      />
     </div>
   );
 }

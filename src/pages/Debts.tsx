@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { AppData, Customer, Supplier } from '../types';
 import { CreditCard, Search, ArrowUpRight, ArrowDownRight, X } from 'lucide-react';
 import { formatCurrency } from '../lib/utils';
+import { useEscapeKey } from '../hooks/useEscapeKey';
 
 interface DebtsProps {
   data: AppData;
@@ -22,6 +23,24 @@ export function Debts({ data, updateData, addItem, updateItem, deleteItem, isAdm
   const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(null);
   const [collectAmount, setCollectAmount] = useState('');
   const [editAmount, setEditAmount] = useState('');
+
+  useEscapeKey(() => {
+    setIsDetailModalOpen(false);
+    setSelectedCustomer(null);
+    setSelectedSupplier(null);
+  }, isDetailModalOpen);
+
+  useEscapeKey(() => {
+    setIsCollectModalOpen(false);
+    setSelectedCustomer(null);
+    setSelectedSupplier(null);
+  }, isCollectModalOpen);
+
+  useEscapeKey(() => {
+    setIsEditModalOpen(false);
+    setSelectedCustomer(null);
+    setSelectedSupplier(null);
+  }, isEditModalOpen);
 
   const handleViewDetails = (item: Customer | Supplier, type: 'customers' | 'suppliers') => {
     if (type === 'customers') {

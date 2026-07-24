@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { AppData, Product } from '../types';
 import { formatCurrency } from '../lib/utils';
 import { Package, Plus, Search, Edit, Trash2, AlertTriangle, CheckCircle2, X } from 'lucide-react';
-import { Toast, ToastType, ConfirmModal } from '../components/Notification';
+import { Toast, ToastType, ConfirmModal, UnsavedModal } from '../components/Notification';
+import { useEscapeKey } from '../hooks/useEscapeKey';
 
 interface ProductsProps {
   data: AppData;
@@ -32,6 +33,7 @@ export function Products({ data, updateData, addItem, updateItem, deleteItem, is
   const showToast = (message: string, type: ToastType = 'success') => {
     setToast({ message, type });
   };
+
   const [formData, setFormData] = useState({
     name: '',
     category: '',
@@ -41,6 +43,26 @@ export function Products({ data, updateData, addItem, updateItem, deleteItem, is
     minStock: '10',
     supplier: ''
   });
+
+  const [showUnsavedPrompt, setShowUnsavedPrompt] = useState(false);
+
+  const isFormDirty = !!formData.name || !!formData.price || !!formData.importPrice;
+
+  const handleCloseAttempt = () => {
+    if (isFormDirty) {
+      setShowUnsavedPrompt(true);
+    } else {
+      setIsAddModalOpen(false);
+      setEditingId(null);
+    }
+  };
+
+  useEscapeKey(
+    handleCloseAttempt,
+    isAddModalOpen && !isAddCategoryModalOpen && !isAddSupplierModalOpen && !showUnsavedPrompt
+  );
+  useEscapeKey(() => setIsAddCategoryModalOpen(false), isAddCategoryModalOpen);
+  useEscapeKey(() => setIsAddSupplierModalOpen(false), isAddSupplierModalOpen);
   const [categoryFormData, setCategoryFormData] = useState({
     name: '',
     parent: ''
@@ -575,10 +597,8 @@ export function Products({ data, updateData, addItem, updateItem, deleteItem, is
               {editingId ? 'Chỉnh sửa sản phẩm' : 'Thêm sản phẩm mới'}
             </h3>
             <button 
-              onClick={() => {
-                setIsAddModalOpen(false);
-                setEditingId(null);
-              }}
+              type="button"
+              onClick={handleCloseAttempt}
               className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
             >
               <X size={20} />
@@ -705,10 +725,7 @@ export function Products({ data, updateData, addItem, updateItem, deleteItem, is
               <div className="flex justify-end gap-3 pt-4 border-t border-gray-100 dark:border-gray-800">
                 <button 
                   type="button"
-                  onClick={() => {
-                    setIsAddModalOpen(false);
-                    setEditingId(null);
-                  }}
+                  onClick={handleCloseAttempt}
                   className="px-5 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium transition-colors"
                 >
                   Hủy
@@ -724,6 +741,18 @@ export function Products({ data, updateData, addItem, updateItem, deleteItem, is
           </div>
         </div>
       )}
+      <UnsavedModal
+        isOpen={showUnsavedPrompt}
+        title="Thông tin sản phẩm chưa lưu"
+        message="Thông tin sản phẩm bạn đang nhập dở sẽ bị mất nếu bạn đóng."
+        onKeepEditing={() => setShowUnsavedPrompt(false)}
+        onDiscard={() => {
+          setShowUnsavedPrompt(false);
+          setIsAddModalOpen(false);
+          setEditingId(null);
+        }}
+      />
+
       {confirmingDelete && (
         <ConfirmModal 
           isOpen={!!confirmingDelete}

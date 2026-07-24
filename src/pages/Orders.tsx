@@ -3,8 +3,9 @@ import { motion, AnimatePresence } from 'motion/react';
 import { AppData, Order, OrderItem } from '../types';
 import { formatCurrency, numberToVietnameseWords } from '../lib/utils';
 import { ShoppingCart, Plus, Search, Eye, Printer, Trash2, X, PlusCircle, Edit, FileText, DollarSign, Package, CreditCard, ChevronDown, Share2 } from 'lucide-react';
-import { Toast, ToastType, ConfirmModal } from '../components/Notification';
+import { Toast, ToastType, ConfirmModal, UnsavedModal } from '../components/Notification';
 import { SearchableSelect } from '../components/SearchableSelect';
+import { useEscapeKey } from '../hooks/useEscapeKey';
 
 interface OrdersProps {
   data: AppData;
@@ -84,9 +85,115 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
   const [toast, setToast] = useState<{ message: string; type: ToastType } | null>(null);
   const [confirmingDelete, setConfirmingDelete] = useState<string | null>(null);
 
+  // Unsaved changes & drafts state
+  const [showUnsavedOrderPrompt, setShowUnsavedOrderPrompt] = useState(false);
+  const [showUnsavedCustomerPrompt, setShowUnsavedCustomerPrompt] = useState(false);
+  const [showUnsavedProductPrompt, setShowUnsavedProductPrompt] = useState(false);
+  const [hasDraftOrder, setHasDraftOrder] = useState(() => !!localStorage.getItem('order_draft_v1'));
+
   const showToast = (message: string, type: ToastType = 'success') => {
     setToast({ message, type });
   };
+
+  const resetForm = () => {
+    setFormData({
+      id: '',
+      customerId: '',
+      date: new Date().toISOString().split('T')[0],
+      paymentMethod: 'Tiền mặt',
+      paymentStatus: 'Đã thanh toán',
+      commission: 0,
+      packagingFee: 0,
+      shippingFee: 0,
+      deposit: 0,
+      collaboratorId: '',
+      collaboratorName: '',
+      notes: ''
+    });
+    setOrderItems([{ productId: '', name: '', quantity: 1, price: 0, discount: 0, discountType: 'percent' }]);
+  };
+
+  // Check if main order form is dirty
+  const isOrderFormDirty = useMemo(() => {
+    const hasItemDetails = orderItems.some(i => i.productId !== '' || i.name !== '' || i.price > 0);
+    return hasItemDetails || !!formData.customerId || !!formData.notes || formData.packagingFee > 0 || formData.shippingFee > 0 || formData.deposit > 0 || formData.commission > 0;
+  }, [orderItems, formData]);
+
+  const handleCloseOrderModalAttempt = () => {
+    if (isOrderFormDirty) {
+      setShowUnsavedOrderPrompt(true);
+    } else {
+      setIsAddModalOpen(false);
+      setEditingId(null);
+      resetForm();
+    }
+  };
+
+  const handleSaveOrderDraft = () => {
+    localStorage.setItem('order_draft_v1', JSON.stringify({ formData, orderItems }));
+    showToast('Đã lưu bản nháp đơn hàng!');
+    setShowUnsavedOrderPrompt(false);
+    setIsAddModalOpen(false);
+    setEditingId(null);
+    resetForm();
+    setHasDraftOrder(true);
+  };
+
+  const handleRestoreOrderDraft = () => {
+    const draftStr = localStorage.getItem('order_draft_v1');
+    if (draftStr) {
+      try {
+        const draft = JSON.parse(draftStr);
+        if (draft.formData) setFormData(draft.formData);
+        if (draft.orderItems) setOrderItems(draft.orderItems);
+        showToast('Đã khôi phục bản nháp đơn hàng!');
+      } catch (e) {
+        console.error(e);
+      }
+    }
+  };
+
+  const handleClearOrderDraft = () => {
+    localStorage.removeItem('order_draft_v1');
+    setHasDraftOrder(false);
+    showToast('Đã xóa bản nháp đơn hàng');
+  };
+
+  const handleDiscardOrderChanges = () => {
+    setShowUnsavedOrderPrompt(false);
+    setIsAddModalOpen(false);
+    setEditingId(null);
+    resetForm();
+  };
+
+  // Register ESC key handlers for stacked modals
+  useEscapeKey(() => setViewOrder(null), !!viewOrder);
+  useEscapeKey(
+    handleCloseOrderModalAttempt,
+    isAddModalOpen && !isAddCustomerModalOpen && !isAddProductModalOpen && !isAddSupplierModalOpen && !isAddCategoryModalOpen && !showUnsavedOrderPrompt
+  );
+  useEscapeKey(
+    () => {
+      if (customerFormData.name || customerFormData.phone) {
+        setShowUnsavedCustomerPrompt(true);
+      } else {
+        setIsAddCustomerModalOpen(false);
+      }
+    },
+    isAddCustomerModalOpen && !showUnsavedCustomerPrompt
+  );
+  useEscapeKey(
+    () => {
+      if (productFormData.name || productFormData.price) {
+        setShowUnsavedProductPrompt(true);
+      } else {
+        setIsAddProductModalOpen(false);
+      }
+    },
+    isAddProductModalOpen && !showUnsavedProductPrompt
+  );
+  useEscapeKey(() => setIsAddSupplierModalOpen(false), isAddSupplierModalOpen);
+  useEscapeKey(() => setIsAddCategoryModalOpen(false), isAddCategoryModalOpen);
 
   const filteredOrders = (data.orders || []).filter(o => {
     const matchesSearch = (o.id || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -1551,15 +1658,35 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
                 {editingId ? 'Chỉnh sửa đơn hàng' : 'Tạo đơn hàng mới'}
               </h3>
               <button 
-                onClick={() => {
-                  setIsAddModalOpen(false);
-                  setEditingId(null);
-                }}
+                type="button"
+                onClick={handleCloseOrderModalAttempt}
                 className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
               >
                 <X size={20} />
               </button>
             </div>
+            
+            {hasDraftOrder && !editingId && (
+              <div className="mx-4 sm:mx-6 mt-4 p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50 rounded-xl flex items-center justify-between text-xs text-amber-800 dark:text-amber-300">
+                <span className="font-semibold">Bán có 1 bản nháp đơn hàng chưa tạo xong.</span>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={handleRestoreOrderDraft}
+                    className="px-3 py-1 bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-bold"
+                  >
+                    Khôi phục
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleClearOrderDraft}
+                    className="px-2 py-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 underline"
+                  >
+                    Xóa nháp
+                  </button>
+                </div>
+              </div>
+            )}
             
             <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-8">
               {/* General Information Section */}
@@ -1713,15 +1840,22 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
                       placeholder="Tên CTV..."
                     />
                   </div>
-                  <div>
-                    <label className="block text-[10px] font-bold text-blue-600 uppercase mb-1 ml-1">Tạm ứng</label>
+                  <div className="bg-amber-50/60 dark:bg-amber-950/20 p-2.5 rounded-xl border border-amber-200/60 dark:border-amber-900/50">
+                    <label className="block text-[10px] font-black text-amber-700 dark:text-amber-400 uppercase mb-1 ml-0.5">
+                      Khách tạm ứng (Đặt cọc)
+                    </label>
                     <input 
                       type="number" min="0"
                       value={formData.deposit}
                       onChange={e => setFormData({...formData, deposit: Number(e.target.value)})}
-                      className="w-full px-3 py-2 border border-blue-100 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm bg-white dark:bg-slate-900 shadow-sm font-bold text-blue-600"
+                      className="w-full px-3 py-1.5 border border-amber-200 dark:border-amber-900 rounded-lg focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 text-sm bg-white dark:bg-slate-900 shadow-sm font-black text-amber-600"
                       placeholder="0"
                     />
+                    {Number(formData.deposit) > 0 && (
+                      <p className="text-[10px] font-bold text-emerald-600 mt-1 truncate">
+                        Còn lại: {formatCurrency(Math.max(0, calculateTotal() - Number(formData.deposit)))}
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>
@@ -1970,30 +2104,23 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
                       <p className="text-[10px] font-bold text-blue-500 uppercase tracking-wider">Tổng đơn hàng</p>
                       <p className="text-xl font-black text-blue-600 leading-none mt-1">{formatCurrency(calculateTotal())}</p>
                     </div>
-                    {Number(formData.deposit) > 0 && (
-                      <>
-                        <div className="border-l border-blue-200 dark:border-blue-800 h-8 self-center"></div>
-                        <div>
-                          <p className="text-[10px] font-bold text-amber-600 uppercase tracking-wider">Khách tạm ứng</p>
-                          <p className="text-xl font-black text-amber-600 leading-none mt-1">{formatCurrency(Number(formData.deposit))}</p>
-                        </div>
-                        <div className="border-l border-blue-200 dark:border-blue-800 h-8 self-center"></div>
-                        <div>
-                          <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider">Còn lại cần thanh toán</p>
-                          <p className="text-xl font-black text-emerald-600 leading-none mt-1">{formatCurrency(Math.max(0, calculateTotal() - Number(formData.deposit)))}</p>
-                        </div>
-                      </>
-                    )}
+                    <div className="border-l border-blue-200 dark:border-blue-800 h-8 self-center"></div>
+                    <div>
+                      <p className="text-[10px] font-bold text-amber-600 uppercase tracking-wider">Khách tạm ứng</p>
+                      <p className="text-xl font-black text-amber-600 leading-none mt-1">{formatCurrency(Number(formData.deposit) || 0)}</p>
+                    </div>
+                    <div className="border-l border-blue-200 dark:border-blue-800 h-8 self-center"></div>
+                    <div>
+                      <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider">Còn lại cần thanh toán</p>
+                      <p className="text-xl font-black text-emerald-600 leading-none mt-1">{formatCurrency(Math.max(0, calculateTotal() - (Number(formData.deposit) || 0)))}</p>
+                    </div>
                   </div>
                 </div>
                 
                 <div className="flex gap-3 w-full sm:w-auto">
                   <button 
                     type="button"
-                    onClick={() => {
-                      setIsAddModalOpen(false);
-                      setEditingId(null);
-                    }}
+                    onClick={handleCloseOrderModalAttempt}
                     className="flex-1 sm:flex-none px-8 py-3 text-gray-500 bg-gray-100 hover:bg-gray-200 rounded-xl font-bold uppercase text-xs tracking-widest transition-all"
                   >
                     Hủy bỏ
@@ -2427,6 +2554,39 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
           </div>
         </div>
       )}
+      {/* Unsaved Changes Warnings */}
+      <UnsavedModal
+        isOpen={showUnsavedOrderPrompt}
+        title="Cảnh báo: Đơn hàng chưa lưu"
+        message="Bạn đang có thông tin đơn hàng chưa lưu. Bạn muốn lưu nháp để tiếp tục sau hay bỏ thay đổi?"
+        onKeepEditing={() => setShowUnsavedOrderPrompt(false)}
+        onDiscard={handleDiscardOrderChanges}
+        onSaveDraft={handleSaveOrderDraft}
+        saveDraftText="Lưu nháp đơn hàng"
+      />
+
+      <UnsavedModal
+        isOpen={showUnsavedCustomerPrompt}
+        title="Thông tin khách hàng chưa lưu"
+        message="Thông tin khách hàng mới đang nhập dở sẽ bị mất nếu bạn đóng."
+        onKeepEditing={() => setShowUnsavedCustomerPrompt(false)}
+        onDiscard={() => {
+          setShowUnsavedCustomerPrompt(false);
+          setIsAddCustomerModalOpen(false);
+        }}
+      />
+
+      <UnsavedModal
+        isOpen={showUnsavedProductPrompt}
+        title="Thông tin sản phẩm chưa lưu"
+        message="Thông tin sản phẩm mới đang nhập dở sẽ bị mất nếu bạn đóng."
+        onKeepEditing={() => setShowUnsavedProductPrompt(false)}
+        onDiscard={() => {
+          setShowUnsavedProductPrompt(false);
+          setIsAddProductModalOpen(false);
+        }}
+      />
+
       {confirmingDelete && (
         <ConfirmModal 
           isOpen={!!confirmingDelete}

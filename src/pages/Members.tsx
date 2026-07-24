@@ -27,6 +27,7 @@ import {
   CreditCard
 } from 'lucide-react';
 import { useAppStore } from '../hooks/useAppStore';
+import { useEscapeKey } from '../hooks/useEscapeKey';
 import { User } from '../types';
 
 export function Members() {
@@ -37,6 +38,8 @@ export function Members() {
   const [filterStatus, setFilterStatus] = useState<'all' | 'approved' | 'pending'>('all');
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [isEditing, setIsEditing] = useState(false);
+
+  useEscapeKey(() => setIsEditing(false), isEditing);
   const [editForm, setEditForm] = useState({
     role: 'user' as 'admin' | 'staff' | 'user',
     position: '',

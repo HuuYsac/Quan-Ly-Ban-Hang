@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { AppData, Category } from '../types';
 import { FolderTree, Search, Plus, Edit, Trash2, X } from 'lucide-react';
 import { Toast, ToastType, ConfirmModal } from '../components/Notification';
+import { useEscapeKey } from '../hooks/useEscapeKey';
 
 interface CategoriesProps {
   data: AppData;
@@ -17,6 +18,8 @@ export function Categories({ data, updateData, addItem, updateItem, deleteItem }
   const [editingId, setEditingId] = useState<string | null>(null);
   const [toast, setToast] = useState<{ message: string; type: ToastType } | null>(null);
   const [confirmingDelete, setConfirmingDelete] = useState<string | null>(null);
+
+  useEscapeKey(() => setIsAddModalOpen(false), isAddModalOpen);
 
   const showToast = (message: string, type: ToastType = 'success') => {
     setToast({ message, type });

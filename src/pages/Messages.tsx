@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAppStore } from '../hooks/useAppStore';
+import { useEscapeKey } from '../hooks/useEscapeKey';
 import { User, Message, Group, InternalTask } from '../types';
 import { auth } from '../firebase';
 import { Send, User as UserIcon, Search, MessageSquare, Plus, Users, CheckSquare, Calendar, Clock, CheckCircle2, Circle, ChevronLeft } from 'lucide-react';
@@ -13,6 +14,9 @@ export default function Messages() {
   const [searchTerm, setSearchTerm] = useState('');
   const [showCreateGroup, setShowCreateGroup] = useState(false);
   const [showCreateTask, setShowCreateTask] = useState(false);
+
+  useEscapeKey(() => setShowCreateGroup(false), showCreateGroup);
+  useEscapeKey(() => setShowCreateTask(false), showCreateTask);
   const [groupName, setGroupName] = useState('');
   const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
   const [taskTitle, setTaskTitle] = useState('');

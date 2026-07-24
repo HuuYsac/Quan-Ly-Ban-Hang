@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
+import { useEscapeKey } from '../hooks/useEscapeKey';
 import { useAppStore } from '../hooks/useAppStore';
 import { 
   Search, 
@@ -49,6 +50,9 @@ const Warranty: React.FC = () => {
   const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'expiring' | 'expired' | 'history'>('active');
   const [isRepairModalOpen, setIsRepairModalOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+
+  useEscapeKey(() => setIsSettingsModalOpen(false), isSettingsModalOpen);
+  useEscapeKey(() => setIsRepairModalOpen(false), isRepairModalOpen);
   const [selectedWarranty, setSelectedWarranty] = useState<WarrantyItem | null>(null);
   const [repairForm, setRepairForm] = useState({
     issue: '',
@@ -852,6 +856,7 @@ const Warranty: React.FC = () => {
               <div>
                 <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Thợ/Đối tác nhận sửa</label>
                 <SearchableSelect 
+                  allowCustomValue={true}
                   options={(data.technicians || []).map(t => ({
                     id: t.name,
                     label: t.name,

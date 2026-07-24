@@ -19,6 +19,7 @@ interface SearchableSelectProps {
   addNewLabel?: string;
   className?: string;
   renderOption?: (option: Option) => React.ReactNode;
+  allowCustomValue?: boolean;
 }
 
 export function SearchableSelect({ 
@@ -29,7 +30,8 @@ export function SearchableSelect({
   onAddNew, 
   addNewLabel = '+ Thêm mới',
   className = '',
-  renderOption
+  renderOption,
+  allowCustomValue = false
 }: SearchableSelectProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -47,15 +49,23 @@ export function SearchableSelect({
     );
   }, [options, searchQuery]);
 
+  const hasExactMatch = useMemo(() => {
+    if (!searchQuery.trim()) return true;
+    return options.some(o => o.label.toLowerCase() === searchQuery.trim().toLowerCase() || o.id.toLowerCase() === searchQuery.trim().toLowerCase());
+  }, [options, searchQuery]);
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        if (isOpen && allowCustomValue && searchQuery.trim() && !hasExactMatch) {
+          onChange(searchQuery.trim());
+        }
         setIsOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  }, [isOpen, allowCustomValue, searchQuery, hasExactMatch, onChange]);
 
   useEffect(() => {
     if (isOpen && inputRef.current) {
@@ -65,6 +75,19 @@ export function SearchableSelect({
       setSearchQuery('');
     }
   }, [isOpen]);
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      if (filteredOptions.length > 0) {
+        onChange(filteredOptions[0].id);
+        setIsOpen(false);
+      } else if (allowCustomValue && searchQuery.trim()) {
+        onChange(searchQuery.trim());
+        setIsOpen(false);
+      }
+    }
+  };
 
   return (
     <div className={`relative ${className}`} ref={containerRef}>
@@ -109,12 +132,25 @@ export function SearchableSelect({
                   placeholder="Tìm kiếm..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyDown={handleKeyDown}
                   className="w-full pl-9 pr-4 py-2 bg-gray-50 border-transparent focus:bg-white focus:border-blue-500 rounded-xl text-sm outline-none transition-all"
                 />
               </div>
             </div>
 
             <div className="max-h-[280px] overflow-y-auto custom-scrollbar p-1">
+              {allowCustomValue && searchQuery.trim() && !hasExactMatch && (
+                <div
+                  onClick={() => {
+                    onChange(searchQuery.trim());
+                    setIsOpen(false);
+                  }}
+                  className="w-full flex items-center justify-between p-2.5 rounded-xl bg-blue-50/70 text-blue-700 hover:bg-blue-100 transition-all cursor-pointer font-medium text-sm mb-1"
+                >
+                  <span className="truncate">Tự nhập: <strong className="font-bold">"{searchQuery.trim()}"</strong></span>
+                  <PlusCircle size={16} className="shrink-0 ml-2" />
+                </div>
+              )}
               {filteredOptions.length > 0 ? (
                 filteredOptions.map((option) => (
                   <div

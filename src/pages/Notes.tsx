@@ -20,6 +20,8 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import { auth } from '../firebase';
 import { cn } from '../lib/utils';
+import { UnsavedModal } from '../components/Notification';
+import { useEscapeKey } from '../hooks/useEscapeKey';
 
 interface NotesProps {
   data: AppData;
@@ -49,6 +51,23 @@ export function Notes({ data }: NotesProps) {
     content: '',
     color: 'Default'
   });
+
+  const [showUnsavedPrompt, setShowUnsavedPrompt] = useState(false);
+
+  const isFormDirty = isAdding 
+    ? (!!newNote.title || !!newNote.content)
+    : (!!editingNote?.title || !!editingNote?.content);
+
+  const handleCloseAttempt = () => {
+    if (isFormDirty) {
+      setShowUnsavedPrompt(true);
+    } else {
+      setIsAdding(false);
+      setEditingNote(null);
+    }
+  };
+
+  useEscapeKey(handleCloseAttempt, (isAdding || !!editingNote) && !showUnsavedPrompt);
 
   const notes = data.notes || [];
   const filteredNotes = notes
@@ -167,7 +186,7 @@ export function Notes({ data }: NotesProps) {
                   </h3>
                 </div>
                 <button 
-                  onClick={() => { setIsAdding(false); setEditingNote(null); }}
+                  onClick={handleCloseAttempt}
                   className="p-2 hover:bg-black/10 rounded-full transition-colors"
                 >
                   <X size={24} className="text-slate-500" />
@@ -331,6 +350,18 @@ export function Notes({ data }: NotesProps) {
           </button>
         </div>
       )}
+
+      <UnsavedModal
+        isOpen={showUnsavedPrompt}
+        title="Ghi chú chưa lưu"
+        message="Nội dung ghi chú đang soạn thảo sẽ bị mất nếu bạn thoát."
+        onKeepEditing={() => setShowUnsavedPrompt(false)}
+        onDiscard={() => {
+          setShowUnsavedPrompt(false);
+          setIsAdding(false);
+          setEditingNote(null);
+        }}
+      />
     </div>
   );
 }

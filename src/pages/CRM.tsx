@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { useEscapeKey } from '../hooks/useEscapeKey';
 import { motion, AnimatePresence } from 'motion/react';
 import { auth } from '../firebase';
 import { AppData, Order, Customer, Lead, CareTask, NotificationSettings } from '../types';
@@ -56,6 +57,13 @@ export function CRM({ data, updateData, addItem, updateItem, deleteItem }: CRMPr
   const [confirmingDelete, setConfirmingDelete] = useState<string | null>(null);
   const [confirmingConvert, setConfirmingConvert] = useState<Lead | null>(null);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'info' } | null>(null);
+
+  useEscapeKey(() => setIsDetailModalOpen(false), isDetailModalOpen);
+  useEscapeKey(() => setShowSettings(false), showSettings);
+  useEscapeKey(() => {
+    setShowLeadModal(false);
+    setEditingLead(null);
+  }, showLeadModal || !!editingLead);
   
   // Default settings if not provided
   const settings = data.cskhSettings || {

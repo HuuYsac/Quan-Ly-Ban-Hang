@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { AppData, Customer } from '../types';
 import { formatCurrency } from '../lib/utils';
 import { Users, Search, Plus, Edit, Trash2, Laptop, ShieldCheck, ShieldAlert, Wrench, Tag, X, ShoppingBag } from 'lucide-react';
+import { ConfirmModal, UnsavedModal } from '../components/Notification';
+import { useEscapeKey } from '../hooks/useEscapeKey';
 
 interface CustomersProps {
   data: AppData;
@@ -27,6 +29,21 @@ export function Customers({ data, updateData, addItem, updateItem, deleteItem }:
     taxCode: '',
     tags: ''
   });
+
+  const [showUnsavedPrompt, setShowUnsavedPrompt] = useState(false);
+
+  const isFormDirty = !!formData.name || !!formData.phone || !!formData.email || !!formData.address;
+
+  const handleCloseAttempt = () => {
+    if (isFormDirty) {
+      setShowUnsavedPrompt(true);
+    } else {
+      setIsAddModalOpen(false);
+      setEditingId(null);
+    }
+  };
+
+  useEscapeKey(handleCloseAttempt, isAddModalOpen && !showUnsavedPrompt);
 
   const [expandedOrders, setExpandedOrders] = useState<Set<string>>(new Set());
 
@@ -442,10 +459,7 @@ export function Customers({ data, updateData, addItem, updateItem, deleteItem }:
                 {editingId ? 'Chỉnh sửa khách hàng' : 'Thêm khách hàng mới'}
               </h3>
               <button 
-                onClick={() => {
-                  setIsAddModalOpen(false);
-                  setEditingId(null);
-                }}
+                onClick={handleCloseAttempt}
                 className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
               >
                 <X size={20} />
@@ -693,10 +707,7 @@ export function Customers({ data, updateData, addItem, updateItem, deleteItem }:
               <div className="flex justify-end gap-3 pt-4 border-t border-gray-100 dark:border-gray-800">
                 <button 
                   type="button"
-                  onClick={() => {
-                    setIsAddModalOpen(false);
-                    setEditingId(null);
-                  }}
+                  onClick={handleCloseAttempt}
                   className="px-5 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium transition-colors"
                 >
                   Hủy
@@ -712,6 +723,18 @@ export function Customers({ data, updateData, addItem, updateItem, deleteItem }:
           </div>
         </div>
       )}
+
+      <UnsavedModal
+        isOpen={showUnsavedPrompt}
+        title="Thông tin khách hàng chưa lưu"
+        message="Thông tin bạn đang nhập dở sẽ bị mất nếu bạn thoát."
+        onKeepEditing={() => setShowUnsavedPrompt(false)}
+        onDiscard={() => {
+          setShowUnsavedPrompt(false);
+          setIsAddModalOpen(false);
+          setEditingId(null);
+        }}
+      />
 
       {/* Confirmation Modal */}
       {confirmingDelete && (
