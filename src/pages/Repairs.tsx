@@ -676,7 +676,10 @@ const Repairs: React.FC = () => {
                         value={formData.technician || ''}
                         onChange={(val) => setFormData({...formData, technician: val})}
                         placeholder="Chọn thợ..."
-                        onAddNew={() => setIsAddTechnicianModalOpen(true)}
+                        onAddNew={(q) => {
+                          if (q) setTechnicianFormData(prev => ({ ...prev, name: q }));
+                          setIsAddTechnicianModalOpen(true);
+                        }}
                         addNewLabel="Thêm thợ mới"
                       />
                       <button 

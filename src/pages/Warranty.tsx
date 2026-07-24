@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { formatCurrency } from '../lib/utils';
 import { Repair, WarrantyNotification, NotificationSettings } from '../types';
+import { SearchableSelect } from '../components/SearchableSelect';
 import { Toast, ToastType } from '../components/Notification';
 
 interface WarrantyItem {
@@ -850,12 +851,15 @@ const Warranty: React.FC = () => {
 
               <div>
                 <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Thợ/Đối tác nhận sửa</label>
-                <input 
-                  type="text"
+                <SearchableSelect 
+                  options={(data.technicians || []).map(t => ({
+                    id: t.name,
+                    label: t.name,
+                    sublabel: t.type + (t.phone ? ` - ${t.phone}` : '')
+                  }))}
                   value={repairForm.technician}
-                  onChange={e => setRepairForm({...repairForm, technician: e.target.value})}
-                  placeholder="Tên thợ hoặc đơn vị đối tác..."
-                  className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm"
+                  onChange={(val) => setRepairForm({...repairForm, technician: val})}
+                  placeholder="Chọn hoặc nhập tên thợ..."
                 />
               </div>
 

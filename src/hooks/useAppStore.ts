@@ -129,6 +129,7 @@ export function useAppStore() {
       const collectionsToSync: [string, keyof AppData][] = [
         ['customers', 'customers'],
         ['suppliers', 'suppliers'],
+        ['technicians', 'technicians'],
         ['products', 'products'],
         ['categories', 'categories'],
         ['orders', 'orders'],
@@ -268,6 +269,7 @@ export function useAppStore() {
 
       await syncCollection('customers', 'customers');
       await syncCollection('suppliers', 'suppliers');
+      await syncCollection('technicians', 'technicians');
       await syncCollection('products', 'products');
       await syncCollection('categories', 'categories');
       await syncCollection('orders', 'orders');
@@ -332,7 +334,7 @@ export function useAppStore() {
     setLoading(true);
     try {
       const collections = [
-        'customers', 'suppliers', 'products', 'categories', 'orders', 
+        'customers', 'suppliers', 'technicians', 'products', 'categories', 'orders', 
         'repairs', 'leads', 'careTasks', 'sales', 'warrantyNotifications', 'promotions', 'messages', 'groups', 'internalTasks', 'notifications'
       ];
 

@@ -15,7 +15,7 @@ interface SearchableSelectProps {
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
-  onAddNew?: () => void;
+  onAddNew?: (searchQuery?: string) => void;
   addNewLabel?: string;
   className?: string;
   renderOption?: (option: Option) => React.ReactNode;
@@ -82,6 +82,8 @@ export function SearchableSelect({
                 <span className="text-[10px] text-gray-500 truncate">{selectedOption.sublabel}</span>
               )}
             </div>
+          ) : value ? (
+            <span className="text-sm font-medium text-gray-900 truncate">{value}</span>
           ) : (
             <span className="text-gray-400 text-sm">{placeholder}</span>
           )}
@@ -158,7 +160,7 @@ export function SearchableSelect({
                 <button
                   type="button"
                   onClick={() => {
-                    onAddNew();
+                    onAddNew(searchQuery);
                     setIsOpen(false);
                   }}
                   className="w-full flex items-center gap-2 p-2.5 text-blue-600 hover:bg-blue-50 rounded-xl transition-all text-sm font-bold uppercase tracking-wider"
