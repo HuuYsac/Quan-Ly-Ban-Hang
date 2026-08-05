@@ -130,7 +130,7 @@ export function Reports({ data, updateData }: ReportsProps) {
     const orderCost = currentPeriodItems.reduce((sum, item) => {
       return sum + (getImportPrice(item.productId, item.importPrice) * item.quantity);
     }, 0) + currentOrderExpenses;
-    const repairCost = currentPeriodRepairs.reduce((sum, r) => sum + (r.partnerCost || 0), 0);
+    const repairCost = currentPeriodRepairs.reduce((sum, r) => sum + (r.partnerCost || 0) + (r.shippingFee || 0), 0);
     const totalCost = orderCost + repairCost;
 
     const prevOrderExpenses = prevPeriodOrders.reduce((sum, o) => 
@@ -138,7 +138,7 @@ export function Reports({ data, updateData }: ReportsProps) {
     const prevOrderCost = prevPeriodItems.reduce((sum, item) => {
       return sum + (getImportPrice(item.productId, item.importPrice) * item.quantity);
     }, 0) + prevOrderExpenses;
-    const prevRepairCost = prevPeriodRepairs.reduce((sum, r) => sum + (r.partnerCost || 0), 0);
+    const prevRepairCost = prevPeriodRepairs.reduce((sum, r) => sum + (r.partnerCost || 0) + (r.shippingFee || 0), 0);
     const prevCost = prevOrderCost + prevRepairCost;
 
     const totalProfit = totalRevenue - totalCost;
@@ -173,14 +173,17 @@ export function Reports({ data, updateData }: ReportsProps) {
 
     categoryProfitData.sort((a, b) => b.profit - a.profit);
 
-    // Most profitable products
+    // Most profitable products (deducting warranty costs if incurred)
     const profitableProducts = (data.products || []).map(p => {
       const pItems = currentPeriodItems.filter(item => item.productId === p.id);
       const revenue = pItems.reduce((sum, item) => sum + (item.subtotal || 0), 0);
       const cost = pItems.reduce((sum, item) => sum + (getImportPrice(item.productId, item.importPrice) * item.quantity), 0);
-      const profit = revenue - cost;
+      const pWarrantyCost = currentPeriodRepairs
+        .filter(r => r.isWarranty && (r.productName === p.name || pItems.some(item => item.serviceTag && item.serviceTag === r.serviceTag)))
+        .reduce((sum, r) => sum + (r.partnerCost || 0) + (r.shippingFee || 0), 0);
+      const profit = revenue - cost - pWarrantyCost;
       const quantitySold = pItems.reduce((sum, item) => sum + item.quantity, 0);
-      return { ...p, revenue, profit, quantitySold };
+      return { ...p, revenue, profit, quantitySold, pWarrantyCost };
     }).filter(p => p.revenue > 0).sort((a, b) => b.profit - a.profit).slice(0, 5);
 
     // Chart data based on filter
@@ -200,7 +203,7 @@ export function Reports({ data, updateData }: ReportsProps) {
         const revenue = dayItems.reduce((sum, item) => sum + (item.subtotal || 0), 0) + 
                         dayRepairs.reduce((sum, r) => sum + (r.customerPrice || 0), 0);
         const cost = dayItems.reduce((sum, item) => sum + (getImportPrice(item.productId, item.importPrice) * item.quantity), 0) +
-                     dayRepairs.reduce((sum, r) => sum + (r.partnerCost || 0), 0);
+                     dayRepairs.reduce((sum, r) => sum + (r.partnerCost || 0) + (r.shippingFee || 0), 0);
         return { name: dayLabel, revenue, profit: revenue - cost, items: dayItems, repairs: dayRepairs };
       });
     } else if (timeFilter === 'month') {
@@ -221,7 +224,7 @@ export function Reports({ data, updateData }: ReportsProps) {
         const revenue = weekItems.reduce((sum, item) => sum + (item.subtotal || 0), 0) +
                         weekRepairs.reduce((sum, r) => sum + (r.customerPrice || 0), 0);
         const cost = weekItems.reduce((sum, item) => sum + (getImportPrice(item.productId, item.importPrice) * item.quantity), 0) +
-                     weekRepairs.reduce((sum, r) => sum + (r.partnerCost || 0), 0);
+                     weekRepairs.reduce((sum, r) => sum + (r.partnerCost || 0) + (r.shippingFee || 0), 0);
         return { name: weekLabel, revenue, profit: revenue - cost, items: weekItems, repairs: weekRepairs };
       });
     } else {
@@ -243,7 +246,7 @@ export function Reports({ data, updateData }: ReportsProps) {
         const revenue = monthItems.reduce((sum, item) => sum + (item.subtotal || 0), 0) +
                         monthRepairs.reduce((sum, r) => sum + (r.customerPrice || 0), 0);
         const cost = monthItems.reduce((sum, item) => sum + (getImportPrice(item.productId, item.importPrice) * item.quantity), 0) +
-                     monthRepairs.reduce((sum, r) => sum + (r.partnerCost || 0), 0);
+                     monthRepairs.reduce((sum, r) => sum + (r.partnerCost || 0) + (r.shippingFee || 0), 0);
         return { name: monthLabel, revenue, profit: revenue - cost, items: monthItems, repairs: monthRepairs };
       });
     }

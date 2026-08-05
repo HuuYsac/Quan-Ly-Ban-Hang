@@ -79,8 +79,10 @@ const Repairs: React.FC = () => {
     returnDate: '',
     warrantyMonths: 0,
     partnerCost: 0,
+    shippingFee: 0,
     customerPrice: 0,
-    profit: 0
+    profit: 0,
+    isWarranty: false
   });
 
   // Check if repair form is dirty
@@ -182,8 +184,9 @@ const Repairs: React.FC = () => {
     e.preventDefault();
     
     const partnerCost = Number(formData.partnerCost) || 0;
+    const shippingFee = Number(formData.shippingFee) || 0;
     const customerPrice = Number(formData.customerPrice) || 0;
-    const profit = customerPrice - partnerCost;
+    const profit = customerPrice - (partnerCost + shippingFee);
 
     try {
       if (editingRepair) {
@@ -484,7 +487,12 @@ const Repairs: React.FC = () => {
                     <div className="flex flex-col gap-1">
                       <div className="flex items-start gap-2">
                         <AlertCircle size={14} className="text-rose-500 mt-0.5 shrink-0" />
-                        <span className="text-sm text-gray-700 line-clamp-2">{repair.issue}</span>
+                        <span className="text-sm text-gray-700 dark:text-gray-300 line-clamp-2">{repair.issue}</span>
+                        {repair.isWarranty && (
+                          <span className="mt-1 inline-flex items-center text-[10px] font-black px-2 py-0.5 rounded-md bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-900 w-fit">
+                            🛡️ Bảo hành miễn phí
+                          </span>
+                        )}
                       </div>
                       {repair.technician && (
                         <span className="text-xs text-gray-500 flex items-center gap-1 mt-1">
@@ -496,16 +504,24 @@ const Repairs: React.FC = () => {
                   <td className="p-4">
                     <div className="flex flex-col text-xs space-y-1">
                       <div className="flex justify-between gap-4">
-                        <span className="text-gray-500">Đối tác:</span>
+                        <span className="text-gray-500">Phí sửa:</span>
                         <span className="font-medium text-gray-900 dark:text-white">{formatCurrency(repair.partnerCost || 0)}</span>
                       </div>
+                      {(repair.shippingFee || 0) > 0 && (
+                        <div className="flex justify-between gap-4">
+                          <span className="text-gray-500">Phí ship:</span>
+                          <span className="font-medium text-gray-900 dark:text-white">{formatCurrency(repair.shippingFee || 0)}</span>
+                        </div>
+                      )}
                       <div className="flex justify-between gap-4">
-                        <span className="text-gray-500">Khách:</span>
+                        <span className="text-gray-500">Thu khách:</span>
                         <span className="font-medium text-blue-600">{formatCurrency(repair.customerPrice || 0)}</span>
                       </div>
                       <div className="flex justify-between gap-4 pt-1 border-t border-gray-100 dark:border-gray-800">
                         <span className="text-gray-500">Lợi nhuận:</span>
-                        <span className="font-bold text-emerald-600">{formatCurrency(repair.profit || 0)}</span>
+                        <span className={`font-bold ${(repair.profit || 0) < 0 ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
+                          {formatCurrency(repair.profit || 0)}
+                        </span>
                       </div>
                     </div>
                   </td>
@@ -848,30 +864,65 @@ const Repairs: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-blue-50/50 rounded-2xl border border-blue-100">
+                {/* Warranty vs Service Selector */}
+                <div className="flex gap-2 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl">
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, isWarranty: true, customerPrice: 0 })}
+                    className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all ${formData.isWarranty ? 'bg-amber-500 text-white shadow-md' : 'text-slate-600 dark:text-slate-400'}`}
+                  >
+                    🛡️ Phiếu Bảo Hành (Miễn Phí)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, isWarranty: false })}
+                    className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all ${!formData.isWarranty ? 'bg-blue-600 text-white shadow-md' : 'text-slate-600 dark:text-slate-400'}`}
+                  >
+                    🛠️ Sửa Dịch Vụ (Tính Phí)
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-4 bg-amber-50/60 dark:bg-amber-950/20 rounded-2xl border border-amber-200/60 dark:border-amber-900/40">
                   <div>
-                    <label className="block text-xs font-bold text-blue-600 uppercase mb-1">Chi phí đối tác (VND)</label>
+                    <label className="block text-[10px] font-bold text-gray-600 dark:text-gray-400 uppercase mb-1">Phí sửa (Thợ/LK)</label>
                     <input 
-                      type="number"
+                      type="number" min="0"
                       value={formData.partnerCost}
                       onChange={e => setFormData({...formData, partnerCost: Number(e.target.value)})}
-                      className="w-full px-4 py-2 border border-blue-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm font-bold"
+                      className="w-full px-3 py-1.5 border border-amber-200 dark:border-amber-900 rounded-xl focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 text-sm font-bold bg-white dark:bg-slate-900"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-blue-600 uppercase mb-1">Giá báo khách (VND)</label>
+                    <label className="block text-[10px] font-bold text-gray-600 dark:text-gray-400 uppercase mb-1">Phí vận chuyển 2 chiều</label>
                     <input 
-                      type="number"
-                      value={formData.customerPrice}
-                      onChange={e => setFormData({...formData, customerPrice: Number(e.target.value)})}
-                      className="w-full px-4 py-2 border border-blue-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm font-bold"
+                      type="number" min="0"
+                      value={formData.shippingFee}
+                      onChange={e => setFormData({...formData, shippingFee: Number(e.target.value)})}
+                      className="w-full px-3 py-1.5 border border-amber-200 dark:border-amber-900 rounded-xl focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 text-sm font-bold bg-white dark:bg-slate-900"
                     />
                   </div>
-                  <div className="md:col-span-2 pt-2 flex justify-between items-center">
-                    <span className="text-xs font-bold text-gray-500 uppercase">Lợi nhuận dự kiến:</span>
-                    <span className="text-lg font-black text-emerald-600">
-                      {formatCurrency((Number(formData.customerPrice) || 0) - (Number(formData.partnerCost) || 0))}
-                    </span>
+                  <div>
+                    <label className="block text-[10px] font-bold text-gray-600 dark:text-gray-400 uppercase mb-1">Giá thu khách</label>
+                    <input 
+                      type="number" min="0"
+                      value={formData.customerPrice}
+                      onChange={e => setFormData({...formData, customerPrice: Number(e.target.value)})}
+                      disabled={formData.isWarranty}
+                      className={`w-full px-3 py-1.5 border border-amber-200 dark:border-amber-900 rounded-xl focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 text-sm font-bold ${formData.isWarranty ? 'bg-slate-100 dark:bg-slate-800 text-slate-500 cursor-not-allowed' : 'bg-white dark:bg-slate-900 text-blue-600'}`}
+                    />
+                  </div>
+                  <div className="sm:col-span-3 pt-2 border-t border-amber-200/50 dark:border-amber-900/40 flex justify-between items-center">
+                    <span className="text-xs font-bold text-gray-600 dark:text-gray-400 uppercase">Tác động lợi nhuận ròng:</span>
+                    {(() => {
+                      const totalCost = (Number(formData.partnerCost) || 0) + (Number(formData.shippingFee) || 0);
+                      const netProfit = (Number(formData.customerPrice) || 0) - totalCost;
+                      return (
+                        <span className={`text-base font-black ${netProfit < 0 ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
+                          {formatCurrency(netProfit)}
+                          {netProfit < 0 && <span className="text-[10px] font-bold ml-1 text-rose-500">(Trừ vào LN cửa hàng)</span>}
+                        </span>
+                      );
+                    })()}
                   </div>
                 </div>
 

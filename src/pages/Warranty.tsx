@@ -57,7 +57,11 @@ const Warranty: React.FC = () => {
   const [repairForm, setRepairForm] = useState({
     issue: '',
     technician: '',
-    notes: ''
+    notes: '',
+    isWarranty: true,
+    partnerCost: 0,
+    shippingFee: 0,
+    customerPrice: 0
   });
   const [settingsForm, setSettingsForm] = useState<NotificationSettings>(data.notificationSettings || {
     zaloAccessToken: '',
@@ -184,6 +188,12 @@ const Warranty: React.FC = () => {
     e.preventDefault();
     if (!selectedWarranty) return;
 
+    const partnerCost = Number(repairForm.partnerCost) || 0;
+    const shippingFee = Number(repairForm.shippingFee) || 0;
+    const customerPrice = Number(repairForm.customerPrice) || 0;
+    const totalCost = partnerCost + shippingFee;
+    const profit = customerPrice - totalCost;
+
     const newRepair: Repair = {
       id: `RP${Date.now()}`,
       customerId: selectedWarranty.customerId,
@@ -194,6 +204,12 @@ const Warranty: React.FC = () => {
       issue: repairForm.issue,
       receivedDate: new Date().toISOString().split('T')[0],
       technician: repairForm.technician,
+      partnerCost,
+      shippingFee,
+      customerPrice,
+      profit,
+      isWarranty: repairForm.isWarranty,
+      orderId: selectedWarranty.orderId,
       status: 'Đang sửa',
       notes: repairForm.notes,
       createdAt: new Date().toISOString()
@@ -202,8 +218,8 @@ const Warranty: React.FC = () => {
     await addItem('repairs', newRepair);
     setIsRepairModalOpen(false);
     setSelectedWarranty(null);
-    setRepairForm({ issue: '', technician: '', notes: '' });
-    showToast('Đã tạo phiếu sửa chữa thành công!');
+    setRepairForm({ issue: '', technician: '', notes: '', isWarranty: true, partnerCost: 0, shippingFee: 0, customerPrice: 0 });
+    showToast('Đã tạo phiếu sửa chữa / bảo hành thành công!');
   };
 
   const handleSaveSettings = async (e: React.FormEvent) => {
@@ -842,6 +858,24 @@ const Warranty: React.FC = () => {
                 <p className="text-xs text-gray-600">Khách: {selectedWarranty.customerName} - {selectedWarranty.customerPhone}</p>
               </div>
 
+              {/* Repair Type Selector */}
+              <div className="flex gap-2 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl">
+                <button
+                  type="button"
+                  onClick={() => setRepairForm({ ...repairForm, isWarranty: true, customerPrice: 0 })}
+                  className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all ${repairForm.isWarranty ? 'bg-amber-500 text-white shadow-md' : 'text-slate-600 dark:text-slate-400'}`}
+                >
+                  🛡️ Phiếu Bảo Hành (Miễn Phí)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRepairForm({ ...repairForm, isWarranty: false })}
+                  className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all ${!repairForm.isWarranty ? 'bg-blue-600 text-white shadow-md' : 'text-slate-600 dark:text-slate-400'}`}
+                >
+                  🛠️ Sửa Dịch Vụ (Tính Phí)
+                </button>
+              </div>
+
               <div>
                 <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Tình trạng/Lỗi cần sửa *</label>
                 <textarea 
@@ -849,7 +883,7 @@ const Warranty: React.FC = () => {
                   value={repairForm.issue}
                   onChange={e => setRepairForm({...repairForm, issue: e.target.value})}
                   placeholder="Mô tả lỗi của máy..."
-                  className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm min-h-[100px]"
+                  className="w-full px-4 py-2 border border-gray-200 dark:border-slate-800 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm min-h-[80px]"
                 />
               </div>
 
@@ -866,6 +900,66 @@ const Warranty: React.FC = () => {
                   onChange={(val) => setRepairForm({...repairForm, technician: val})}
                   placeholder="Chọn hoặc nhập tên thợ..."
                 />
+              </div>
+
+              {/* Financial Breakdown */}
+              <div className="p-3.5 bg-amber-50/70 dark:bg-amber-950/20 rounded-xl border border-amber-200/60 dark:border-amber-900/40 space-y-3">
+                <p className="text-xs font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider flex items-center justify-between">
+                  <span>Chi phí & Giá thu</span>
+                  {repairForm.isWarranty && <span className="bg-amber-200 dark:bg-amber-900 text-amber-900 dark:text-amber-200 text-[10px] px-2 py-0.5 rounded-full">Chi phí BH trừ LN</span>}
+                </p>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[10px] font-bold text-gray-600 dark:text-gray-400 uppercase mb-1">Chi phí sửa (Thợ/LK)</label>
+                    <input 
+                      type="number" min="0"
+                      value={repairForm.partnerCost}
+                      onChange={e => setRepairForm({...repairForm, partnerCost: Number(e.target.value)})}
+                      placeholder="0"
+                      className="w-full px-3 py-1.5 border border-gray-200 dark:border-slate-800 rounded-lg text-sm bg-white dark:bg-slate-900 font-bold"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-gray-600 dark:text-gray-400 uppercase mb-1">Phí vận chuyển 2 chiều</label>
+                    <input 
+                      type="number" min="0"
+                      value={repairForm.shippingFee}
+                      onChange={e => setRepairForm({...repairForm, shippingFee: Number(e.target.value)})}
+                      placeholder="0"
+                      className="w-full px-3 py-1.5 border border-gray-200 dark:border-slate-800 rounded-lg text-sm bg-white dark:bg-slate-900 font-bold"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold text-gray-600 dark:text-gray-400 uppercase mb-1">Giá thu từ khách (VND)</label>
+                  <input 
+                    type="number" min="0"
+                    value={repairForm.customerPrice}
+                    onChange={e => setRepairForm({...repairForm, customerPrice: Number(e.target.value)})}
+                    placeholder="0"
+                    disabled={repairForm.isWarranty}
+                    className={`w-full px-3 py-1.5 border border-gray-200 dark:border-slate-800 rounded-lg text-sm font-bold ${repairForm.isWarranty ? 'bg-slate-100 dark:bg-slate-800 text-slate-500 cursor-not-allowed' : 'bg-white dark:bg-slate-900 text-blue-600'}`}
+                  />
+                  {repairForm.isWarranty && (
+                    <p className="text-[10px] text-slate-500 mt-0.5">Bảo hành miễn phí cho khách (Thu khách = 0đ)</p>
+                  )}
+                </div>
+
+                <div className="pt-2 border-t border-amber-200/50 dark:border-amber-900/40 flex items-center justify-between">
+                  <span className="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase">Tác động lợi nhuận:</span>
+                  {(() => {
+                    const totalCost = (Number(repairForm.partnerCost) || 0) + (Number(repairForm.shippingFee) || 0);
+                    const netProfit = (Number(repairForm.customerPrice) || 0) - totalCost;
+                    return (
+                      <span className={`text-sm font-black ${netProfit < 0 ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
+                        {formatCurrency(netProfit)}
+                        {netProfit < 0 && <span className="text-[10px] font-medium ml-1 text-rose-500">(Trừ vào LN cửa hàng)</span>}
+                      </span>
+                    );
+                  })()}
+                </div>
               </div>
 
               <div>

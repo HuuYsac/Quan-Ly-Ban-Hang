@@ -109,6 +109,9 @@ export interface Repair {
   customerPrice?: number;
   profit?: number;
   createdAt: string;
+  isWarranty?: boolean;
+  shippingFee?: number;
+  orderId?: string;
 }
 
 export interface Order {

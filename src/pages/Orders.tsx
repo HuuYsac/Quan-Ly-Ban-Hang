@@ -1618,29 +1618,77 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
                 {/* Internal Costs & Profit Details for the Store */}
                 <div className="mt-6 pt-6 border-t border-gray-100 dark:border-gray-800">
                   <h5 className="text-sm font-bold text-gray-900 dark:text-white mb-3 uppercase tracking-wider text-[11px]">Thông tin chi phí & Lợi nhuận (Nội bộ)</h5>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-100 dark:border-slate-800">
-                    <div>
-                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Phí đóng gói</p>
-                      <p className="font-bold text-sm text-gray-900 dark:text-white">{formatCurrency(viewOrder.packagingFee || 0)}</p>
-                    </div>
-                    <div>
-                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Phí vận chuyển</p>
-                      <p className="font-bold text-sm text-gray-900 dark:text-white">{formatCurrency(viewOrder.shippingFee || 0)}</p>
-                    </div>
-                    <div>
-                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Hoa hồng CTV</p>
-                      <p className="font-bold text-sm text-rose-600">
-                        {formatCurrency(viewOrder.commission || 0)}
-                        {viewOrder.collaboratorName && <span className="text-xs text-gray-500 block">({viewOrder.collaboratorName})</span>}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Lợi nhuận ròng</p>
-                      <p className={`font-black text-sm ${(viewOrder.profit ?? 0) >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
-                        {formatCurrency(viewOrder.profit ?? (viewOrder.total - (viewOrder.totalCost ?? 0)))}
-                      </p>
-                    </div>
-                  </div>
+                  {(() => {
+                    const orderWarrantyRepairs = (data.repairs || []).filter(r => 
+                      (r.orderId === viewOrder.id || (viewOrder.products || []).some(item => item.serviceTag && item.serviceTag === r.serviceTag)) && r.isWarranty
+                    );
+                    const totalWarrantyExpense = orderWarrantyRepairs.reduce((sum, r) => sum + (r.partnerCost || 0) + (r.shippingFee || 0), 0);
+                    const initialProfit = viewOrder.profit ?? (viewOrder.total - (viewOrder.totalCost ?? 0));
+                    const netProfit = initialProfit - totalWarrantyExpense;
+
+                    return (
+                      <div className="space-y-3">
+                        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-100 dark:border-slate-800">
+                          <div>
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Lợi nhuận ban đầu</p>
+                            <p className="font-bold text-sm text-blue-600">{formatCurrency(initialProfit)}</p>
+                          </div>
+                          <div>
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Phí đóng gói & Ship</p>
+                            <p className="font-bold text-sm text-gray-900 dark:text-white">{formatCurrency((viewOrder.packagingFee || 0) + (viewOrder.shippingFee || 0))}</p>
+                          </div>
+                          <div>
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Hoa hồng CTV</p>
+                            <p className="font-bold text-sm text-rose-600">
+                              {formatCurrency(viewOrder.commission || 0)}
+                              {viewOrder.collaboratorName && <span className="text-[10px] text-gray-500 block truncate">({viewOrder.collaboratorName})</span>}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-[10px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider mb-1">Phí BH phát sinh</p>
+                            <p className={`font-black text-sm ${totalWarrantyExpense > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-400'}`}>
+                              {totalWarrantyExpense > 0 ? `-${formatCurrency(totalWarrantyExpense)}` : '0 ₫'}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Lợi nhuận ròng thực tế</p>
+                            <p className={`font-black text-sm ${netProfit >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                              {formatCurrency(netProfit)}
+                            </p>
+                          </div>
+                        </div>
+
+                        {orderWarrantyRepairs.length > 0 && (
+                          <div className="bg-amber-50/70 dark:bg-amber-950/30 p-3.5 rounded-xl border border-amber-200/60 dark:border-amber-900/50">
+                            <p className="text-xs font-bold text-amber-800 dark:text-amber-300 uppercase tracking-wider mb-2 flex items-center justify-between">
+                              <span>🛡️ Lịch sử bảo hành phát sinh ({orderWarrantyRepairs.length} lần)</span>
+                              <span className="text-rose-600 dark:text-rose-400 font-black">TỔNG TRỪ LN: -{formatCurrency(totalWarrantyExpense)}</span>
+                            </p>
+                            <div className="space-y-2">
+                              {orderWarrantyRepairs.map((repair, rIdx) => {
+                                const repairCost = (repair.partnerCost || 0) + (repair.shippingFee || 0);
+                                return (
+                                  <div key={rIdx} className="flex flex-wrap items-center justify-between text-xs bg-white dark:bg-slate-900 p-2.5 rounded-lg border border-amber-200/50 dark:border-amber-900/40">
+                                    <div className="flex items-center gap-2">
+                                      <span className="font-bold text-slate-500 dark:text-slate-400">[{repair.receivedDate}]</span>
+                                      <span className="font-semibold text-slate-800 dark:text-slate-200">{repair.issue}</span>
+                                      {repair.serviceTag && <span className="text-[10px] font-mono font-bold text-blue-600">S/N: {repair.serviceTag}</span>}
+                                    </div>
+                                    <div className="text-right font-black text-rose-600">
+                                      -{formatCurrency(repairCost)}
+                                      <span className="text-[10px] text-slate-500 font-normal ml-1.5">
+                                        (Thợ: {formatCurrency(repair.partnerCost || 0)} + Ship: {formatCurrency(repair.shippingFee || 0)})
+                                      </span>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
                 </div>
               </div>
             </div>
