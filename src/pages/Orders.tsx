@@ -1887,9 +1887,9 @@ export function Orders({ data, updateData, addItem, updateItem, deleteItem, isAd
                       <div className="grid grid-cols-1 sm:grid-cols-12 gap-4 items-start pt-2">
                         <div className="sm:col-span-5">
                           <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1 ml-1">Sản phẩm *</label>
-                          <div className="flex gap-2">
+                          <div className="flex gap-2 min-w-0">
                             <SearchableSelect 
-                              className="flex-1"
+                              className="flex-1 min-w-0"
                               options={(data.products || []).map(p => ({
                                 id: p.id,
                                 label: p.name,

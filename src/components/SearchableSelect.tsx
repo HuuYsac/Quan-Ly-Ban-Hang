@@ -97,21 +97,25 @@ export function SearchableSelect({
           isOpen ? 'ring-2 ring-blue-500/20 border-blue-500' : 'border-gray-200 hover:border-gray-300'
         }`}
       >
-        <div className="flex-1 truncate">
+        <div className="flex-1 min-w-0 pr-2">
           {selectedOption ? (
-            <div className="flex flex-col">
-              <span className="text-sm font-medium text-gray-900 truncate">{selectedOption.label}</span>
+            <div className="flex flex-col min-w-0">
+              <span className="text-sm font-semibold text-gray-900 dark:text-white truncate block max-w-full" title={selectedOption.label}>
+                {selectedOption.label}
+              </span>
               {selectedOption.sublabel && (
-                <span className="text-[10px] text-gray-500 truncate">{selectedOption.sublabel}</span>
+                <span className="text-[11px] font-medium text-gray-500 dark:text-gray-400 truncate block max-w-full">
+                  {selectedOption.sublabel}
+                </span>
               )}
             </div>
           ) : value ? (
-            <span className="text-sm font-medium text-gray-900 truncate">{value}</span>
+            <span className="text-sm font-medium text-gray-900 dark:text-white truncate block max-w-full" title={value}>{value}</span>
           ) : (
-            <span className="text-gray-400 text-sm">{placeholder}</span>
+            <span className="text-gray-400 text-sm truncate block">{placeholder}</span>
           )}
         </div>
-        <ChevronDown size={18} className={`text-gray-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+        <ChevronDown size={18} className={`text-gray-400 shrink-0 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
       </div>
 
       <AnimatePresence>
@@ -121,9 +125,9 @@ export function SearchableSelect({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 4, scale: 0.98 }}
             transition={{ duration: 0.15 }}
-            className="absolute z-[110] w-full mt-2 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden"
+            className="absolute z-[110] w-full mt-2 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-gray-100 dark:border-slate-800 overflow-hidden"
           >
-            <div className="p-2 border-b border-gray-50">
+            <div className="p-2 border-b border-gray-50 dark:border-slate-800">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
                 <input
@@ -133,7 +137,7 @@ export function SearchableSelect({
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  className="w-full pl-9 pr-4 py-2 bg-gray-50 border-transparent focus:bg-white focus:border-blue-500 rounded-xl text-sm outline-none transition-all"
+                  className="w-full pl-9 pr-4 py-2 bg-gray-50 dark:bg-slate-800 border-transparent focus:bg-white dark:focus:bg-slate-900 focus:border-blue-500 rounded-xl text-sm outline-none transition-all dark:text-white"
                 />
               </div>
             </div>
@@ -145,9 +149,9 @@ export function SearchableSelect({
                     onChange(searchQuery.trim());
                     setIsOpen(false);
                   }}
-                  className="w-full flex items-center justify-between p-2.5 rounded-xl bg-blue-50/70 text-blue-700 hover:bg-blue-100 transition-all cursor-pointer font-medium text-sm mb-1"
+                  className="w-full flex items-center justify-between p-2.5 rounded-xl bg-blue-50/70 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 hover:bg-blue-100 transition-all cursor-pointer font-medium text-sm mb-1"
                 >
-                  <span className="truncate">Tự nhập: <strong className="font-bold">"{searchQuery.trim()}"</strong></span>
+                  <span className="truncate pr-2">Tự nhập: <strong className="font-bold">"{searchQuery.trim()}"</strong></span>
                   <PlusCircle size={16} className="shrink-0 ml-2" />
                 </div>
               )}
@@ -165,23 +169,26 @@ export function SearchableSelect({
                       option.disabled 
                         ? 'opacity-50 cursor-not-allowed' 
                         : value === option.id 
-                          ? 'bg-blue-50 text-blue-700' 
-                          : 'hover:bg-gray-50'
+                          ? 'bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300' 
+                          : 'hover:bg-gray-50 dark:hover:bg-slate-800/60'
                     }`}
                   >
-                    <div className="flex-1 min-w-0">
+                    <div className="flex-1 min-w-0 pr-2">
                       {renderOption ? renderOption(option) : (
-                        <div className="flex flex-col">
-                          <span className={`text-sm font-medium truncate ${value === option.id ? 'text-blue-700' : 'text-gray-900'}`}>
+                        <div className="flex flex-col min-w-0">
+                          <span 
+                            className={`text-sm font-medium truncate block max-w-full ${value === option.id ? 'text-blue-700 dark:text-blue-300 font-bold' : 'text-gray-900 dark:text-gray-100'}`}
+                            title={option.label}
+                          >
                             {option.label}
                           </span>
                           {option.sublabel && (
-                            <span className="text-[10px] text-gray-500 truncate">{option.sublabel}</span>
+                            <span className="text-[10px] text-gray-500 dark:text-gray-400 truncate block max-w-full">{option.sublabel}</span>
                           )}
                         </div>
                       )}
                     </div>
-                    {value === option.id && <Check size={16} className="text-blue-600 shrink-0 ml-2" />}
+                    {value === option.id && <Check size={16} className="text-blue-600 dark:text-blue-400 shrink-0 ml-1" />}
                   </div>
                 ))
               ) : (
